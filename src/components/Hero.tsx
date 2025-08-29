@@ -52,10 +52,12 @@ const Hero = () => {
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button variant="hero" size="lg" className="min-w-[200px]">
-              <Search className="h-5 w-5" />
-              Browse Plans
-              <ArrowRight className="h-5 w-5" />
+            <Button variant="hero" size="lg" className="min-w-[200px]" asChild>
+              <a href="/plans">
+                <Search className="h-5 w-5" />
+                Browse Plans
+                <ArrowRight className="h-5 w-5" />
+              </a>
             </Button>
             <Button variant="outline" size="lg" className="min-w-[200px]">
               <Play className="h-5 w-5" />

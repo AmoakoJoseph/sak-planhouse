@@ -7,9 +7,9 @@ const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const navItems = [
-    { icon: Home, label: 'Home', href: '#' },
-    { icon: Search, label: 'Browse Plans', href: '#browse' },
-    { icon: User, label: 'About', href: '#about' },
+    { icon: Home, label: 'Home', href: '/' },
+    { icon: Search, label: 'Browse Plans', href: '/plans' },
+    { icon: User, label: 'About', href: '/about' },
   ];
 
   return (
@@ -46,11 +46,11 @@ const Header = () => {
             <ShoppingCart className="h-4 w-4" />
             Cart (0)
           </Button>
-          <Button variant="outline" size="sm">
-            Login
+          <Button variant="outline" size="sm" asChild>
+            <a href="/login">Login</a>
           </Button>
-          <Button variant="cta" size="sm">
-            Get Started
+          <Button variant="cta" size="sm" asChild>
+            <a href="/register">Get Started</a>
           </Button>
         </div>
 
@@ -76,11 +76,11 @@ const Header = () => {
               ))}
               <div className="pt-6 border-t">
                 <div className="flex flex-col space-y-3">
-                  <Button variant="outline" className="w-full">
-                    Login
+                  <Button variant="outline" className="w-full" asChild>
+                    <a href="/login">Login</a>
                   </Button>
-                  <Button variant="cta" className="w-full">
-                    Get Started
+                  <Button variant="cta" className="w-full" asChild>
+                    <a href="/register">Get Started</a>
                   </Button>
                 </div>
               </div>
