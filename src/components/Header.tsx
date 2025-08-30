@@ -1,12 +1,16 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, Home, Search, User, ShoppingCart } from 'lucide-react';
+import { Menu, Home, Search, User, ShoppingCart, LogOut } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import AuthModal from './AuthModal';
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const { user, signOut, profile } = useAuth();
+  const navigate = useNavigate();
 
   const navItems = [
     { icon: Home, label: 'Home', href: '/' },
@@ -15,7 +19,15 @@ const Header = () => {
   ];
 
   const handleAuthClick = () => {
-    setAuthModalOpen(true);
+    if (user) {
+      signOut();
+    } else {
+      setAuthModalOpen(true);
+    }
+  };
+
+  const handleAdminClick = () => {
+    navigate('/admin/login');
   };
 
   return (
@@ -53,9 +65,26 @@ const Header = () => {
               <ShoppingCart className="h-4 w-4" />
               Cart (0)
             </Button>
-            <Button variant="cta" size="sm" onClick={handleAuthClick}>
-              Sign In
-            </Button>
+            {user ? (
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-muted-foreground">
+                  Hello, {profile?.first_name || 'User'}
+                </span>
+                <Button variant="ghost" size="sm" onClick={handleAuthClick}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Button variant="ghost" size="sm" onClick={handleAdminClick}>
+                  Admin
+                </Button>
+                <Button variant="cta" size="sm" onClick={handleAuthClick}>
+                  Sign In
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu */}
