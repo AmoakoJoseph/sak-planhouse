@@ -81,7 +81,7 @@ const Footer = () => {
             </div>
             <p className="text-white/70 leading-relaxed">
               Ghana's premier platform for professional architectural plans. 
-              Building dreams with quality designs since 2020.
+              Building dreams with quality designs since 2020. Over 30+ house plans available.
             </p>
             <div className="flex space-x-4">
               {socialLinks.map((social) => (

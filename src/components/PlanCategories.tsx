@@ -10,29 +10,29 @@ const PlanCategories = () => {
   const categories = [
     {
       title: 'Luxury Villas',
-      description: 'Spacious multi-story homes with premium features',
+      description: 'Spacious multi-story homes with premium features and modern amenities',
       image: villaImage,
-      plans: 150,
-      startingPrice: '₵2,500',
-      features: ['4-6 Bedrooms', '3-5 Bathrooms', '2500-4000 sq ft'],
+      plans: 10,
+      startingPrice: '₵2,100',
+      features: ['4-6 Bedrooms', '3-5 Bathrooms', '2600-4200 sq ft'],
       popular: true,
     },
     {
       title: 'Modern Bungalows',
-      description: 'Single-story comfort with contemporary design',
+      description: 'Single-story comfort with contemporary design and family-friendly layouts',
       image: bungalowImage,
-      plans: 180,
-      startingPrice: '₵1,800',
-      features: ['2-4 Bedrooms', '2-3 Bathrooms', '1200-2500 sq ft'],
+      plans: 10,
+      startingPrice: '₵1,500',
+      features: ['2-4 Bedrooms', '2-3 Bathrooms', '1200-2200 sq ft'],
       popular: false,
     },
     {
       title: 'Stylish Townhouses',
-      description: 'Multi-level urban living solutions',
+      description: 'Multi-level urban living solutions with smart space utilization',
       image: townhouseImage,
-      plans: 120,
-      startingPrice: '₵2,200',
-      features: ['3-4 Bedrooms', '2-4 Bathrooms', '1800-3000 sq ft'],
+      plans: 10,
+      startingPrice: '₵1,700',
+      features: ['2-5 Bedrooms', '2-4 Bathrooms', '1600-2800 sq ft'],
       popular: false,
     },
   ];
@@ -51,7 +51,7 @@ const PlanCategories = () => {
     {
       icon: Square,
       title: 'Various Sizes',
-      description: 'Plans ranging from 1,200 to 4,000+ square feet',
+      description: 'Plans ranging from 1,200 to 4,200+ square feet',
     },
     {
       icon: Star,
@@ -73,7 +73,7 @@ const PlanCategories = () => {
             <span className="bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent"> Home Design</span>
           </h2>
           <p className="text-lg text-muted-foreground">
-            Explore our extensive collection of professionally designed house plans, 
+            Explore our extensive collection of 30+ professionally designed house plans, 
             each crafted to meet modern living standards and local building requirements.
           </p>
         </div>

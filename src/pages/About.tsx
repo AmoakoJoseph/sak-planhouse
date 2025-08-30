@@ -17,7 +17,7 @@ import { Link } from 'react-router-dom';
 
 const About = () => {
   const stats = [
-    { icon: Building, number: '500+', label: 'House Plans' },
+    { icon: Building, number: '30+', label: 'House Plans' },
     { icon: Users, number: '2000+', label: 'Happy Customers' },
     { icon: Award, number: '10+', label: 'Years Experience' },
     { icon: Globe, number: '50+', label: 'Cities Served' },
