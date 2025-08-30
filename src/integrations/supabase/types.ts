@@ -14,7 +14,194 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      downloads: {
+        Row: {
+          created_at: string
+          download_count: number
+          id: string
+          last_downloaded: string | null
+          order_id: string
+          plan_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          download_count?: number
+          id?: string
+          last_downloaded?: string | null
+          order_id: string
+          plan_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          download_count?: number
+          id?: string
+          last_downloaded?: string | null
+          order_id?: string
+          plan_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "downloads_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "downloads_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          payment_intent_id: string | null
+          plan_id: string
+          status: Database["public"]["Enums"]["order_status"]
+          tier: Database["public"]["Enums"]["plan_tier"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          payment_intent_id?: string | null
+          plan_id: string
+          status?: Database["public"]["Enums"]["order_status"]
+          tier: Database["public"]["Enums"]["plan_tier"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          payment_intent_id?: string | null
+          plan_id?: string
+          status?: Database["public"]["Enums"]["order_status"]
+          tier?: Database["public"]["Enums"]["plan_tier"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plans: {
+        Row: {
+          area_sqft: number | null
+          basic_price: number
+          bathrooms: number | null
+          bedrooms: number | null
+          created_at: string
+          description: string | null
+          featured: boolean
+          gallery_images: string[] | null
+          id: string
+          image_url: string | null
+          plan_files: Json | null
+          plan_type: Database["public"]["Enums"]["plan_type"]
+          premium_price: number
+          standard_price: number
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          area_sqft?: number | null
+          basic_price?: number
+          bathrooms?: number | null
+          bedrooms?: number | null
+          created_at?: string
+          description?: string | null
+          featured?: boolean
+          gallery_images?: string[] | null
+          id?: string
+          image_url?: string | null
+          plan_files?: Json | null
+          plan_type: Database["public"]["Enums"]["plan_type"]
+          premium_price?: number
+          standard_price?: number
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          area_sqft?: number | null
+          basic_price?: number
+          bathrooms?: number | null
+          bedrooms?: number | null
+          created_at?: string
+          description?: string | null
+          featured?: boolean
+          gallery_images?: string[] | null
+          id?: string
+          image_url?: string | null
+          plan_files?: Json | null
+          plan_type?: Database["public"]["Enums"]["plan_type"]
+          premium_price?: number
+          standard_price?: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          phone: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -24,6 +211,7 @@ export type Database = {
     }
     Enums: {
       DownloadStatus: "PENDING" | "READY" | "EXPIRED" | "FAILED"
+      order_status: "pending" | "completed" | "cancelled" | "refunded"
       OrderStatus:
         | "PENDING"
         | "PROCESSING"
@@ -31,6 +219,14 @@ export type Database = {
         | "CANCELLED"
         | "REFUNDED"
       PaymentStatus: "PENDING" | "PAID" | "FAILED" | "REFUNDED"
+      plan_tier: "basic" | "standard" | "premium"
+      plan_type:
+        | "villa"
+        | "bungalow"
+        | "townhouse"
+        | "duplex"
+        | "apartment"
+        | "commercial"
       PlanStatus: "DRAFT" | "PUBLISHED" | "ARCHIVED"
       PlanType:
         | "VILLA"
@@ -44,6 +240,7 @@ export type Database = {
         | "TINYHOUSE"
         | "MANSION"
       TierType: "BASIC" | "STANDARD" | "PREMIUM"
+      user_role: "user" | "admin" | "super_admin"
       UserRole: "USER" | "ADMIN" | "SUPER_ADMIN"
       UserStatus: "ACTIVE" | "SUSPENDED" | "BANNED"
     }
@@ -174,6 +371,7 @@ export const Constants = {
   public: {
     Enums: {
       DownloadStatus: ["PENDING", "READY", "EXPIRED", "FAILED"],
+      order_status: ["pending", "completed", "cancelled", "refunded"],
       OrderStatus: [
         "PENDING",
         "PROCESSING",
@@ -182,6 +380,15 @@ export const Constants = {
         "REFUNDED",
       ],
       PaymentStatus: ["PENDING", "PAID", "FAILED", "REFUNDED"],
+      plan_tier: ["basic", "standard", "premium"],
+      plan_type: [
+        "villa",
+        "bungalow",
+        "townhouse",
+        "duplex",
+        "apartment",
+        "commercial",
+      ],
       PlanStatus: ["DRAFT", "PUBLISHED", "ARCHIVED"],
       PlanType: [
         "VILLA",
@@ -196,6 +403,7 @@ export const Constants = {
         "MANSION",
       ],
       TierType: ["BASIC", "STANDARD", "PREMIUM"],
+      user_role: ["user", "admin", "super_admin"],
       UserRole: ["USER", "ADMIN", "SUPER_ADMIN"],
       UserStatus: ["ACTIVE", "SUSPENDED", "BANNED"],
     },
