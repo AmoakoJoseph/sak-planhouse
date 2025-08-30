@@ -295,7 +295,7 @@ const AdminPlans = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="plan_type">Plan Type</Label>
-                    <Select value={planForm.plan_type} onValueChange={(value) => setPlanForm(prev => ({ ...prev, plan_type: value }))}>
+                    <Select value={planForm.plan_type} onValueChange={(value) => setPlanForm(prev => ({ ...prev, plan_type: value as PlanType }))}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -553,7 +553,7 @@ const AdminPlans = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-plan_type">Plan Type</Label>
-                <Select value={planForm.plan_type} onValueChange={(value) => setPlanForm(prev => ({ ...prev, plan_type: value }))}>
+                <Select value={planForm.plan_type} onValueChange={(value) => setPlanForm(prev => ({ ...prev, plan_type: value as PlanType }))}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

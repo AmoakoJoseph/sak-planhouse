@@ -16,6 +16,11 @@ import Checkout from "./pages/Checkout";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminPlans from "./pages/AdminPlans";
+import UserDashboard from "./pages/UserDashboard";
+import UserProfile from "./pages/UserProfile";
+import UserOrders from "./pages/UserOrders";
+import UserFavorites from "./pages/UserFavorites";
+import UserSettings from "./pages/UserSettings";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +39,13 @@ const AppContent = () => {
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/checkout" element={<Checkout />} />
+          
+          {/* User Routes */}
+          <Route path="/user/dashboard" element={<UserDashboard />} />
+          <Route path="/user/profile" element={<UserProfile />} />
+          <Route path="/user/orders" element={<UserOrders />} />
+          <Route path="/user/favorites" element={<UserFavorites />} />
+          <Route path="/user/settings" element={<UserSettings />} />
           
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
