@@ -225,6 +225,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_admin_user: {
+        Args: { admin_email?: string }
+        Returns: string
+      }
       promote_user_to_admin: {
         Args: { user_email: string }
         Returns: undefined

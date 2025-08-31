@@ -195,11 +195,11 @@ const UserProfile = () => {
                       
                       <div>
                         <h2 className="text-xl font-semibold">
-                          {profile?.first_name || 'John'} {profile?.last_name || 'Doe'}
+                          {profile?.first_name} {profile?.last_name}
                         </h2>
-                        <p className="text-muted-foreground">{profile?.email || user?.email}</p>
+                        <p className="text-muted-foreground">{profile?.email}</p>
                         <Badge variant="secondary" className="mt-2">
-                          {profile?.role || 'user'}
+                          {profile?.role}
                         </Badge>
                       </div>
 
@@ -428,29 +428,23 @@ const UserProfile = () => {
                         <h4 className="font-medium">Change Password</h4>
                         <p className="text-sm text-muted-foreground">Update your account password</p>
                       </div>
-                      <Button variant="outline" size="sm">
-                        Change
-                      </Button>
+                      <Button variant="outline">Change</Button>
                     </div>
-
+                    
                     <div className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
                         <h4 className="font-medium">Two-Factor Authentication</h4>
                         <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
                       </div>
-                      <Button variant="outline" size="sm">
-                        Enable
-                      </Button>
+                      <Button variant="outline">Enable</Button>
                     </div>
-
+                    
                     <div className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
-                        <h4 className="font-medium">Delete Account</h4>
-                        <p className="text-sm text-muted-foreground">Permanently delete your account</p>
+                        <h4 className="font-medium">Account Deactivation</h4>
+                        <p className="text-sm text-muted-foreground">Temporarily disable your account</p>
                       </div>
-                      <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                        Delete
-                      </Button>
+                      <Button variant="destructive" onClick={signOut}>Sign Out</Button>
                     </div>
                   </CardContent>
                 </Card>
