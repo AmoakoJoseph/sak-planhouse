@@ -50,28 +50,17 @@ const UserProfile = () => {
       return;
     }
 
-    // Use mock profile data if real profile is not available
-    const userProfile = profile || {
-      id: 'mock-id',
-      user_id: user?.id || '',
-      email: user?.email || '',
-      first_name: 'John',
-      last_name: 'Doe',
-      role: 'user' as const,
-      avatar_url: undefined
-    };
-
     setFormData({
-      first_name: userProfile.first_name || '',
-      last_name: userProfile.last_name || '',
-      email: userProfile.email || user.email || '',
-      phone: userProfile.phone || '',
-      address: userProfile.address || '',
-      city: userProfile.city || '',
-      country: userProfile.country || 'Ghana',
-      bio: userProfile.bio || '',
-      company: userProfile.company || '',
-      website: userProfile.website || ''
+      first_name: profile?.first_name || '',
+      last_name: profile?.last_name || '',
+      email: profile?.email || user.email || '',
+      phone: profile?.phone || '',
+      address: profile?.address || '',
+      city: profile?.city || '',
+      country: profile?.country || 'Ghana',
+      bio: profile?.bio || '',
+      company: profile?.company || '',
+      website: profile?.website || ''
     });
   }, [user, profile, navigate]);
 
@@ -102,27 +91,17 @@ const UserProfile = () => {
 
   const handleCancel = () => {
     // Reset form data to original values
-    const userProfile = profile || {
-      id: 'mock-id',
-      user_id: user?.id || '',
-      email: user?.email || '',
-      first_name: 'John',
-      last_name: 'Doe',
-      role: 'user' as const,
-      avatar_url: undefined
-    };
-    
     setFormData({
-      first_name: userProfile.first_name || '',
-      last_name: userProfile.last_name || '',
-      email: userProfile.email || user?.email || '',
-      phone: userProfile.phone || '',
-      address: userProfile.address || '',
-      city: userProfile.city || '',
-      country: userProfile.country || 'Ghana',
-      bio: userProfile.bio || '',
-      company: userProfile.company || '',
-      website: userProfile.website || ''
+      first_name: profile?.first_name || '',
+      last_name: profile?.last_name || '',
+      email: profile?.email || user?.email || '',
+      phone: profile?.phone || '',
+      address: profile?.address || '',
+      city: profile?.city || '',
+      country: profile?.country || 'Ghana',
+      bio: profile?.bio || '',
+      company: profile?.company || '',
+      website: profile?.website || ''
     });
     setIsEditing(false);
   };
