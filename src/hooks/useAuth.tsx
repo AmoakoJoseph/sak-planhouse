@@ -8,6 +8,13 @@ interface Profile {
   email: string;
   first_name?: string;
   last_name?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  bio?: string;
+  company?: string;
+  website?: string;
   role: 'user' | 'admin' | 'super_admin';
   avatar_url?: string;
 }

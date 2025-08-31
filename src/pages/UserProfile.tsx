@@ -198,9 +198,9 @@ const UserProfile = () => {
                     <div className="text-center space-y-4">
                       <div className="relative inline-block">
                         <Avatar className="h-24 w-24 mx-auto">
-                          <AvatarImage src={userProfile.avatar_url} />
+                          <AvatarImage src={profile?.avatar_url} />
                           <AvatarFallback className="text-2xl">
-                            {userProfile.first_name?.[0]}{userProfile.last_name?.[0] || 'U'}
+                            {profile?.first_name?.[0]}{profile?.last_name?.[0] || 'U'}
                           </AvatarFallback>
                         </Avatar>
                         {isEditing && (
@@ -216,11 +216,11 @@ const UserProfile = () => {
                       
                       <div>
                         <h2 className="text-xl font-semibold">
-                          {userProfile.first_name} {userProfile.last_name}
+                          {profile?.first_name || 'John'} {profile?.last_name || 'Doe'}
                         </h2>
-                        <p className="text-muted-foreground">{userProfile.email}</p>
+                        <p className="text-muted-foreground">{profile?.email || user?.email}</p>
                         <Badge variant="secondary" className="mt-2">
-                          {userProfile.role}
+                          {profile?.role || 'user'}
                         </Badge>
                       </div>
 
@@ -231,16 +231,16 @@ const UserProfile = () => {
                           <Calendar className="h-4 w-4" />
                           <span>Member since {new Date(user.created_at).toLocaleDateString()}</span>
                         </div>
-                        {userProfile.phone && (
+                        {profile?.phone && (
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <Phone className="h-4 w-4" />
-                            <span>{userProfile.phone}</span>
+                            <span>{profile.phone}</span>
                           </div>
                         )}
-                        {userProfile.city && (
+                        {profile?.city && (
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <MapPin className="h-4 w-4" />
-                            <span>{userProfile.city}, {userProfile.country}</span>
+                            <span>{profile.city}, {profile.country}</span>
                           </div>
                         )}
                       </div>
