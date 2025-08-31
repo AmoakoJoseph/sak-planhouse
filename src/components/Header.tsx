@@ -28,9 +28,7 @@ const Header = () => {
     }
   };
 
-  const handleAdminClick = () => {
-    navigate('/admin/login');
-  };
+
 
   return (
     <>
@@ -72,23 +70,23 @@ const Header = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="sm" className="relative h-8 w-8 rounded-full">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={profile?.avatar_url} alt={profile?.first_name || 'User'} />
-                        <AvatarFallback className="text-sm">
-                          {profile?.first_name?.[0]}{profile?.last_name?.[0] || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
+                                             <Avatar className="h-8 w-8">
+                         <AvatarImage src={profile?.avatar_url} alt={profile?.first_name || 'User'} />
+                         <AvatarFallback className="text-sm">
+                           {profile?.first_name?.[0] || 'U'}{profile?.last_name?.[0] || ''}
+                         </AvatarFallback>
+                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="end" forceMount>
-                    <div className="flex items-center justify-start gap-2 p-2">
-                      <div className="flex flex-col space-y-1 leading-none">
-                        <p className="font-medium">{profile?.first_name} {profile?.last_name}</p>
-                        <p className="w-[200px] truncate text-sm text-muted-foreground">
-                          {profile?.email}
-                        </p>
-                      </div>
-                    </div>
+                                         <div className="flex items-center justify-start gap-2 p-2">
+                       <div className="flex flex-col space-y-1 leading-none">
+                         <p className="font-medium">{profile?.first_name || 'User'} {profile?.last_name || ''}</p>
+                         <p className="w-[200px] truncate text-sm text-muted-foreground">
+                           {profile?.email || user?.email || 'user@example.com'}
+                         </p>
+                       </div>
+                     </div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <Link to="/user/dashboard">
@@ -128,16 +126,13 @@ const Header = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-            ) : (
-              <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="sm" onClick={handleAdminClick}>
-                  Admin
-                </Button>
-                <Button variant="cta" size="sm" onClick={handleAuthClick}>
-                  Sign In
-                </Button>
-              </div>
-            )}
+                         ) : (
+               <div className="flex items-center space-x-2">
+                 <Button variant="cta" size="sm" onClick={handleAuthClick}>
+                   Sign In
+                 </Button>
+               </div>
+             )}
           </div>
 
           {/* Mobile Menu */}

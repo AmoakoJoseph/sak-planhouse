@@ -136,7 +136,18 @@ const UserDashboard = () => {
     }
   }, [user, navigate]);
 
-  if (!user || !profile) {
+  // Use mock profile data if real profile is not available
+  const userProfile = profile || {
+    id: 'mock-id',
+    user_id: user?.id || '',
+    email: user?.email || '',
+    first_name: 'John',
+    last_name: 'Doe',
+    role: 'user' as const,
+    avatar_url: undefined
+  };
+
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -181,7 +192,7 @@ const UserDashboard = () => {
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back, {profile.first_name || 'User'}!</h1>
+                <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back, {userProfile.first_name || 'User'}!</h1>
                 <p className="text-muted-foreground">Manage your account, view orders, and explore plans</p>
               </div>
               <div className="flex items-center gap-4">
@@ -202,23 +213,23 @@ const UserDashboard = () => {
               <CardContent className="p-6">
                 <div className="flex items-center gap-6">
                   <Avatar className="h-20 w-20">
-                    <AvatarImage src={profile.avatar_url} />
+                    <AvatarImage src={userProfile.avatar_url} />
                     <AvatarFallback className="text-lg">
-                      {profile.first_name?.[0]}{profile.last_name?.[0] || 'U'}
+                      {userProfile.first_name?.[0]}{userProfile.last_name?.[0] || 'U'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
                     <h2 className="text-xl font-semibold mb-2">
-                      {profile.first_name} {profile.last_name}
+                      {userProfile.first_name} {userProfile.last_name}
                     </h2>
                     <div className="flex items-center gap-6 text-sm text-muted-foreground">
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4" />
-                        {profile.email}
+                        {userProfile.email}
                       </div>
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4" />
-                        {profile.role}
+                        {userProfile.role}
                       </div>
                     </div>
                   </div>

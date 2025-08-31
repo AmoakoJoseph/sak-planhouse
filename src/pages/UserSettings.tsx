@@ -83,6 +83,17 @@ const UserSettings = () => {
     }
   }, [user, navigate]);
 
+  // Use mock profile data if real profile is not available
+  const userProfile = profile || {
+    id: 'mock-id',
+    user_id: user?.id || '',
+    email: user?.email || '',
+    first_name: 'John',
+    last_name: 'Doe',
+    role: 'user' as const,
+    avatar_url: undefined
+  };
+
   const handleSettingChange = (key: string, value: any) => {
     setSettings(prev => ({
       ...prev,
@@ -139,7 +150,7 @@ const UserSettings = () => {
 
   const exportData = () => {
     const data = {
-      profile,
+      profile: userProfile,
       settings,
       orders: [], // This would be fetched from your backend
       favorites: [] // This would be fetched from your backend
@@ -163,7 +174,7 @@ const UserSettings = () => {
     }
   };
 
-  if (!user || !profile) {
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

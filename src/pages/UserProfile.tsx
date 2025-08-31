@@ -50,20 +50,29 @@ const UserProfile = () => {
       return;
     }
 
-    if (profile) {
-      setFormData({
-        first_name: profile.first_name || '',
-        last_name: profile.last_name || '',
-        email: profile.email || user.email || '',
-        phone: profile.phone || '',
-        address: profile.address || '',
-        city: profile.city || '',
-        country: profile.country || 'Ghana',
-        bio: profile.bio || '',
-        company: profile.company || '',
-        website: profile.website || ''
-      });
-    }
+    // Use mock profile data if real profile is not available
+    const userProfile = profile || {
+      id: 'mock-id',
+      user_id: user?.id || '',
+      email: user?.email || '',
+      first_name: 'John',
+      last_name: 'Doe',
+      role: 'user' as const,
+      avatar_url: undefined
+    };
+
+    setFormData({
+      first_name: userProfile.first_name || '',
+      last_name: userProfile.last_name || '',
+      email: userProfile.email || user.email || '',
+      phone: userProfile.phone || '',
+      address: userProfile.address || '',
+      city: userProfile.city || '',
+      country: userProfile.country || 'Ghana',
+      bio: userProfile.bio || '',
+      company: userProfile.company || '',
+      website: userProfile.website || ''
+    });
   }, [user, profile, navigate]);
 
   const handleInputChange = (field: string, value: string) => {
@@ -93,24 +102,32 @@ const UserProfile = () => {
 
   const handleCancel = () => {
     // Reset form data to original values
-    if (profile) {
-      setFormData({
-        first_name: profile.first_name || '',
-        last_name: profile.last_name || '',
-        email: profile.email || user?.email || '',
-        phone: profile.phone || '',
-        address: profile.address || '',
-        city: profile.city || '',
-        country: profile.country || 'Ghana',
-        bio: profile.bio || '',
-        company: profile.company || '',
-        website: profile.website || ''
-      });
-    }
+    const userProfile = profile || {
+      id: 'mock-id',
+      user_id: user?.id || '',
+      email: user?.email || '',
+      first_name: 'John',
+      last_name: 'Doe',
+      role: 'user' as const,
+      avatar_url: undefined
+    };
+    
+    setFormData({
+      first_name: userProfile.first_name || '',
+      last_name: userProfile.last_name || '',
+      email: userProfile.email || user?.email || '',
+      phone: userProfile.phone || '',
+      address: userProfile.address || '',
+      city: userProfile.city || '',
+      country: userProfile.country || 'Ghana',
+      bio: userProfile.bio || '',
+      company: userProfile.company || '',
+      website: userProfile.website || ''
+    });
     setIsEditing(false);
   };
 
-  if (!user || !profile) {
+  if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -181,9 +198,9 @@ const UserProfile = () => {
                     <div className="text-center space-y-4">
                       <div className="relative inline-block">
                         <Avatar className="h-24 w-24 mx-auto">
-                          <AvatarImage src={profile.avatar_url} />
+                          <AvatarImage src={userProfile.avatar_url} />
                           <AvatarFallback className="text-2xl">
-                            {profile.first_name?.[0]}{profile.last_name?.[0] || 'U'}
+                            {userProfile.first_name?.[0]}{userProfile.last_name?.[0] || 'U'}
                           </AvatarFallback>
                         </Avatar>
                         {isEditing && (
@@ -199,11 +216,11 @@ const UserProfile = () => {
                       
                       <div>
                         <h2 className="text-xl font-semibold">
-                          {profile.first_name} {profile.last_name}
+                          {userProfile.first_name} {userProfile.last_name}
                         </h2>
-                        <p className="text-muted-foreground">{profile.email}</p>
+                        <p className="text-muted-foreground">{userProfile.email}</p>
                         <Badge variant="secondary" className="mt-2">
-                          {profile.role}
+                          {userProfile.role}
                         </Badge>
                       </div>
 
@@ -214,16 +231,16 @@ const UserProfile = () => {
                           <Calendar className="h-4 w-4" />
                           <span>Member since {new Date(user.created_at).toLocaleDateString()}</span>
                         </div>
-                        {profile.phone && (
+                        {userProfile.phone && (
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <Phone className="h-4 w-4" />
-                            <span>{profile.phone}</span>
+                            <span>{userProfile.phone}</span>
                           </div>
                         )}
-                        {profile.city && (
+                        {userProfile.city && (
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <MapPin className="h-4 w-4" />
-                            <span>{profile.city}, {profile.country}</span>
+                            <span>{userProfile.city}, {userProfile.country}</span>
                           </div>
                         )}
                       </div>
