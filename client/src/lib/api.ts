@@ -144,12 +144,19 @@ class ApiClient {
     return response.json();
   }
 
-  // Downloads
-  getDownloadInfo: (orderId: string) => api.get(`/api/downloads/${orderId}`),
-  downloadFile: (orderId: string, filePath: string) => {
-    const url = `${API_BASE}/api/downloads/${orderId}/file?filePath=${encodeURIComponent(filePath)}`;
-    return fetch(url);
-  },
+  // Downloads API
+  async getDownloadInfo(orderId: string): Promise<any> {
+    const response = await fetch(`${API_BASE}/downloads/${orderId}`);
+    if (!response.ok) throw new Error('Failed to fetch download info');
+    return response.json();
+  }
+
+  async downloadFile(orderId: string, filePath: string): Promise<Response> {
+    const url = `${API_BASE}/downloads/${orderId}/file?filePath=${encodeURIComponent(filePath)}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Failed to download file');
+    return response;
+  }
 }
 
 export const api = new ApiClient();
