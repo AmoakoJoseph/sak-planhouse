@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +13,7 @@ interface DownloadInfo {
   orderId: string;
   planTitle: string;
   packageType: string;
-  files: string[];
+  files: { tier: string; path: string }[]; // Changed to include tier information
   expiresAt: string;
 }
 
@@ -42,17 +41,17 @@ export const DownloadManager = ({ orderId }: DownloadManagerProps) => {
 
   const handleDownloadFile = async (filePath: string) => {
     setDownloadingFiles(prev => new Set([...prev, filePath]));
-    
+
     try {
       const response = await fetch(`/api/downloads/${orderId}/file?filePath=${encodeURIComponent(filePath)}`);
-      
+
       if (!response.ok) {
         throw new Error('Download failed');
       }
 
       // Get filename from the file path
       const fileName = filePath.split('/').pop() || 'download';
-      
+
       // Create blob and download
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -77,9 +76,9 @@ export const DownloadManager = ({ orderId }: DownloadManagerProps) => {
 
   const handleDownloadAll = async () => {
     if (!downloadInfo) return;
-    
-    for (const filePath of downloadInfo.files) {
-      await handleDownloadFile(filePath);
+
+    for (const fileInfo of downloadInfo.files) {
+      await handleDownloadFile(fileInfo.path);
       // Add a small delay between downloads to prevent overwhelming the server
       await new Promise(resolve => setTimeout(resolve, 500));
     }
@@ -112,6 +111,24 @@ export const DownloadManager = ({ orderId }: DownloadManagerProps) => {
       </Card>
     );
   }
+
+  // Group files by tier
+  const filesByTier: Record<string, string[]> = {
+    basic: [],
+    standard: [],
+    premium: [],
+  };
+
+  downloadInfo.files.forEach(file => {
+    if (file.tier === 'basic' && filesByTier.basic) {
+      filesByTier.basic.push(file.path);
+    } else if (file.tier === 'standard' && filesByTier.standard) {
+      filesByTier.standard.push(file.path);
+    } else if (file.tier === 'premium' && filesByTier.premium) {
+      filesByTier.premium.push(file.path);
+    }
+  });
+
 
   return (
     <Card>
@@ -152,9 +169,9 @@ export const DownloadManager = ({ orderId }: DownloadManagerProps) => {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="font-medium">Available Files</h4>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={handleDownloadAll}
                   disabled={downloadingFiles.size > 0}
                 >
@@ -172,41 +189,48 @@ export const DownloadManager = ({ orderId }: DownloadManagerProps) => {
                 </Button>
               </div>
 
-              <div className="space-y-2">
-                {downloadInfo.files.map((filePath, index) => {
-                  const fileName = filePath.split('/').pop() || `file-${index + 1}`;
-                  const isDownloading = downloadingFiles.has(filePath);
-                  
-                  return (
-                    <div key={filePath} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium text-sm">{fileName}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {filePath.includes('.pdf') ? 'PDF Document' : 
-                             filePath.includes('.dwg') ? 'AutoCAD Drawing' :
-                             filePath.includes('.dxf') ? 'DXF Drawing' :
-                             filePath.includes('.zip') ? 'ZIP Archive' : 'Document'}
-                          </p>
+              {Object.entries(filesByTier).map(([tier, filePaths]) => {
+                if (filePaths.length === 0) return null;
+
+                return (
+                  <div key={tier} className="space-y-2">
+                    <Badge variant="outline" className="mb-2">{tier.charAt(0).toUpperCase() + tier.slice(1)} Tier</Badge>
+                    {filePaths.map((filePath, index) => {
+                      const fileName = filePath.split('/').pop() || `file-${index + 1}`;
+                      const isDownloading = downloadingFiles.has(filePath);
+
+                      return (
+                        <div key={filePath} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <p className="font-medium text-sm">{fileName}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {filePath.includes('.pdf') ? 'PDF Document' :
+                                 filePath.includes('.dwg') ? 'AutoCAD Drawing' :
+                                 filePath.includes('.dxf') ? 'DXF Drawing' :
+                                 filePath.includes('.zip') ? 'ZIP Archive' : 'Document'}
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDownloadFile(filePath)}
+                            disabled={isDownloading}
+                          >
+                            {isDownloading ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Download className="h-3 w-3" />
+                            )}
+                          </Button>
                         </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDownloadFile(filePath)}
-                        disabled={isDownloading}
-                      >
-                        {isDownloading ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <Download className="h-3 w-3" />
-                        )}
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
             </div>
 
             <div className="p-3 bg-muted/30 rounded-lg">

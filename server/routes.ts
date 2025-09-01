@@ -396,10 +396,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Plan not found" });
       }
 
-      // Get plan files for the purchased package
-      const packageFiles = plan.plan_files?.[order.package_type as keyof typeof plan.plan_files] || [];
+      // Get files based on tier hierarchy: basic = basic only, standard = basic + standard, premium = basic + standard + premium
+      let availableFiles: string[] = [];
+      const planFiles = plan.plan_files || {};
       
-      if (!packageFiles || packageFiles.length === 0) {
+      if (order.package_type === 'basic') {
+        availableFiles = planFiles.basic || [];
+      } else if (order.package_type === 'standard') {
+        availableFiles = [
+          ...(planFiles.basic || []),
+          ...(planFiles.standard || [])
+        ];
+      } else if (order.package_type === 'premium') {
+        availableFiles = [
+          ...(planFiles.basic || []),
+          ...(planFiles.standard || []),
+          ...(planFiles.premium || [])
+        ];
+      }
+      
+      if (!availableFiles || availableFiles.length === 0) {
         return res.status(404).json({ error: "No files available for download" });
       }
 
@@ -407,7 +423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         orderId,
         planTitle: plan.title,
         packageType: order.package_type,
-        files: packageFiles,
+        files: availableFiles,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
       });
     } catch (error) {
@@ -440,9 +456,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Plan not found" });
       }
 
-      // Verify the file belongs to the purchased package
-      const packageFiles = plan.plan_files?.[order.package_type as keyof typeof plan.plan_files] || [];
-      if (!packageFiles.includes(filePath as string)) {
+      // Get files based on tier hierarchy and verify access
+      let availableFiles: string[] = [];
+      const planFiles = plan.plan_files || {};
+      
+      if (order.package_type === 'basic') {
+        availableFiles = planFiles.basic || [];
+      } else if (order.package_type === 'standard') {
+        availableFiles = [
+          ...(planFiles.basic || []),
+          ...(planFiles.standard || [])
+        ];
+      } else if (order.package_type === 'premium') {
+        availableFiles = [
+          ...(planFiles.basic || []),
+          ...(planFiles.standard || []),
+          ...(planFiles.premium || [])
+        ];
+      }
+
+      if (!availableFiles.includes(filePath as string)) {
         return res.status(403).json({ error: "File not included in your package" });
       }
 
