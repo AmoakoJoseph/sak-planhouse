@@ -58,7 +58,7 @@ class ApiClient {
     const params = new URLSearchParams();
     if (filters?.status) params.append('status', filters.status);
     if (filters?.featured !== undefined) params.append('featured', filters.featured.toString());
-    
+
     const response = await fetch(`${API_BASE}/plans?${params}`);
     if (!response.ok) throw new Error('Failed to fetch plans');
     return response.json();
@@ -101,7 +101,7 @@ class ApiClient {
   async getOrders(userId?: string): Promise<Order[]> {
     const params = new URLSearchParams();
     if (userId) params.append('userId', userId);
-    
+
     const response = await fetch(`${API_BASE}/orders?${params}`);
     if (!response.ok) throw new Error('Failed to fetch orders');
     return response.json();
@@ -143,6 +143,13 @@ class ApiClient {
     if (!response.ok) throw new Error('Failed to update profile');
     return response.json();
   }
+
+  // Downloads
+  getDownloadInfo: (orderId: string) => api.get(`/api/downloads/${orderId}`),
+  downloadFile: (orderId: string, filePath: string) => {
+    const url = `${API_BASE}/api/downloads/${orderId}/file?filePath=${encodeURIComponent(filePath)}`;
+    return fetch(url);
+  },
 }
 
 export const api = new ApiClient();

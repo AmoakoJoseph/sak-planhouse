@@ -377,6 +377,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Download routes
+  app.get("/api/downloads/:orderId", async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const order = await storage.getOrder(orderId);
+      
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+
+      if (order.payment_status !== 'completed') {
+        return res.status(403).json({ error: "Payment not completed" });
+      }
+
+      const plan = await storage.getPlan(order.plan_id);
+      if (!plan) {
+        return res.status(404).json({ error: "Plan not found" });
+      }
+
+      // Get plan files for the purchased package
+      const packageFiles = plan.plan_files?.[order.package_type as keyof typeof plan.plan_files] || [];
+      
+      if (!packageFiles || packageFiles.length === 0) {
+        return res.status(404).json({ error: "No files available for download" });
+      }
+
+      res.json({
+        orderId,
+        planTitle: plan.title,
+        packageType: order.package_type,
+        files: packageFiles,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+      });
+    } catch (error) {
+      console.error("Error fetching download info:", error);
+      res.status(500).json({ error: "Failed to fetch download information" });
+    }
+  });
+
+  app.get("/api/downloads/:orderId/file", async (req, res) => {
+    try {
+      const { orderId } = req.params;
+      const { filePath } = req.query;
+      
+      if (!filePath) {
+        return res.status(400).json({ error: "File path is required" });
+      }
+
+      const order = await storage.getOrder(orderId);
+      
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+
+      if (order.payment_status !== 'completed') {
+        return res.status(403).json({ error: "Payment not completed" });
+      }
+
+      const plan = await storage.getPlan(order.plan_id);
+      if (!plan) {
+        return res.status(404).json({ error: "Plan not found" });
+      }
+
+      // Verify the file belongs to the purchased package
+      const packageFiles = plan.plan_files?.[order.package_type as keyof typeof plan.plan_files] || [];
+      if (!packageFiles.includes(filePath as string)) {
+        return res.status(403).json({ error: "File not included in your package" });
+      }
+
+      const fullFilePath = path.join(process.cwd(), filePath as string);
+      
+      if (!fs.existsSync(fullFilePath)) {
+        return res.status(404).json({ error: "File not found" });
+      }
+
+      // Record the download
+      await storage.recordDownload({
+        order_id: orderId,
+        file_path: filePath as string,
+        user_id: order.user_id,
+      });
+
+      // Set appropriate headers for download
+      const fileName = path.basename(fullFilePath);
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.setHeader('Content-Type', 'application/octet-stream');
+      
+      // Stream the file
+      const fileStream = fs.createReadStream(fullFilePath);
+      fileStream.pipe(res);
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      res.status(500).json({ error: "Failed to download file" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

@@ -27,6 +27,10 @@ export interface IStorage {
   getOrder(id: string): Promise<Order | undefined>;
   createOrder(order: Omit<Order, 'id' | 'created_at' | 'updated_at'>): Promise<Order>;
   updateOrder(id: string, updates: Partial<Order>): Promise<Order | undefined>;
+  
+  // Downloads management
+  getDownloads(userId?: string): Promise<Download[]>;
+  recordDownload(download: Omit<Download, 'id' | 'downloaded_at'>): Promise<Download>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -142,6 +146,29 @@ export class DatabaseStorage implements IStorage {
       .set({ ...updates, updated_at: new Date() })
       .where(eq(orders.id, id))
       .returning();
+    return result[0];
+  }
+
+  // Downloads methods
+  async getDownloads(userId?: string): Promise<Download[]> {
+    const conditions = [];
+    
+    if (userId) {
+      conditions.push(eq(downloads.user_id, userId));
+    }
+    
+    const result = await db.select().from(downloads)
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(desc(downloads.downloaded_at));
+    
+    return result;
+  }
+
+  async recordDownload(download: Omit<Download, 'id' | 'downloaded_at'>): Promise<Download> {
+    const result = await db.insert(downloads).values({
+      ...download,
+      downloaded_at: new Date(),
+    }).returning();
     return result[0];
   }
 }

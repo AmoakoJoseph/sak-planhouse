@@ -588,6 +588,9 @@ const AdminPlans = () => {
                           <div className="font-medium flex items-center">
                             {plan.title}
                             {plan.featured && <Star className="w-4 h-4 ml-2 text-yellow-500" />}
+                            {plan.plan_files && Object.values(plan.plan_files).some((files: any) => files?.length > 0) && (
+                              <CheckCircle className="w-4 h-4 ml-2 text-green-500" title="Has downloadable files" />
+                            )}
                           </div>
                           <div className="text-sm text-muted-foreground truncate max-w-xs">
                             {plan.description}

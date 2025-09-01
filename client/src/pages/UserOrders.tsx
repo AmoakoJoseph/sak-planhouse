@@ -34,11 +34,12 @@ import townhouseImage from '@/assets/townhouse-plan.jpg';
 const UserOrders = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('all');
-  const [orders, setOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [selectedOrderForDownload, setSelectedOrderForDownload] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -48,11 +49,63 @@ const UserOrders = () => {
 
   const fetchOrders = async () => {
     if (!user) return;
-    
+
     try {
-      // Mock orders data for now
-      const data: any[] = [];
-      setOrders(data || []);
+      // Mock orders data - in real implementation, fetch from API
+      const mockOrders = [
+        {
+          id: '1',
+          planTitle: 'Modern 4-Bedroom Villa',
+          planType: 'villa',
+          packageType: 'premium',
+          amount: 850,
+          paymentMethod: 'paystack',
+          status: 'completed',
+          createdAt: '2024-01-15',
+          architect: 'SAKConstruction',
+          image: villaImage,
+          bedrooms: 4,
+          bathrooms: 3,
+          area: 2800,
+          downloadCount: 3,
+          downloadExpiry: '2024-02-15'
+        },
+        {
+          id: '2', 
+          planTitle: 'Cozy 3-Bedroom Bungalow',
+          planType: 'bungalow',
+          packageType: 'standard',
+          amount: 450,
+          paymentMethod: 'paystack',
+          status: 'processing',
+          createdAt: '2024-01-20',
+          architect: 'SAKConstruction',
+          image: bungalowImage,
+          bedrooms: 3,
+          bathrooms: 2,
+          area: 1800,
+          downloadCount: 0,
+          downloadExpiry: null
+        },
+        {
+          id: '3',
+          planTitle: 'Elegant 2-Story Townhouse',
+          planType: 'townhouse', 
+          packageType: 'basic',
+          amount: 350,
+          paymentMethod: 'paystack',
+          status: 'completed',
+          createdAt: '2024-01-10',
+          architect: 'SAKConstruction',
+          image: townhouseImage,
+          bedrooms: 3,
+          bathrooms: 2,
+          area: 2200,
+          downloadCount: 1,
+          downloadExpiry: '2024-02-10'
+        }
+      ];
+      setOrders(mockOrders || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
     } finally {
@@ -112,7 +165,7 @@ const UserOrders = () => {
                          order.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     const matchesTab = activeTab === 'all' || order.status === activeTab;
-    
+
     return matchesSearch && matchesStatus && matchesTab;
   });
 
@@ -294,8 +347,8 @@ const UserOrders = () => {
                             {/* Order Image */}
                             <div className="lg:w-64 h-48 lg:h-auto">
                               <img
-                                src={order.plans?.image_url || villaImage}
-                                alt={order.plans?.title}
+                                src={order.image || villaImage}
+                                alt={order.planTitle}
                                 className="w-full h-full object-cover"
                               />
                             </div>
@@ -304,11 +357,11 @@ const UserOrders = () => {
                             <div className="flex-1 p-6">
                               <div className="flex items-start justify-between mb-4">
                                 <div>
-                                  <h3 className="text-xl font-semibold mb-2">{order.plans?.title}</h3>
-                                  <p className="text-muted-foreground mb-2">{order.tier} Package</p>
+                                  <h3 className="text-xl font-semibold mb-2">{order.planTitle}</h3>
+                                  <p className="text-muted-foreground mb-2">{order.packageType} Package</p>
                                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                     <span>Order ID: {order.id}</span>
-                                    <span>Date: {new Date(order.created_at).toLocaleDateString()}</span>
+                                    <span>Date: {new Date(order.createdAt).toLocaleDateString()}</span>
                                   </div>
                                 </div>
                                 <div className="text-right">
@@ -325,33 +378,37 @@ const UserOrders = () => {
                                 <h4 className="font-medium mb-2">Package Details:</h4>
                                 <div className="grid grid-cols-2 gap-4 text-sm">
                                   <div>
-                                    <span className="text-muted-foreground">Plan Type:</span> {order.plans?.plan_type}
+                                    <span className="text-muted-foreground">Plan Type:</span> {order.planType}
                                   </div>
                                   <div>
-                                    <span className="text-muted-foreground">Bedrooms:</span> {order.plans?.bedrooms}
+                                    <span className="text-muted-foreground">Bedrooms:</span> {order.bedrooms}
                                   </div>
                                   <div>
-                                    <span className="text-muted-foreground">Bathrooms:</span> {order.plans?.bathrooms}
+                                    <span className="text-muted-foreground">Bathrooms:</span> {order.bathrooms}
                                   </div>
                                   <div>
-                                    <span className="text-muted-foreground">Area:</span> {order.plans?.area_sqft} sq ft
+                                    <span className="text-muted-foreground">Area:</span> {order.area} sq ft
                                   </div>
                                 </div>
                               </div>
 
                               {/* Actions */}
                               <div className="flex items-center justify-between pt-4 border-t">
-                                <div className="flex items-center gap-4">
-                                  <Button variant="outline" size="sm" asChild>
-                                    <Link to={`/plans/${order.plan_id}`}>
-                                      <Eye className="h-4 w-4 mr-2" />
-                                      View Plan
-                                    </Link>
+                                <div className="flex gap-2">
+                                  <Button variant="outline" size="sm">
+                                    <Eye className="w-3 h-3 mr-1" />
+                                    View Details
                                   </Button>
                                   {order.status === 'completed' && (
-                                    <Button variant="outline" size="sm">
-                                      <Download className="h-4 w-4 mr-2" />
-                                      Download Plans
+                                    <Button 
+                                      variant="default" 
+                                      size="sm"
+                                      asChild
+                                    >
+                                      <Link to={`/user/downloads/${order.id}`}>
+                                        <Download className="w-3 h-3 mr-1" />
+                                        Download
+                                      </Link>
                                     </Button>
                                   )}
                                 </div>

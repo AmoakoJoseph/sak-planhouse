@@ -19,6 +19,7 @@ import UserProfile from "./pages/UserProfile";
 import UserOrders from "./pages/UserOrders";
 import UserFavorites from "./pages/UserFavorites";
 import UserSettings from "./pages/UserSettings";
+import DownloadPage from '@/pages/DownloadPage';
 
 const queryClient = new QueryClient();
 
@@ -37,17 +38,18 @@ const AppContent = () => {
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/checkout" element={<Checkout />} />
-          
+
           {/* User Routes */}
           <Route path="/user/dashboard" element={<UserDashboard />} />
           <Route path="/user/profile" element={<UserProfile />} />
           <Route path="/user/orders" element={<UserOrders />} />
+          <Route path="/user/downloads/:orderId" element={<DownloadPage />} />
           <Route path="/user/favorites" element={<UserFavorites />} />
           <Route path="/user/settings" element={<UserSettings />} />
-          
+
           {/* Admin Routes */}
           <Route path="/admin/*" element={<Admin />} />
-          
+
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
