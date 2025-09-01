@@ -6,39 +6,94 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, CreditCard, CheckCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { PaystackPayment } from '@/components/PaystackPayment';
+import { api } from '@/lib/api';
 
 const Checkout = () => {
   const [checkoutData, setCheckoutData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
+  const [verifying, setVerifying] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
+    const verifyPayment = async () => {
+      const reference = searchParams.get('reference');
+      if (reference) {
+        setVerifying(true);
+        try {
+          const response = await api.post('/api/payments/verify', { reference });
+          if (response.data.success) {
+            setPaymentSuccess(true);
+            localStorage.removeItem('checkoutData');
+          } else {
+            setPaymentError('Payment verification failed');
+          }
+        } catch (error) {
+          setPaymentError('Payment verification failed');
+        } finally {
+          setVerifying(false);
+        }
+      }
+    };
+
     // Get checkout data from localStorage
     const data = localStorage.getItem('checkoutData');
     if (data) {
       setCheckoutData(JSON.parse(data));
-    } else {
-      // No checkout data, redirect to plans
+      verifyPayment();
+    } else if (!searchParams.get('reference')) {
+      // No checkout data and no payment reference, redirect to plans
       navigate('/plans');
     }
     setLoading(false);
-  }, [navigate]);
+  }, [navigate, searchParams]);
 
-  const handlePayment = () => {
-    // Here you would integrate with your payment processor
-    // For now, we'll show a success message
-    alert('Payment successful! Your house plan will be available for download shortly.');
-    localStorage.removeItem('checkoutData'); // Clear checkout data
-    navigate('/plans');
+  const handlePaymentSuccess = (paymentData: any) => {
+    setPaymentSuccess(true);
+    localStorage.removeItem('checkoutData');
   };
 
-  if (loading) {
+  const handlePaymentError = (error: string) => {
+    setPaymentError(error);
+  };
+
+  if (loading || verifying) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading checkout...</p>
+          <p className="text-muted-foreground">
+            {verifying ? 'Verifying payment...' : 'Loading checkout...'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (paymentSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="h-8 w-8 text-green-600" />
+          </div>
+          <h1 className="text-2xl font-bold mb-4">Payment Successful!</h1>
+          <p className="text-muted-foreground mb-6">
+            Thank you for your purchase. Your house plan will be available for download shortly.
+            A receipt has been sent to your email.
+          </p>
+          <div className="space-y-3">
+            <Button asChild className="w-full">
+              <Link to="/user/orders">View My Orders</Link>
+            </Button>
+            <Button variant="outline" asChild className="w-full">
+              <Link to="/plans">Browse More Plans</Link>
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -143,56 +198,22 @@ const Checkout = () => {
               </Card>
             </div>
 
-            {/* Payment Form */}
+            {/* Payment Section */}
             <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" />
-                    Payment Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" type="email" placeholder="your@email.com" />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="card">Card Number</Label>
-                    <Input id="card" placeholder="1234 5678 9012 3456" />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="expiry">Expiry Date</Label>
-                      <Input id="expiry" placeholder="MM/YY" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cvv">CVV</Label>
-                      <Input id="cvv" placeholder="123" />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Cardholder Name</Label>
-                    <Input id="name" placeholder="John Doe" />
-                  </div>
-                </CardContent>
-              </Card>
+              {paymentError && (
+                <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                  <p className="text-destructive text-sm">{paymentError}</p>
+                </div>
+              )}
 
-              {/* Payment Button */}
-              <Button 
-                className="w-full" 
-                size="lg" 
-                onClick={handlePayment}
-              >
-                Pay ₵{checkoutData.price}
-              </Button>
-              
-              <p className="text-xs text-muted-foreground text-center">
-                Your payment is secured with SSL encryption. We never store your card details.
-              </p>
+              <PaystackPayment
+                planId={checkoutData.planId}
+                planTitle={checkoutData.planTitle}
+                packageType={checkoutData.package}
+                amount={checkoutData.price}
+                onSuccess={handlePaymentSuccess}
+                onError={handlePaymentError}
+              />
             </div>
           </div>
         </div>

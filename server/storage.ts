@@ -129,7 +129,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createOrder(order: Omit<Order, 'id' | 'created_at' | 'updated_at'>): Promise<Order> {
-    const result = await db.insert(orders).values(order).returning();
+    const result = await db.insert(orders).values({
+      ...order,
+      created_at: new Date(),
+      updated_at: new Date(),
+    }).returning();
     return result[0];
   }
 

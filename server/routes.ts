@@ -5,6 +5,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import express from "express";
+import { PaystackService } from "./paystack";
 
 // Multer configuration for file uploads
 const imageStorage = multer.diskStorage({
@@ -254,6 +255,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/signout", async (req, res) => {
     res.json({ success: true });
+  });
+
+  // Payment routes
+  app.post("/api/payments/initialize", async (req, res) => {
+    try {
+      const { email, amount, planId, planTitle, packageType } = req.body;
+
+      if (!email || !amount || !planId) {
+        return res.status(400).json({ error: "Missing required payment data" });
+      }
+
+      const reference = PaystackService.generateReference();
+      const amountInKobo = Math.round(amount * 100); // Convert cedis to kobo
+
+      const paymentData = {
+        email,
+        amount: amountInKobo,
+        reference,
+        callback_url: `${req.protocol}://${req.get('host')}/api/payments/callback`,
+        metadata: {
+          planId,
+          planTitle,
+          packageType,
+          custom_fields: [
+            {
+              display_name: "Plan",
+              variable_name: "plan",
+              value: planTitle,
+            },
+            {
+              display_name: "Package",
+              variable_name: "package",
+              value: packageType,
+            },
+          ],
+        },
+      };
+
+      const result = await PaystackService.initializePayment(paymentData);
+
+      if (result.success) {
+        res.json({
+          success: true,
+          authorization_url: result.data.authorization_url,
+          access_code: result.data.access_code,
+          reference: result.data.reference,
+        });
+      } else {
+        res.status(400).json({ error: result.error });
+      }
+    } catch (error) {
+      console.error("Error initializing payment:", error);
+      res.status(500).json({ error: "Failed to initialize payment" });
+    }
+  });
+
+  app.post("/api/payments/verify", async (req, res) => {
+    try {
+      const { reference } = req.body;
+
+      if (!reference) {
+        return res.status(400).json({ error: "Payment reference is required" });
+      }
+
+      const verification = await PaystackService.verifyPayment(reference);
+
+      if (!verification) {
+        return res.status(400).json({ error: "Payment verification failed" });
+      }
+
+      if (verification.data.status === 'success') {
+        // Create order record
+        const orderData = {
+          user_id: 'guest', // You may want to implement user sessions
+          plan_id: verification.data.metadata.planId,
+          package_type: verification.data.metadata.packageType,
+          amount: verification.data.amount / 100, // Convert back to cedis
+          payment_reference: reference,
+          payment_status: 'completed',
+          payment_method: 'paystack',
+        };
+
+        const order = await storage.createOrder(orderData);
+
+        res.json({
+          success: true,
+          payment: verification.data,
+          order,
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: "Payment was not successful",
+          status: verification.data.status,
+        });
+      }
+    } catch (error) {
+      console.error("Error verifying payment:", error);
+      res.status(500).json({ error: "Failed to verify payment" });
+    }
+  });
+
+  app.post("/api/payments/callback", async (req, res) => {
+    try {
+      // Paystack webhook callback
+      const { reference } = req.body;
+      
+      if (reference) {
+        const verification = await PaystackService.verifyPayment(reference);
+        if (verification && verification.data.status === 'success') {
+          // Update order status or perform any post-payment actions
+          console.log('Payment verified via callback:', reference);
+        }
+      }
+      
+      res.status(200).send('OK');
+    } catch (error) {
+      console.error("Error handling payment callback:", error);
+      res.status(500).send('Error');
+    }
   });
 
   const httpServer = createServer(app);
