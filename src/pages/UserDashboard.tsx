@@ -25,6 +25,7 @@ import {
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import villaImage from '@/assets/villa-plan.jpg';
 import bungalowImage from '@/assets/bungalow-plan.jpg';
 import townhouseImage from '@/assets/townhouse-plan.jpg';
@@ -33,44 +34,57 @@ const UserDashboard = () => {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+  const [userStats, setUserStats] = useState({
+    totalOrders: 0,
+    totalSpent: 0,
+    favoritePlans: 0,
+    downloads: 0
+  });
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock data - in a real app, this would come from your backend
-  const userStats = {
-    totalOrders: 3,
-    totalSpent: 8500,
-    favoritePlans: 7,
-    downloads: 12
+  useEffect(() => {
+    if (user) {
+      fetchUserData();
+    }
+  }, [user]);
+
+  const fetchUserData = async () => {
+    if (!user) return;
+    
+    try {
+      // Fetch orders
+      const { data: orders, error: ordersError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          plans!inner(*)
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      if (ordersError) throw ordersError;
+
+      // Calculate stats
+      const completedOrders = orders?.filter(o => o.status === 'completed') || [];
+      const totalSpent = completedOrders.reduce((sum, order) => sum + (order.amount || 0), 0);
+      
+      setUserStats({
+        totalOrders: orders?.length || 0,
+        totalSpent,
+        favoritePlans: 0, // To be implemented with favorites feature
+        downloads: 0 // To be calculated from downloads table
+      });
+
+      setRecentOrders(orders || []);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const recentOrders = [
-    {
-      id: 'ORD-001',
-      planTitle: 'Luxury Villa Paradise',
-      package: 'Premium Package',
-      amount: 4500,
-      status: 'completed',
-      date: '2024-01-15',
-      image: villaImage
-    },
-    {
-      id: 'ORD-002',
-      planTitle: 'Modern Family Bungalow',
-      package: 'Standard Package',
-      amount: 2300,
-      status: 'completed',
-      date: '2024-01-10',
-      image: bungalowImage
-    },
-    {
-      id: 'ORD-003',
-      planTitle: 'Contemporary Townhouse',
-      package: 'Basic Package',
-      amount: 2200,
-      status: 'processing',
-      date: '2024-01-05',
-      image: townhouseImage
-    }
-  ];
 
   const favoritePlans = [
     {
@@ -135,6 +149,17 @@ const UserDashboard = () => {
       navigate('/login');
     }
   }, [user, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Use mock profile data if real profile is not available
   const userProfile = profile || {
@@ -334,13 +359,13 @@ const UserDashboard = () => {
                         {recentOrders.slice(0, 3).map((order) => (
                           <div key={order.id} className="flex items-center gap-4 p-4 border rounded-lg">
                             <img
-                              src={order.image}
-                              alt={order.planTitle}
+                              src={order.plans?.image_url || villaImage}
+                              alt={order.plans?.title}
                               className="w-16 h-16 object-cover rounded-lg"
                             />
                             <div className="flex-1">
-                              <h4 className="font-medium">{order.planTitle}</h4>
-                              <p className="text-sm text-muted-foreground">{order.package}</p>
+                              <h4 className="font-medium">{order.plans?.title}</h4>
+                              <p className="text-sm text-muted-foreground">{order.tier} Package</p>
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge className={getStatusColor(order.status)}>
                                   {order.status}

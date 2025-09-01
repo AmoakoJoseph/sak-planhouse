@@ -27,6 +27,7 @@ import {
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import villaImage from '@/assets/villa-plan.jpg';
 import bungalowImage from '@/assets/bungalow-plan.jpg';
 import townhouseImage from '@/assets/townhouse-plan.jpg';
@@ -37,76 +38,53 @@ const UserOrders = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('all');
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock orders data - in a real app, this would come from your backend
-  const orders = [
-    {
-      id: 'ORD-001',
-      planTitle: 'Luxury Villa Paradise',
-      package: 'Premium Package',
-      amount: 4500,
-      status: 'completed',
-      date: '2024-01-15',
-      image: villaImage,
-      planId: 1,
-      downloads: 3,
-      rating: 5,
-      review: 'Excellent plans! Very detailed and professional.',
-      architect: 'Samuel Kwame Architecture',
-      features: ['Floor plans (PDF)', 'Detailed elevations', 'Cross sections', 'Construction details', 'Electrical layout', 'Plumbing layout', 'CAD files (DWG)', '3D renderings', 'Interior layouts', 'Landscape design', 'Structural details', 'HVAC layout', 'Permit-ready drawings']
-    },
-    {
-      id: 'ORD-002',
-      planTitle: 'Modern Family Bungalow',
-      package: 'Standard Package',
-      amount: 2300,
-      status: 'completed',
-      date: '2024-01-10',
-      image: bungalowImage,
-      planId: 7,
-      downloads: 2,
-      rating: 4,
-      review: 'Great value for money. Plans are clear and easy to follow.',
-      architect: 'Ama Osei Architecture',
-      features: ['Floor plans (PDF)', 'Basic elevations', 'Plot plan', 'Material list', 'Detailed elevations', 'Cross sections', 'Construction details', 'Electrical layout', 'Plumbing layout', 'CAD files (DWG)']
-    },
-    {
-      id: 'ORD-003',
-      planTitle: 'Contemporary Townhouse',
-      package: 'Basic Package',
-      amount: 2200,
-      status: 'processing',
-      date: '2024-01-05',
-      image: townhouseImage,
-      planId: 13,
-      downloads: 0,
-      rating: null,
-      review: null,
-      architect: 'Kwame Asante Architecture',
-      features: ['Floor plans (PDF)', 'Basic elevations', 'Plot plan', 'Material list']
-    },
-    {
-      id: 'ORD-004',
-      planTitle: 'Executive Villa Estate',
-      package: 'Premium Package',
-      amount: 5500,
-      status: 'pending',
-      date: '2024-01-20',
-      image: villaImage,
-      planId: 2,
-      downloads: 0,
-      rating: null,
-      review: null,
-      architect: 'Samuel Kwame Architecture',
-      features: ['Floor plans (PDF)', 'Basic elevations', 'Plot plan', 'Material list', 'Detailed elevations', 'Cross sections', 'Construction details', 'Electrical layout', 'Plumbing layout', 'CAD files (DWG)', '3D renderings', 'Interior layouts', 'Landscape design', 'Structural details', 'HVAC layout', 'Permit-ready drawings']
+  useEffect(() => {
+    if (user) {
+      fetchOrders();
     }
-  ];
+  }, [user]);
+
+  const fetchOrders = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          plans!inner(*)
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setOrders(data || []);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) {
       navigate('/login');
     }
   }, [user, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading orders...</p>
+        </div>
+      </div>
+    );
+  }
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -139,7 +117,7 @@ const UserOrders = () => {
   };
 
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.planTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = order.plans?.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          order.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     const matchesTab = activeTab === 'all' || order.status === activeTab;
@@ -325,8 +303,8 @@ const UserOrders = () => {
                             {/* Order Image */}
                             <div className="lg:w-64 h-48 lg:h-auto">
                               <img
-                                src={order.image}
-                                alt={order.planTitle}
+                                src={order.plans?.image_url || villaImage}
+                                alt={order.plans?.title}
                                 className="w-full h-full object-cover"
                               />
                             </div>
@@ -335,12 +313,11 @@ const UserOrders = () => {
                             <div className="flex-1 p-6">
                               <div className="flex items-start justify-between mb-4">
                                 <div>
-                                  <h3 className="text-xl font-semibold mb-2">{order.planTitle}</h3>
-                                  <p className="text-muted-foreground mb-2">{order.package}</p>
+                                  <h3 className="text-xl font-semibold mb-2">{order.plans?.title}</h3>
+                                  <p className="text-muted-foreground mb-2">{order.tier} Package</p>
                                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                     <span>Order ID: {order.id}</span>
-                                    <span>Date: {new Date(order.date).toLocaleDateString()}</span>
-                                    <span>Architect: {order.architect}</span>
+                                    <span>Date: {new Date(order.created_at).toLocaleDateString()}</span>
                                   </div>
                                 </div>
                                 <div className="text-right">
@@ -352,21 +329,22 @@ const UserOrders = () => {
                                 </div>
                               </div>
 
-                              {/* Features */}
+                              {/* Package Info */}
                               <div className="mb-4">
-                                <h4 className="font-medium mb-2">Package Includes:</h4>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                  {order.features.slice(0, 6).map((feature, index) => (
-                                    <div key={index} className="flex items-center gap-2 text-sm">
-                                      <CheckCircle className="h-3 w-3 text-green-500 flex-shrink-0" />
-                                      <span className="text-muted-foreground">{feature}</span>
-                                    </div>
-                                  ))}
-                                  {order.features.length > 6 && (
-                                    <div className="text-sm text-muted-foreground">
-                                      +{order.features.length - 6} more items
-                                    </div>
-                                  )}
+                                <h4 className="font-medium mb-2">Package Details:</h4>
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                  <div>
+                                    <span className="text-muted-foreground">Plan Type:</span> {order.plans?.plan_type}
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">Bedrooms:</span> {order.plans?.bedrooms}
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">Bathrooms:</span> {order.plans?.bathrooms}
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground">Area:</span> {order.plans?.area_sqft} sq ft
+                                  </div>
                                 </div>
                               </div>
 
@@ -374,7 +352,7 @@ const UserOrders = () => {
                               <div className="flex items-center justify-between pt-4 border-t">
                                 <div className="flex items-center gap-4">
                                   <Button variant="outline" size="sm" asChild>
-                                    <Link to={`/plans/${order.planId}`}>
+                                    <Link to={`/plans/${order.plan_id}`}>
                                       <Eye className="h-4 w-4 mr-2" />
                                       View Plan
                                     </Link>
@@ -382,31 +360,17 @@ const UserOrders = () => {
                                   {order.status === 'completed' && (
                                     <Button variant="outline" size="sm">
                                       <Download className="h-4 w-4 mr-2" />
-                                      Download ({order.downloads})
+                                      Download Plans
                                     </Button>
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  {order.rating && (
-                                    <div className="flex items-center gap-1 text-sm">
-                                      <Star className="h-4 w-4 fill-current text-yellow-400" />
-                                      <span>{order.rating}/5</span>
-                                    </div>
-                                  )}
                                   <Button variant="outline" size="sm">
                                     <FileText className="h-4 w-4 mr-2" />
                                     Invoice
                                   </Button>
                                 </div>
                               </div>
-
-                              {/* Review */}
-                              {order.review && (
-                                <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-                                  <h4 className="font-medium mb-2">Your Review</h4>
-                                  <p className="text-sm text-muted-foreground">{order.review}</p>
-                                </div>
-                              )}
                             </div>
                           </div>
                         </CardContent>
