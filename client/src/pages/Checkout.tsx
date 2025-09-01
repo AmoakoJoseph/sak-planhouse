@@ -1,16 +1,20 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, CreditCard, CheckCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ArrowLeft, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { StripePaymentForm } from '@/components/StripePaymentForm';
+import { useAuth } from '@/hooks/useAuth';
 
 const Checkout = () => {
   const [checkoutData, setCheckoutData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -25,12 +29,24 @@ const Checkout = () => {
     setLoading(false);
   }, [navigate]);
 
-  const handlePayment = () => {
-    // Here you would integrate with your payment processor
-    // For now, we'll show a success message
-    alert('Payment successful! Your house plan will be available for download shortly.');
-    localStorage.removeItem('checkoutData'); // Clear checkout data
-    navigate('/plans');
+  const handlePaymentSuccess = (result: any) => {
+    setPaymentSuccess(true);
+    setPaymentError(null);
+    localStorage.removeItem('checkoutData');
+    
+    // Redirect to success page or user dashboard after a delay
+    setTimeout(() => {
+      navigate('/user/orders', { 
+        state: { 
+          message: 'Payment successful! Your house plan is now available for download.' 
+        }
+      });
+    }, 3000);
+  };
+
+  const handlePaymentError = (error: string) => {
+    setPaymentError(error);
+    setPaymentSuccess(false);
   };
 
   if (loading) {
@@ -145,54 +161,45 @@ const Checkout = () => {
 
             {/* Payment Form */}
             <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" />
-                    Payment Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" type="email" placeholder="your@email.com" />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="card">Card Number</Label>
-                    <Input id="card" placeholder="1234 5678 9012 3456" />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="expiry">Expiry Date</Label>
-                      <Input id="expiry" placeholder="MM/YY" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="cvv">CVV</Label>
-                      <Input id="cvv" placeholder="123" />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Cardholder Name</Label>
-                    <Input id="name" placeholder="John Doe" />
-                  </div>
-                </CardContent>
-              </Card>
+              {paymentError && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>{paymentError}</AlertDescription>
+                </Alert>
+              )}
 
-              {/* Payment Button */}
-              <Button 
-                className="w-full" 
-                size="lg" 
-                onClick={handlePayment}
-              >
-                Pay ₵{checkoutData.price}
-              </Button>
-              
-              <p className="text-xs text-muted-foreground text-center">
-                Your payment is secured with SSL encryption. We never store your card details.
-              </p>
+              {paymentSuccess ? (
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <div className="flex flex-col items-center space-y-4">
+                      <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                        <CheckCircle className="w-8 h-8 text-green-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold">Payment Successful!</h3>
+                        <p className="text-muted-foreground">
+                          Your house plan is now available for download.
+                        </p>
+                      </div>
+                      <Button asChild>
+                        <Link to="/user/orders">View My Orders</Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <StripePaymentForm
+                  paymentData={{
+                    planId: checkoutData.planId,
+                    planTitle: checkoutData.planTitle,
+                    package: checkoutData.package,
+                    amount: checkoutData.price,
+                    userId: user?.id
+                  }}
+                  onSuccess={handlePaymentSuccess}
+                  onError={handlePaymentError}
+                />
+              )}
             </div>
           </div>
         </div>

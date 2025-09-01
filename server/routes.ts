@@ -5,6 +5,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import express from "express";
+import { stripe, createPaymentIntent, confirmPayment } from "./stripe";
 
 // Multer configuration for file uploads
 const imageStorage = multer.diskStorage({
@@ -254,6 +255,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/signout", async (req, res) => {
     res.json({ success: true });
+  });
+
+  // Payment endpoints
+  app.post("/api/payments/create-intent", async (req, res) => {
+    try {
+      const { amount, currency = 'ghs', planId, planTitle, package: planPackage, userId } = req.body;
+      
+      if (!amount || !planId || !planTitle || !planPackage) {
+        return res.status(400).json({ error: "Missing required payment data" });
+      }
+
+      const paymentIntent = await createPaymentIntent({
+        amount,
+        currency,
+        metadata: {
+          planId,
+          planTitle,
+          package: planPackage,
+          userId: userId || 'guest'
+        }
+      });
+
+      res.json({
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id
+      });
+    } catch (error) {
+      console.error("Error creating payment intent:", error);
+      res.status(500).json({ error: "Failed to create payment intent" });
+    }
+  });
+
+  app.post("/api/payments/confirm", async (req, res) => {
+    try {
+      const { paymentIntentId } = req.body;
+      
+      if (!paymentIntentId) {
+        return res.status(400).json({ error: "Payment intent ID is required" });
+      }
+
+      const paymentIntent = await confirmPayment(paymentIntentId);
+      
+      if (paymentIntent.status === 'succeeded') {
+        // Create order in database
+        const orderData = {
+          user_id: paymentIntent.metadata.userId !== 'guest' ? paymentIntent.metadata.userId : null,
+          plan_id: paymentIntent.metadata.planId,
+          package_type: paymentIntent.metadata.package,
+          total_amount: paymentIntent.amount / 100, // Convert back from cents
+          payment_status: 'completed',
+          payment_method: 'stripe',
+          stripe_payment_intent_id: paymentIntent.id
+        };
+
+        const order = await storage.createOrder(orderData);
+        
+        res.json({
+          success: true,
+          order,
+          paymentIntent: {
+            id: paymentIntent.id,
+            status: paymentIntent.status,
+            amount: paymentIntent.amount / 100
+          }
+        });
+      } else {
+        res.status(400).json({ 
+          error: "Payment not completed", 
+          status: paymentIntent.status 
+        });
+      }
+    } catch (error) {
+      console.error("Error confirming payment:", error);
+      res.status(500).json({ error: "Failed to confirm payment" });
+    }
+  });
+
+  // Stripe webhook endpoint
+  app.post("/api/webhooks/stripe", express.raw({ type: 'application/json' }), async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    
+    if (!process.env.STRIPE_WEBHOOK_SECRET) {
+      return res.status(500).json({ error: "Webhook secret not configured" });
+    }
+
+    try {
+      const event = stripe.webhooks.constructEvent(req.body, sig as string, process.env.STRIPE_WEBHOOK_SECRET);
+      
+      switch (event.type) {
+        case 'payment_intent.succeeded':
+          const paymentIntent = event.data.object;
+          console.log('Payment succeeded:', paymentIntent.id);
+          // Additional processing if needed
+          break;
+        case 'payment_intent.payment_failed':
+          const failedPayment = event.data.object;
+          console.log('Payment failed:', failedPayment.id);
+          break;
+        default:
+          console.log(`Unhandled event type ${event.type}`);
+      }
+
+      res.json({ received: true });
+    } catch (error) {
+      console.error('Webhook signature verification failed:', error);
+      res.status(400).json({ error: 'Invalid signature' });
+    }
   });
 
   const httpServer = createServer(app);
