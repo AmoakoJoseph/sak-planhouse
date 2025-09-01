@@ -1,12 +1,41 @@
 -- Add missing fields to profiles table
-ALTER TABLE public.profiles 
-ADD COLUMN phone TEXT,
-ADD COLUMN address TEXT,
-ADD COLUMN city TEXT,
-ADD COLUMN country TEXT DEFAULT 'Ghana',
-ADD COLUMN bio TEXT,
-ADD COLUMN company TEXT,
-ADD COLUMN website TEXT;
+DO $$ 
+BEGIN
+    -- Add phone column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'phone') THEN
+        ALTER TABLE public.profiles ADD COLUMN phone TEXT;
+    END IF;
+    
+    -- Add address column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'address') THEN
+        ALTER TABLE public.profiles ADD COLUMN address TEXT;
+    END IF;
+    
+    -- Add city column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'city') THEN
+        ALTER TABLE public.profiles ADD COLUMN city TEXT;
+    END IF;
+    
+    -- Add country column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'country') THEN
+        ALTER TABLE public.profiles ADD COLUMN country TEXT DEFAULT 'Ghana';
+    END IF;
+    
+    -- Add bio column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'bio') THEN
+        ALTER TABLE public.profiles ADD COLUMN bio TEXT;
+    END IF;
+    
+    -- Add company column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'company') THEN
+        ALTER TABLE public.profiles ADD COLUMN company TEXT;
+    END IF;
+    
+    -- Add website column if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'profiles' AND column_name = 'website') THEN
+        ALTER TABLE public.profiles ADD COLUMN website TEXT;
+    END IF;
+END $$;
 
 -- Create an admin user profile (you'll need to sign up with this email first)
 -- This will be used once the auth user is created

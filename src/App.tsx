@@ -13,9 +13,7 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import Checkout from "./pages/Checkout";
-import AdminLogin from "./pages/AdminLogin";
-import AdminDashboard from "./pages/AdminDashboard";
-import AdminPlans from "./pages/AdminPlans";
+import Admin from "./pages/Admin";
 import UserDashboard from "./pages/UserDashboard";
 import UserProfile from "./pages/UserProfile";
 import UserOrders from "./pages/UserOrders";
@@ -48,9 +46,7 @@ const AppContent = () => {
           <Route path="/user/settings" element={<UserSettings />} />
           
           {/* Admin Routes */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/plans" element={<AdminPlans />} />
+          <Route path="/admin/*" element={<Admin />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

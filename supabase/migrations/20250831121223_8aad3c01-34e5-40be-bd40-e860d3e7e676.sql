@@ -1,23 +1,3 @@
--- Create an admin user directly in the database
--- First, let's insert an admin profile (this assumes you'll create the auth user separately)
-INSERT INTO public.profiles (
-  user_id, 
-  email, 
-  first_name, 
-  last_name, 
-  role,
-  phone,
-  country
-) VALUES (
-  '00000000-0000-0000-0000-000000000001'::uuid,  -- Placeholder UUID - will be updated when real admin signs up
-  'admin@sakconstructionsgh.com',
-  'Admin',
-  'User',
-  'admin',
-  '+233 20 123 4567',
-  'Ghana'
-) ON CONFLICT (user_id) DO NOTHING;
-
 -- Create a simple function to create admin from existing user
 CREATE OR REPLACE FUNCTION public.create_admin_user(
   admin_email TEXT DEFAULT 'admin@sakconstructionsgh.com',
