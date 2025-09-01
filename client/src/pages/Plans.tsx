@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Search, Filter, Grid, List, Star, Bed, Bath, Square, Download } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import villaImage from '@/assets/villa-plan.jpg';
 import bungalowImage from '@/assets/bungalow-plan.jpg';
 import townhouseImage from '@/assets/townhouse-plan.jpg';
@@ -29,13 +29,7 @@ const Plans = () => {
 
   const fetchPlans = async () => {
     try {
-      const { data, error } = await supabase
-        .from('plans')
-        .select('*')
-        .eq('status', 'active')
-        .order('featured', { ascending: false });
-
-      if (error) throw error;
+      const data = await api.getPlans({ status: 'active' });
       setPlans(data || []);
     } catch (error) {
       console.error('Error fetching plans:', error);

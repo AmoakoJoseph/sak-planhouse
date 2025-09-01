@@ -27,7 +27,6 @@ import {
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 import villaImage from '@/assets/villa-plan.jpg';
 import bungalowImage from '@/assets/bungalow-plan.jpg';
 import townhouseImage from '@/assets/townhouse-plan.jpg';
@@ -51,16 +50,8 @@ const UserOrders = () => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          plans!inner(*)
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
+      // Mock orders data for now
+      const data: any[] = [];
       setOrders(data || []);
     } catch (error) {
       console.error('Error fetching orders:', error);

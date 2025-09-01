@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { api } from '@/lib/api';
 import villaImage from '@/assets/villa-plan.jpg';
 import bungalowImage from '@/assets/bungalow-plan.jpg';
 import townhouseImage from '@/assets/townhouse-plan.jpg';
@@ -41,15 +41,10 @@ const PlanDetail = () => {
 
   const fetchPlan = async () => {
     try {
-      const { data, error } = await supabase
-        .from('plans')
-        .select('*')
-        .eq('id', id)
-        .eq('status', 'active')
-        .single();
-
-      if (error) throw error;
-      setPlan(data);
+      if (id) {
+        const data = await api.getPlan(id);
+        setPlan(data);
+      }
     } catch (error) {
       console.error('Error fetching plan:', error);
       navigate('/plans');

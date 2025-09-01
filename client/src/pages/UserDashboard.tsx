@@ -25,7 +25,6 @@ import {
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 import villaImage from '@/assets/villa-plan.jpg';
 import bungalowImage from '@/assets/bungalow-plan.jpg';
 import townhouseImage from '@/assets/townhouse-plan.jpg';
@@ -53,28 +52,14 @@ const UserDashboard = () => {
     if (!user) return;
     
     try {
-      // Fetch orders
-      const { data: orders, error: ordersError } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          plans!inner(*)
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(3);
-
-      if (ordersError) throw ordersError;
-
-      // Calculate stats
-      const completedOrders = orders?.filter(o => o.status === 'completed') || [];
-      const totalSpent = completedOrders.reduce((sum, order) => sum + (order.amount || 0), 0);
+      // Mock user data for now
+      const orders: any[] = [];
       
       setUserStats({
-        totalOrders: orders?.length || 0,
-        totalSpent,
-        favoritePlans: 0, // To be implemented with favorites feature
-        downloads: 0 // To be calculated from downloads table
+        totalOrders: 0,
+        totalSpent: 0,
+        favoritePlans: 0,
+        downloads: 0
       });
 
       setRecentOrders(orders || []);

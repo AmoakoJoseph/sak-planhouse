@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,49 +42,14 @@ const AdminDashboard = () => {
 
   const fetchDashboardStats = async () => {
     try {
-      // Fetch users count
-      const { count: usersCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
-
-      // Fetch plans count
-      const { count: plansCount } = await supabase
-        .from('plans')
-        .select('*', { count: 'exact', head: true });
-
-      // Fetch orders count and revenue
-      const { data: orders, count: ordersCount } = await supabase
-        .from('orders')
-        .select('*', { count: 'exact' });
-
-      const totalRevenue = orders?.reduce((sum, order) => sum + Number(order.amount), 0) || 0;
-
-      // Fetch recent orders with plan details
-      const { data: recentOrders } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          plans:plan_id (title, plan_type),
-          profiles:user_id (first_name, last_name, email)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      // Fetch featured plans
-      const { data: featuredPlans } = await supabase
-        .from('plans')
-        .select('*')
-        .eq('featured', true)
-        .eq('status', 'active')
-        .limit(5);
-
+      // Mock data for now
       setStats({
-        totalUsers: usersCount || 0,
-        totalPlans: plansCount || 0,
-        totalOrders: ordersCount || 0,
-        totalRevenue,
-        recentOrders: recentOrders || [],
-        featuredPlans: featuredPlans || []
+        totalUsers: 0,
+        totalPlans: 4,
+        totalOrders: 0,
+        totalRevenue: 0,
+        recentOrders: [],
+        featuredPlans: []
       });
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
