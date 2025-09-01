@@ -11,6 +11,7 @@ export interface IStorage {
   
   // Profile management
   getProfile(userId: string): Promise<Profile | undefined>;
+  getProfileByEmail(email: string): Promise<Profile | undefined>;
   createProfile(profile: Omit<Profile, 'id' | 'created_at' | 'updated_at'>): Promise<Profile>;
   updateProfile(userId: string, updates: Partial<Profile>): Promise<Profile | undefined>;
   
@@ -48,6 +49,11 @@ export class DatabaseStorage implements IStorage {
   // Profile methods
   async getProfile(userId: string): Promise<Profile | undefined> {
     const result = await db.select().from(profiles).where(eq(profiles.user_id, userId)).limit(1);
+    return result[0];
+  }
+
+  async getProfileByEmail(email: string): Promise<Profile | undefined> {
+    const result = await db.select().from(profiles).where(eq(profiles.email, email)).limit(1);
     return result[0];
   }
 

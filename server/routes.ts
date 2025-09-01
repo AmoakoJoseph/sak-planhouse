@@ -128,6 +128,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Authentication API
+  app.post("/api/auth/signin", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      // For the admin user, check credentials
+      if (email === 'admin@sakconstructionsgh.com' && password === 'admin123') {
+        const profile = await storage.getProfileByEmail(email);
+        if (profile) {
+          res.json({
+            user: { id: profile.user_id, email: profile.email },
+            profile
+          });
+          return;
+        }
+      }
+      
+      res.status(401).json({ error: "Invalid credentials" });
+    } catch (error) {
+      console.error("Error signing in:", error);
+      res.status(500).json({ error: "Failed to sign in" });
+    }
+  });
+
+  app.post("/api/auth/signout", async (req, res) => {
+    res.json({ success: true });
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

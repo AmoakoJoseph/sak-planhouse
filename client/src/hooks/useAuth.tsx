@@ -63,13 +63,38 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const signIn = async (email: string, password: string) => {
-    // Mock signin - replace with real authentication later
-    console.log('Sign in attempted:', { email });
-    return { error: null };
+    try {
+      console.log('Sign in attempted:', { email });
+      
+      const response = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+        setProfile(data.profile);
+        return { error: null };
+      } else {
+        const errorData = await response.json();
+        return { error: errorData.error || 'Sign in failed' };
+      }
+    } catch (error) {
+      console.error('Sign in error:', error);
+      return { error: 'Network error occurred' };
+    }
   };
 
   const signOut = async () => {
-    // Mock signout
+    try {
+      await fetch('/api/auth/signout', { method: 'POST' });
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
     setUser(null);
     setProfile(null);
   };
