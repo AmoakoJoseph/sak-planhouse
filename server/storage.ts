@@ -128,10 +128,7 @@ export class DatabaseStorage implements IStorage {
     return result[0];
   }
 
-  async createOrder(order: Omit<Order, 'id' | 'created_at' | 'updated_at'> & { 
-    stripe_payment_intent_id?: string; 
-    payment_method?: string;
-  }): Promise<Order> {
+  async createOrder(order: Omit<Order, 'id' | 'created_at' | 'updated_at'>): Promise<Order> {
     const result = await db.insert(orders).values(order).returning();
     return result[0];
   }
