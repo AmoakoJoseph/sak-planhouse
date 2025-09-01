@@ -20,7 +20,7 @@ interface Plan {
   id: string;
   title: string;
   description: string | null;
-  plan_type: PlanType;
+  plan_type: string;
   bedrooms: number;
   bathrooms: number;
   area_sqft: number;
@@ -29,7 +29,9 @@ interface Plan {
   premium_price: number;
   featured: boolean;
   status: string;
-  image_url?: string;
+  image_url?: string | null;
+  gallery_images?: any;
+  plan_files?: any;
   created_at: string;
 }
 
@@ -53,8 +55,14 @@ const AdminPlans = () => {
     standard_price: 399.99,
     premium_price: 599.99,
     featured: false,
-    status: 'active'
+    status: 'active',
+    image_url: null as string | null,
+    gallery_images: null as any,
+    plan_files: null as any
   });
+
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
@@ -190,8 +198,92 @@ const AdminPlans = () => {
       standard_price: 399.99,
       premium_price: 599.99,
       featured: false,
-      status: 'active'
+      status: 'active',
+      image_url: null,
+      gallery_images: null,
+      plan_files: null
     });
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await fetch('/api/upload/image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setPlanForm(prev => ({ ...prev, image_url: result.url }));
+        toast({
+          title: "Success",
+          description: "Image uploaded successfully"
+        });
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload image",
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handlePlanFilesUpload = async (event: React.ChangeEvent<HTMLInputElement>, tier: string) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingFiles(true);
+    const formData = new FormData();
+    
+    for (let i = 0; i < files.length; i++) {
+      formData.append(tier, files[i]);
+    }
+
+    try {
+      const response = await fetch('/api/upload/plan-files', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setPlanForm(prev => ({ 
+          ...prev, 
+          plan_files: { 
+            ...prev.plan_files, 
+            ...result.files 
+          } 
+        }));
+        toast({
+          title: "Success",
+          description: `${tier} plan files uploaded successfully`
+        });
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error('Error uploading plan files:', error);
+      toast({
+        title: "Error",
+        description: `Failed to upload ${tier} plan files`,
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingFiles(false);
+    }
   };
 
   const openEditModal = (plan: Plan) => {
@@ -199,7 +291,7 @@ const AdminPlans = () => {
     setPlanForm({
       title: plan.title,
       description: plan.description || '',
-      plan_type: plan.plan_type,
+      plan_type: plan.plan_type as PlanType,
       bedrooms: plan.bedrooms || 3,
       bathrooms: plan.bathrooms || 2,
       area_sqft: plan.area_sqft || 2000,
@@ -371,6 +463,72 @@ const AdminPlans = () => {
                       min="0"
                     />
                   </div>
+                </div>
+
+                {/* Image Upload Section */}
+                <div className="space-y-2">
+                  <Label>Plan Image</Label>
+                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4">
+                    <div className="flex flex-col items-center space-y-2">
+                      {planForm.image_url ? (
+                        <div className="space-y-2">
+                          <img src={planForm.image_url} alt="Plan preview" className="max-w-32 h-20 object-cover rounded" />
+                          <Button type="button" variant="outline" size="sm" onClick={() => setPlanForm(prev => ({ ...prev, image_url: null }))}>
+                            Remove Image
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="text-center">
+                            <p className="text-sm text-muted-foreground">Upload plan image (JPG, PNG)</p>
+                            <p className="text-xs text-muted-foreground">Max size: 10MB</p>
+                          </div>
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            disabled={uploadingImage}
+                            className="max-w-xs"
+                          />
+                          {uploadingImage && <p className="text-xs text-blue-600">Uploading...</p>}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Plan Files Upload Section */}
+                <div className="space-y-4">
+                  <Label>Plan Files by Tier</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {(['basic', 'standard', 'premium'] as const).map((tier) => (
+                      <div key={tier} className="border rounded-lg p-3">
+                        <Label className="text-sm font-medium capitalize">{tier} Files</Label>
+                        <div className="mt-2 space-y-2">
+                          <Input
+                            type="file"
+                            multiple
+                            accept=".pdf,.dwg,.dxf,.zip"
+                            onChange={(e) => handlePlanFilesUpload(e, tier)}
+                            disabled={uploadingFiles}
+                            className="text-xs"
+                          />
+                          <p className="text-xs text-muted-foreground">PDF, DWG, DXF, ZIP (Max 50MB each)</p>
+                          {planForm.plan_files?.[tier] && planForm.plan_files[tier].length > 0 && (
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium">{planForm.plan_files[tier].length} file(s) uploaded</p>
+                              {planForm.plan_files[tier].map((file: string, index: number) => (
+                                <p key={index} className="text-xs text-muted-foreground truncate">
+                                  {file.split('/').pop()}
+                                </p>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {uploadingFiles && <p className="text-sm text-blue-600">Uploading files...</p>}
                 </div>
 
                 <div className="flex items-center space-x-2">
