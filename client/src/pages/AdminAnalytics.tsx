@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -56,68 +55,7 @@ interface AnalyticsData {
 const AdminAnalytics = () => {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
-  const [analytics, setAnalytics] = useState<AnalyticsData>({
-    overview: {
-      totalRevenue: 15420.50,
-      revenueGrowth: 12.5,
-      totalOrders: 145,
-      ordersGrowth: 8.2,
-      totalUsers: 89,
-      usersGrowth: 15.3,
-      totalDownloads: 287,
-      downloadsGrowth: 22.1,
-    },
-    planMetrics: {
-      basicSales: 65,
-      standardSales: 45,
-      premiumSales: 35,
-      totalPlans: 12,
-    },
-    recentActivity: [
-      {
-        id: '1',
-        type: 'order',
-        description: 'Premium Villa Plan purchased by John Doe',
-        timestamp: '2 hours ago',
-        amount: 200.00,
-      },
-      {
-        id: '2',
-        type: 'download',
-        description: 'Standard files downloaded by Jane Smith',
-        timestamp: '4 hours ago',
-      },
-      {
-        id: '3',
-        type: 'user_signup',
-        description: 'New user registration: Mike Johnson',
-        timestamp: '6 hours ago',
-      },
-    ],
-    topPlans: [
-      {
-        id: '1',
-        title: 'Modern Villa Design',
-        sales: 24,
-        revenue: 4800.00,
-        category: 'Villa',
-      },
-      {
-        id: '2',
-        title: 'Contemporary Bungalow',
-        sales: 18,
-        revenue: 2700.00,
-        category: 'Bungalow',
-      },
-      {
-        id: '3',
-        title: 'Luxury Townhouse',
-        sales: 15,
-        revenue: 3750.00,
-        category: 'Townhouse',
-      },
-    ],
-  });
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null); // Initialize with null
   const [loadingAnalytics, setLoadingAnalytics] = useState(true);
 
   useEffect(() => {
@@ -133,12 +71,17 @@ const AdminAnalytics = () => {
   }, [user, isAdmin]);
 
   const fetchAnalytics = async () => {
+    setLoadingAnalytics(true); // Set loading to true when fetching
     try {
       const [analyticsResponse, ordersResponse, plansResponse] = await Promise.all([
         fetch('/api/analytics'),
         fetch('/api/orders'),
         fetch('/api/plans')
       ]);
+
+      if (!analyticsResponse.ok || !ordersResponse.ok || !plansResponse.ok) {
+        throw new Error('Failed to fetch data');
+      }
 
       const analyticsData = await analyticsResponse.json();
       const ordersData = await ordersResponse.json();
@@ -212,17 +155,36 @@ const AdminAnalytics = () => {
       });
     } catch (error) {
       console.error('Error fetching analytics:', error);
+      setAnalytics(null); // Set analytics to null on error
     } finally {
-      setLoadingAnalytics(false);
+      setLoadingAnalytics(false); // Set loading to false when done
     }
   };
 
-  if (loading || !user || !isAdmin) {
+  if (loading || loadingAnalytics) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return null;
+  }
+
+  if (!analytics) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading analytics...</p>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">No Analytics Data</h2>
+          <p className="text-gray-600">Unable to load analytics data.</p>
+          <button 
+            onClick={fetchAnalytics}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -239,7 +201,7 @@ const AdminAnalytics = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/10">
       <AdminHeader />
-      
+
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -324,7 +286,7 @@ const AdminAnalytics = () => {
                   </div>
                   <Progress value={(analytics.planMetrics.basicSales / analytics.overview.totalOrders) * 100} className="h-2" />
                 </div>
-                
+
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Standard Plans</span>
@@ -332,7 +294,7 @@ const AdminAnalytics = () => {
                   </div>
                   <Progress value={(analytics.planMetrics.standardSales / analytics.overview.totalOrders) * 100} className="h-2" />
                 </div>
-                
+
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Premium Plans</span>

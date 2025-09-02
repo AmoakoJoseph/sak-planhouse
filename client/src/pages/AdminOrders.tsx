@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ShoppingCart, Search, Filter, Download } from 'lucide-react';
+import { ShoppingCart, Search, Filter, Download, MoreHorizontal } from 'lucide-react';
 import AdminHeader from '@/components/AdminHeader';
 
 const AdminOrders = () => {
@@ -18,6 +17,8 @@ const AdminOrders = () => {
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [packageFilter, setPackageFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
   const [loadingOrders, setLoadingOrders] = useState(true);
 
   useEffect(() => {
@@ -34,7 +35,8 @@ const AdminOrders = () => {
 
   useEffect(() => {
     filterOrders();
-  }, [orders, searchTerm, statusFilter]);
+  }, [orders, searchTerm, statusFilter, packageFilter, sortBy]);
+
 
   const fetchOrders = async () => {
     try {
@@ -49,24 +51,39 @@ const AdminOrders = () => {
   };
 
   const filterOrders = () => {
-    let filtered = orders;
-
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter((order: any) => order.status === statusFilter);
+    if (!Array.isArray(orders)) {
+      setFilteredOrders([]);
+      return;
     }
 
-    if (searchTerm) {
-      filtered = filtered.filter((order: any) => 
-        order.plan_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.profile_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        `${order.profile_first_name} ${order.profile_last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
+    let filtered = orders.filter(order => {
+      const matchesSearch = (order.plan_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           (order.user_id || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || (order.payment_status || 'pending') === statusFilter;
+      const matchesPackage = packageFilter === 'all' || (order.package_type || 'basic') === packageFilter;
+      return matchesSearch && matchesStatus && matchesPackage;
+    });
+
+    // Sort orders
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+        case 'oldest':
+          return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
+        case 'amount-high':
+          return (b.amount || 0) - (a.amount || 0);
+        case 'amount-low':
+          return (a.amount || 0) - (b.amount || 0);
+        default:
+          return 0;
+      }
+    });
 
     setFilteredOrders(filtered);
   };
 
-  if (loading || !user || !isAdmin) {
+  if (loading || loadingOrders) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -77,10 +94,15 @@ const AdminOrders = () => {
     );
   }
 
+  if (!isAdmin) {
+    return null;
+  }
+
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/10">
       <AdminHeader />
-      
+
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -106,7 +128,7 @@ const AdminOrders = () => {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search orders..."
+                  placeholder="Search orders by Plan ID or User ID..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -121,6 +143,29 @@ const AdminOrders = () => {
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="failed">Failed</SelectItem>
+                  <SelectItem value="processing">Processing</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={packageFilter} onValueChange={setPackageFilter}>
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="Filter by package" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Packages</SelectItem>
+                  <SelectItem value="basic">Basic</SelectItem>
+                  <SelectItem value="standard">Standard</SelectItem>
+                  <SelectItem value="premium">Premium</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">Newest</SelectItem>
+                  <SelectItem value="oldest">Oldest</SelectItem>
+                  <SelectItem value="amount-high">Amount (High to Low)</SelectItem>
+                  <SelectItem value="amount-low">Amount (Low to High)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -148,7 +193,7 @@ const AdminOrders = () => {
                 <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-muted-foreground mb-2">No Orders Found</h3>
                 <p className="text-sm text-muted-foreground">
-                  {orders.length === 0 
+                  {orders.length === 0
                     ? "Orders will appear here once customers start purchasing plans."
                     : "Try adjusting your search or filter criteria."
                   }
@@ -169,44 +214,30 @@ const AdminOrders = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredOrders.map((order: any) => (
+                  {Array.isArray(filteredOrders) && filteredOrders.map((order) => (
                     <TableRow key={order.id}>
-                      <TableCell className="font-mono text-xs">
-                        {order.id.substring(0, 8)}...
-                      </TableCell>
+                      <TableCell className="font-medium">#{(order.id || '').substring(0, 8)}</TableCell>
                       <TableCell>
                         <div>
-                          <div className="font-medium">
-                            {order.profile_first_name} {order.profile_last_name}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {order.profile_email}
-                          </div>
+                          <div className="font-medium">{order.plan_id || 'Unknown Plan'}</div>
+                          <div className="text-sm text-gray-500">{order.user_id || 'Unknown User'}</div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div>
-                          <div className="font-medium">{order.plan_title}</div>
-                          <div className="text-sm text-muted-foreground capitalize">
-                            {order.plan_type}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize">
-                          {order.tier}
+                        <Badge variant={(order.package_type || 'basic') === 'premium' ? 'default' :
+                                      (order.package_type || 'basic') === 'standard' ? 'secondary' : 'outline'}>
+                          {order.package_type || 'basic'}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-medium">
-                        ₵{Number(order.amount).toFixed(2)}
-                      </TableCell>
+                      <TableCell className="font-medium">GH₵{order.amount || 0}</TableCell>
                       <TableCell>
-                        <Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>
-                          {order.status}
+                        <Badge variant={(order.payment_status || 'pending') === 'completed' ? 'default' :
+                                      (order.payment_status || 'pending') === 'processing' ? 'secondary' : 'destructive'}>
+                          {order.payment_status || 'pending'}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        {new Date(order.created_at).toLocaleDateString()}
+                      <TableCell className="text-sm text-gray-500">
+                        {new Date(order.created_at || Date.now()).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
                         <Button size="sm" variant="ghost">

@@ -1,5 +1,4 @@
-
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,53 +13,82 @@ import AdminHeader from '@/components/AdminHeader';
 const AdminUsers = () => {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
-  const [users, setUsers] = useState([]);
-  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
   const [loadingUsers, setLoadingUsers] = useState(true);
 
   useEffect(() => {
-    if (!loading && (!user || !isAdmin)) {
+    if (loading) return;
+
+    if (!isAdmin) {
       navigate('/admin/login');
+      return;
     }
-  }, [user, isAdmin, loading, navigate]);
 
-  useEffect(() => {
-    if (user && isAdmin) {
-      fetchUsers();
-    }
-  }, [user, isAdmin]);
-
-  useEffect(() => {
-    filterUsers();
-  }, [users, searchTerm]);
+    fetchUsers();
+  }, [loading, isAdmin, navigate]);
 
   const fetchUsers = async () => {
     try {
+      setLoadingUsers(true);
       const response = await fetch('/api/users');
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
       const data = await response.json();
-      setUsers(data || []);
+      setUsers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching users:', error);
+      setUsers([]);
     } finally {
       setLoadingUsers(false);
     }
   };
 
-  const filterUsers = () => {
-    let filtered = users;
-
-    if (searchTerm) {
-      filtered = filtered.filter((user: any) => 
-        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        `${user.first_name} ${user.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+  // Filter and sort users
+  useEffect(() => {
+    if (!Array.isArray(users)) {
+      setFilteredUsers([]);
+      return;
     }
 
-    setFilteredUsers(filtered);
-  };
+    let filtered = users.filter(user => {
+      const userName = user.firstName && user.lastName 
+        ? `${user.firstName} ${user.lastName}` 
+        : user.email || '';
+      const matchesSearch = userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           (user.email || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesRole = roleFilter === 'all' || (user.role || 'user') === roleFilter;
+      return matchesSearch && matchesRole;
+    });
 
-  if (loading || !user || !isAdmin) {
+    // Sort users
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+        case 'oldest':
+          return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+        case 'name':
+          const aName = a.firstName && a.lastName 
+            ? `${a.firstName} ${a.lastName}` 
+            : a.email || '';
+          const bName = b.firstName && b.lastName 
+            ? `${b.firstName} ${b.lastName}` 
+            : b.email || '';
+          return aName.localeCompare(bName);
+        default:
+          return 0;
+      }
+    });
+
+    setFilteredUsers(filtered);
+  }, [users, searchTerm, roleFilter, sortBy]);
+
+  if (loading || loadingUsers) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -71,31 +99,35 @@ const AdminUsers = () => {
     );
   }
 
+  if (!isAdmin) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/10">
       <AdminHeader />
-      
+
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">User Management</h1>
             <p className="text-muted-foreground">Manage registered users and their permissions</p>
           </div>
-          <Button>
+          <Button onClick={() => navigate('/admin/invite-user')}>
             <UserPlus className="h-4 w-4 mr-2" />
             Invite User
           </Button>
         </div>
 
-        {/* Search */}
+        {/* Search and Filters */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Search className="h-5 w-5" />
-              <span>Search Users</span>
+              <span>Search & Filter Users</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -105,6 +137,28 @@ const AdminUsers = () => {
                 className="pl-10"
               />
             </div>
+            
+            <Select value={roleFilter} onValueChange={setRoleFilter}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Filter by role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Roles</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="user">User</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">Newest Joined</SelectItem>
+                <SelectItem value="oldest">Oldest Joined</SelectItem>
+                <SelectItem value="name">Name (A-Z)</SelectItem>
+              </SelectContent>
+            </Select>
           </CardContent>
         </Card>
 
@@ -142,45 +196,44 @@ const AdminUsers = () => {
                     <TableHead>User</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
-                    <TableHead>Orders</TableHead>
-                    <TableHead>Joined</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Joined</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredUsers.map((userData: any) => (
-                    <TableRow key={userData.id}>
+                  {Array.isArray(filteredUsers) && filteredUsers.map((user) => (
+                    <TableRow key={user.id}>
                       <TableCell>
                         <div className="flex items-center space-x-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={userData.avatar_url} />
-                            <AvatarFallback>
-                              {`${userData.first_name?.[0] || ''}${userData.last_name?.[0] || ''}`}
+                          <Avatar>
+                            <AvatarFallback className="bg-blue-100 text-blue-600">
+                              {(user.firstName || user.email)?.charAt(0).toUpperCase() || 'U'}
                             </AvatarFallback>
                           </Avatar>
                           <div>
                             <div className="font-medium">
-                              {userData.first_name} {userData.last_name}
+                              {user.firstName && user.lastName 
+                                ? `${user.firstName} ${user.lastName}` 
+                                : user.email}
                             </div>
-                            <div className="text-sm text-muted-foreground">
-                              {userData.company}
-                            </div>
+                            <div className="text-sm text-gray-500">{user.email}</div>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{userData.email}</TableCell>
+                      <TableCell>{user.email}</TableCell>
                       <TableCell>
-                        <Badge variant={userData.role === 'admin' ? 'default' : 'secondary'}>
-                          {userData.role}
+                        <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                          {user.role || 'user'}
                         </Badge>
                       </TableCell>
-                      <TableCell>0</TableCell> {/* You'd need to calculate this */}
                       <TableCell>
-                        {new Date(userData.created_at).toLocaleDateString()}
+                        <Badge variant="default">
+                          active
+                        </Badge>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">Active</Badge>
+                      <TableCell className="text-sm text-gray-500">
+                        {new Date(user.createdAt || Date.now()).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
                         <Button size="sm" variant="ghost">

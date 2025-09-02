@@ -171,6 +171,127 @@ export class DatabaseStorage implements IStorage {
     }).returning();
     return result[0];
   }
+
+  // Analytics methods
+  async getAnalytics(): Promise<any> {
+    try {
+      // Get total revenue from completed orders
+      const revenueResult = await db.select({
+        totalRevenue: sql<number>`SUM(${orders.amount})`.mapWith(Number),
+        totalOrders: sql<number>`COUNT(*)`.mapWith(Number),
+      }).from(orders).where(eq(orders.payment_status, 'completed'));
+
+      // Get total users count
+      const usersResult = await db.select({
+        totalUsers: sql<number>`COUNT(*)`.mapWith(Number),
+      }).from(profiles);
+
+      // Get total downloads count
+      const downloadsResult = await db.select({
+        totalDownloads: sql<number>`COUNT(*)`.mapWith(Number),
+      }).from(downloads);
+
+      // Get plan metrics
+      const planMetricsResult = await db.select({
+        packageType: orders.package_type,
+        count: sql<number>`COUNT(*)`.mapWith(Number),
+      }).from(orders)
+        .where(eq(orders.payment_status, 'completed'))
+        .groupBy(orders.package_type);
+
+      // Get recent activity (orders)
+      const recentOrdersResult = await db.select().from(orders)
+        .orderBy(desc(orders.created_at))
+        .limit(10);
+
+      // Get top plans by sales
+      const topPlansResult = await db.select({
+        planId: orders.plan_id,
+        sales: sql<number>`COUNT(*)`.mapWith(Number),
+        revenue: sql<number>`SUM(${orders.amount})`.mapWith(Number),
+      }).from(orders)
+        .where(eq(orders.payment_status, 'completed'))
+        .groupBy(orders.plan_id)
+        .orderBy(desc(sql`COUNT(*)`))
+        .limit(5);
+
+      const totalRevenue = revenueResult[0]?.totalRevenue || 0;
+      const totalOrders = revenueResult[0]?.totalOrders || 0;
+      const totalUsers = usersResult[0]?.totalUsers || 0;
+      const totalDownloads = downloadsResult[0]?.totalDownloads || 0;
+
+      // Calculate plan metrics
+      const planMetrics = {
+        basicSales: planMetricsResult.find(p => p.packageType === 'basic')?.count || 0,
+        standardSales: planMetricsResult.find(p => p.packageType === 'standard')?.count || 0,
+        premiumSales: planMetricsResult.find(p => p.packageType === 'premium')?.count || 0,
+        totalPlans: await db.select({ count: sql<number>`COUNT(*)`.mapWith(Number) }).from(plans).then(r => r[0]?.count || 0),
+      };
+
+      // Format recent activity
+      const recentActivity = recentOrdersResult.map((order, index) => ({
+        id: order.id,
+        type: 'order' as const,
+        description: `${order.package_type} package purchased`,
+        timestamp: new Date(order.created_at).toLocaleString(),
+        amount: order.amount,
+      }));
+
+      // Get plan details for top plans
+      const topPlans = await Promise.all(
+        topPlansResult.map(async (topPlan) => {
+          const plan = await this.getPlan(topPlan.planId);
+          return {
+            id: topPlan.planId,
+            title: plan?.title || 'Unknown Plan',
+            sales: topPlan.sales,
+            revenue: topPlan.revenue,
+            category: plan?.category || 'Unknown',
+          };
+        })
+      );
+
+      return {
+        overview: {
+          totalRevenue,
+          revenueGrowth: 12.5, // Mock growth percentage
+          totalOrders,
+          ordersGrowth: 8.2, // Mock growth percentage
+          totalUsers,
+          usersGrowth: 15.3, // Mock growth percentage
+          totalDownloads,
+          downloadsGrowth: 22.1, // Mock growth percentage
+        },
+        planMetrics,
+        recentActivity,
+        topPlans,
+      };
+    } catch (error) {
+      console.error('Error getting analytics:', error);
+      throw error;
+    }
+  }
+
+  // Users methods
+  async getAllUsers(): Promise<any[]> {
+    try {
+      const result = await db.select({
+        id: profiles.id,
+        userId: profiles.user_id,
+        email: profiles.email,
+        firstName: profiles.first_name,
+        lastName: profiles.last_name,
+        role: profiles.role,
+        createdAt: profiles.created_at,
+        updatedAt: profiles.updated_at,
+      }).from(profiles).orderBy(desc(profiles.created_at));
+
+      return result;
+    } catch (error) {
+      console.error('Error getting all users:', error);
+      throw error;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();
