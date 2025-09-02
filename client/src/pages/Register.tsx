@@ -6,6 +6,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Mail, Lock, User, Eye, EyeOff, Phone } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useAuth } from '@/context/AuthContext'; // Assuming AuthContext provides login function
+import api from '@/lib/api'; // Assuming api is imported correctly
 
 const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -20,10 +23,63 @@ const Register = () => {
     agreeToTerms: false,
     receiveUpdates: false
   });
+  const [loading, setLoading] = useState(false); // Add loading state
+  const [error, setError] = useState(''); // Add error state
+  const navigate = useNavigate(); // Initialize navigate
+  const { login } = useAuth(); // Get login function from AuthContext
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Registration attempted:', formData);
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    if (!formData.agreeToTerms) {
+      setError('You must agree to the Terms of Service.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(''); // Clear previous errors
+
+      // Create user profile
+      const profileData = {
+        user_id: 'guest-' + Date.now(), // Temporary ID generation
+        email: formData.email,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        phone: formData.phone || null,
+        role: 'user',
+      };
+
+      await api.post('/api/profiles', profileData);
+
+      // For demo purposes, auto-login after registration
+      login({
+        id: profileData.user_id,
+        email: profileData.email,
+        firstName: profileData.first_name,
+        lastName: profileData.last_name,
+        phone: profileData.phone,
+        role: profileData.role,
+      });
+
+      // Check for pending premium order
+      const pendingOrder = localStorage.getItem('pendingPremiumOrder');
+      if (pendingOrder) {
+        const orderInfo = JSON.parse(pendingOrder);
+        localStorage.removeItem('pendingPremiumOrder');
+        navigate(`/download/${orderInfo.orderId}`);
+      } else {
+        navigate('/user/dashboard');
+      }
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      setError(error.response?.data?.message || 'Failed to create account. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -178,8 +234,8 @@ const Register = () => {
               {/* Checkboxes */}
               <div className="space-y-3">
                 <div className="flex items-start space-x-2">
-                  <Checkbox 
-                    id="agreeToTerms" 
+                  <Checkbox
+                    id="agreeToTerms"
                     checked={formData.agreeToTerms}
                     onCheckedChange={(checked) => setFormData({...formData, agreeToTerms: checked as boolean})}
                     required
@@ -197,8 +253,8 @@ const Register = () => {
                 </div>
 
                 <div className="flex items-start space-x-2">
-                  <Checkbox 
-                    id="receiveUpdates" 
+                  <Checkbox
+                    id="receiveUpdates"
                     checked={formData.receiveUpdates}
                     onCheckedChange={(checked) => setFormData({...formData, receiveUpdates: checked as boolean})}
                   />
@@ -207,10 +263,11 @@ const Register = () => {
                   </Label>
                 </div>
               </div>
+              {error && <p className="text-sm text-red-500 text-center">{error}</p>}
 
               {/* Submit Button */}
-              <Button type="submit" variant="cta" size="lg" className="w-full">
-                Create Account
+              <Button type="submit" variant="cta" size="lg" className="w-full" disabled={loading}>
+                {loading ? 'Creating Account...' : 'Create Account'}
               </Button>
             </form>
 

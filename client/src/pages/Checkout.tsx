@@ -19,6 +19,16 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
+  // Mock user state for demonstration. Replace with actual auth state.
+  const user = null; // Example: user = { id: '123', name: 'John Doe' }
+  const selectedPackage = checkoutData?.package || 'basic'; // Default to basic
+  const plan = { title: checkoutData?.planTitle || 'Basic Plan' }; // Mock plan title
+  const packagePrices = {
+    basic: 50.00,
+    standard: 100.00,
+    premium: 150.00,
+  }; // Mock prices
+
   useEffect(() => {
     const verifyPayment = async () => {
       const reference = searchParams.get('reference');
@@ -53,8 +63,25 @@ const Checkout = () => {
   }, [navigate, searchParams]);
 
   const handlePaymentSuccess = (paymentData: any) => {
-    setPaymentSuccess(true);
-    localStorage.removeItem('checkoutData');
+    console.log('Payment successful:', paymentData);
+
+    if (paymentData.order && paymentData.order.id) {
+      // For premium packages, require account creation
+      if (selectedPackage === 'premium' && !user) {
+        // Store order info in localStorage and redirect to register
+        localStorage.setItem('pendingPremiumOrder', JSON.stringify({
+          orderId: paymentData.order.id,
+          planTitle: plan.title,
+          packageType: selectedPackage
+        }));
+        navigate('/auth/register');
+      } else {
+        navigate(`/download/${paymentData.order.id}`);
+      }
+    } else {
+      console.error('Order ID not found in payment data');
+      setError('Payment completed but order information is missing. Please contact support.');
+    }
   };
 
   const handlePaymentError = (error: string) => {
@@ -128,7 +155,7 @@ const Checkout = () => {
               </Button>
               <Badge variant="secondary">Checkout</Badge>
             </div>
-            
+
             <div className="text-center">
               <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
                 Complete Your Purchase
@@ -159,12 +186,30 @@ const Checkout = () => {
                     </div>
                     <Badge variant="secondary">{checkoutData.package}</Badge>
                   </div>
-                  
+
                   <Separator />
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-semibold">Total</span>
-                    <span className="text-2xl font-bold text-primary">₵{checkoutData.price}</span>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">Package Type:</span>
+                      <Badge variant="secondary" className="capitalize">
+                        {selectedPackage}
+                      </Badge>
+                    </div>
+                    {selectedPackage === 'premium' && !user && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm text-blue-800">
+                          <strong>Premium Package:</strong> Account creation required for download access.
+                          You'll be prompted to create an account after payment.
+                        </p>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">Total Amount:</span>
+                      <span className="text-lg font-bold">
+                        GH₵ {packagePrices[selectedPackage].toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

@@ -14,10 +14,35 @@ const DownloadPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user) {
-      navigate('/auth/login');
+    // Check for pending premium order that requires account creation
+    const pendingOrder = localStorage.getItem('pendingPremiumOrder');
+    if (pendingOrder && !user) {
+      const orderInfo = JSON.parse(pendingOrder);
+      if (orderInfo.orderId === orderId) {
+        navigate('/auth/register');
+        return;
+      }
     }
-  }, [user, navigate]);
+    
+    // For premium downloads, require user account
+    if (!user && orderId) {
+      // Check if this is a premium order by making a quick API call
+      const checkOrderType = async () => {
+        try {
+          const response = await fetch(`/api/downloads/${orderId}`);
+          const data = await response.json();
+          if (data.packageType === 'premium') {
+            navigate('/auth/register');
+          } else {
+            navigate('/auth/login');
+          }
+        } catch {
+          navigate('/auth/login');
+        }
+      };
+      checkOrderType();
+    }
+  }, [user, navigate, orderId]);
 
   if (!orderId) {
     return (
