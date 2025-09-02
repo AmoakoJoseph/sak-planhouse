@@ -4,6 +4,10 @@ import { useAuth } from '@/hooks/useAuth';
 import AdminLogin from './AdminLogin';
 import AdminDashboard from './AdminDashboard';
 import AdminPlans from './AdminPlans';
+import AdminAnalytics from './AdminAnalytics';
+import AdminOrders from './AdminOrders';
+import AdminUsers from './AdminUsers';
+import AdminSettings from './AdminSettings';
 
 const Admin = () => {
   const { user, profile } = useAuth();
@@ -36,7 +40,11 @@ const Admin = () => {
       <Routes>
         <Route path="login" element={<AdminLogin />} />
         <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="analytics" element={<AdminAnalytics />} />
         <Route path="plans" element={<AdminPlans />} />
+        <Route path="orders" element={<AdminOrders />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="settings" element={<AdminSettings />} />
       </Routes>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { api } from '@/lib/api';
@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, ArrowLeft, Star, Eye } from 'lucide-react';
+import { Plus, Edit, Trash2, ArrowLeft, Star, Eye, CheckCircle } from 'lucide-react';
+import AdminHeader from '@/components/AdminHeader';
 
 type PlanType = 'villa' | 'bungalow' | 'townhouse' | 'duplex' | 'apartment' | 'commercial';
 
@@ -94,7 +95,7 @@ const AdminPlans = () => {
 
   const handleCreatePlan = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       await api.createPlan(planForm);
 
@@ -102,7 +103,7 @@ const AdminPlans = () => {
         title: "Success",
         description: "Plan created successfully"
       });
-      
+
       setIsCreateModalOpen(false);
       resetForm();
       fetchPlans();
@@ -128,7 +129,7 @@ const AdminPlans = () => {
         title: "Success",
         description: "Plan updated successfully"
       });
-      
+
       setEditingPlan(null);
       resetForm();
       fetchPlans();
@@ -153,7 +154,7 @@ const AdminPlans = () => {
         title: "Success",
         description: "Plan deleted successfully"
       });
-      
+
       fetchPlans();
     } catch (error) {
       console.error('Error deleting plan:', error);
@@ -174,7 +175,7 @@ const AdminPlans = () => {
         title: "Success",
         description: `Plan ${!plan.featured ? 'featured' : 'unfeatured'} successfully`
       });
-      
+
       fetchPlans();
     } catch (error) {
       console.error('Error updating plan:', error);
@@ -247,7 +248,7 @@ const AdminPlans = () => {
 
     setUploadingFiles(true);
     const formData = new FormData();
-    
+
     for (let i = 0; i < files.length; i++) {
       formData.append(tier, files[i]);
     }
@@ -316,244 +317,7 @@ const AdminPlans = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/admin/dashboard')}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Dashboard
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold">Plan Management</h1>
-              <p className="text-sm text-muted-foreground">Manage construction plans and pricing</p>
-            </div>
-          </div>
-          
-          <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Add New Plan
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Create New Plan</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleCreatePlan} className="space-y-4">
-                
-                <div className="space-y-2">
-                  <Label htmlFor="title">Plan Title</Label>
-                  <Input
-                    id="title"
-                    value={planForm.title}
-                    onChange={(e) => setPlanForm(prev => ({ ...prev, title: e.target.value }))}
-                    required
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={planForm.description}
-                    onChange={(e) => setPlanForm(prev => ({ ...prev, description: e.target.value }))}
-                    rows={3}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="plan_type">Plan Type</Label>
-                    <Select value={planForm.plan_type} onValueChange={(value) => setPlanForm(prev => ({ ...prev, plan_type: value as PlanType }))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="villa">Villa</SelectItem>
-                        <SelectItem value="bungalow">Bungalow</SelectItem>
-                        <SelectItem value="townhouse">Townhouse</SelectItem>
-                        <SelectItem value="duplex">Duplex</SelectItem>
-                        <SelectItem value="apartment">Apartment</SelectItem>
-                        <SelectItem value="commercial">Commercial</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select value={planForm.status} onValueChange={(value) => setPlanForm(prev => ({ ...prev, status: value }))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                        <SelectItem value="draft">Draft</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="bedrooms">Bedrooms</Label>
-                    <Input
-                      id="bedrooms"
-                      type="number"
-                      value={planForm.bedrooms}
-                      onChange={(e) => setPlanForm(prev => ({ ...prev, bedrooms: parseInt(e.target.value) }))}
-                      min="1"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="bathrooms">Bathrooms</Label>
-                    <Input
-                      id="bathrooms"
-                      type="number"
-                      value={planForm.bathrooms}
-                      onChange={(e) => setPlanForm(prev => ({ ...prev, bathrooms: parseInt(e.target.value) }))}
-                      min="1"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="area_sqft">Area (sq ft)</Label>
-                    <Input
-                      id="area_sqft"
-                      type="number"
-                      value={planForm.area_sqft}
-                      onChange={(e) => setPlanForm(prev => ({ ...prev, area_sqft: parseInt(e.target.value) }))}
-                      min="100"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="basic_price">Basic Price (₵)</Label>
-                    <Input
-                      id="basic_price"
-                      type="number"
-                      step="0.01"
-                      value={planForm.basic_price}
-                      onChange={(e) => setPlanForm(prev => ({ ...prev, basic_price: parseFloat(e.target.value) }))}
-                      min="0"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="standard_price">Standard Price (₵)</Label>
-                    <Input
-                      id="standard_price"
-                      type="number"
-                      step="0.01"
-                      value={planForm.standard_price}
-                      onChange={(e) => setPlanForm(prev => ({ ...prev, standard_price: parseFloat(e.target.value) }))}
-                      min="0"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="premium_price">Premium Price (₵)</Label>
-                    <Input
-                      id="premium_price"
-                      type="number"
-                      step="0.01"
-                      value={planForm.premium_price}
-                      onChange={(e) => setPlanForm(prev => ({ ...prev, premium_price: parseFloat(e.target.value) }))}
-                      min="0"
-                    />
-                  </div>
-                </div>
-
-                {/* Image Upload Section */}
-                <div className="space-y-2">
-                  <Label>Plan Image</Label>
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4">
-                    <div className="flex flex-col items-center space-y-2">
-                      {planForm.image_url ? (
-                        <div className="space-y-2">
-                          <img src={planForm.image_url} alt="Plan preview" className="max-w-32 h-20 object-cover rounded" />
-                          <Button type="button" variant="outline" size="sm" onClick={() => setPlanForm(prev => ({ ...prev, image_url: null }))}>
-                            Remove Image
-                          </Button>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="text-center">
-                            <p className="text-sm text-muted-foreground">Upload plan image (JPG, PNG)</p>
-                            <p className="text-xs text-muted-foreground">Max size: 10MB</p>
-                          </div>
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            disabled={uploadingImage}
-                            className="max-w-xs"
-                          />
-                          {uploadingImage && <p className="text-xs text-blue-600">Uploading...</p>}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Plan Files Upload Section */}
-                <div className="space-y-4">
-                  <Label>Plan Files by Tier</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {(['basic', 'standard', 'premium'] as const).map((tier) => (
-                      <div key={tier} className="border rounded-lg p-3">
-                        <Label className="text-sm font-medium capitalize">{tier} Files</Label>
-                        <div className="mt-2 space-y-2">
-                          <Input
-                            type="file"
-                            multiple
-                            accept=".pdf,.dwg,.dxf,.zip"
-                            onChange={(e) => handlePlanFilesUpload(e, tier)}
-                            disabled={uploadingFiles}
-                            className="text-xs"
-                          />
-                          <p className="text-xs text-muted-foreground">PDF, DWG, DXF, ZIP (Max 50MB each)</p>
-                          {planForm.plan_files?.[tier] && planForm.plan_files[tier].length > 0 && (
-                            <div className="space-y-1">
-                              <p className="text-xs font-medium">{planForm.plan_files[tier].length} file(s) uploaded</p>
-                              {planForm.plan_files[tier].map((file: string, index: number) => (
-                                <p key={index} className="text-xs text-muted-foreground truncate">
-                                  {file.split('/').pop()}
-                                </p>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  {uploadingFiles && <p className="text-sm text-blue-600">Uploading files...</p>}
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="featured"
-                    checked={planForm.featured}
-                    onChange={(e) => setPlanForm(prev => ({ ...prev, featured: e.target.checked }))}
-                  />
-                  <Label htmlFor="featured">Featured Plan</Label>
-                </div>
-
-                <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => setIsCreateModalOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">
-                    Create Plan
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </header>
+      <AdminHeader />
 
       <div className="container mx-auto px-4 py-8">
         <Card>
@@ -669,7 +433,7 @@ const AdminPlans = () => {
             <DialogTitle>Edit Plan</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleUpdatePlan} className="space-y-4">
-            
+
             <div className="space-y-2">
               <Label htmlFor="edit-title">Plan Title</Label>
               <Input
@@ -679,7 +443,7 @@ const AdminPlans = () => {
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="edit-description">Description</Label>
               <Textarea

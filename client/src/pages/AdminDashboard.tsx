@@ -4,7 +4,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, FileText, ShoppingCart, TrendingUp, LogOut, Settings } from 'lucide-react';
+import { Users, FileText, ShoppingCart, TrendingUp, BarChart3, Settings } from 'lucide-react';
+import AdminHeader from '@/components/AdminHeader';
 
 interface DashboardStats {
   totalUsers: number;
@@ -75,32 +76,8 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-hover">
-              <span className="text-lg font-bold text-primary-foreground">S</span>
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">SAK Constructions Admin</h1>
-              <p className="text-sm text-muted-foreground">Management Dashboard</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <Button variant="outline" size="sm">
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
-            </Button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/10">
+      <AdminHeader />
 
       <div className="container mx-auto px-4 py-8">
         {/* Stats Grid */}
@@ -153,7 +130,15 @@ const AdminDashboard = () => {
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Button 
-            className="h-20 flex-col"
+            className="h-20 flex-col bg-gradient-to-br from-primary to-primary-hover hover:from-primary-hover hover:to-primary"
+            onClick={() => navigate('/admin/analytics')}
+          >
+            <BarChart3 className="w-6 h-6 mb-2" />
+            View Analytics
+          </Button>
+          <Button 
+            variant="outline" 
+            className="h-20 flex-col hover:bg-accent/50"
             onClick={() => navigate('/admin/plans')}
           >
             <FileText className="w-6 h-6 mb-2" />
@@ -161,7 +146,7 @@ const AdminDashboard = () => {
           </Button>
           <Button 
             variant="outline" 
-            className="h-20 flex-col"
+            className="h-20 flex-col hover:bg-accent/50"
             onClick={() => navigate('/admin/orders')}
           >
             <ShoppingCart className="w-6 h-6 mb-2" />
@@ -169,18 +154,11 @@ const AdminDashboard = () => {
           </Button>
           <Button 
             variant="outline" 
-            className="h-20 flex-col"
+            className="h-20 flex-col hover:bg-accent/50"
             onClick={() => navigate('/admin/users')}
           >
             <Users className="w-6 h-6 mb-2" />
             Manage Users
-          </Button>
-          <Button 
-            variant="outline" 
-            className="h-20 flex-col"
-          >
-            <Settings className="w-6 h-6 mb-2" />
-            Site Settings
           </Button>
         </div>
 

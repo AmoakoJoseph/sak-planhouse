@@ -61,21 +61,20 @@ const Hero = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button variant="hero" size="lg" className="min-w-[200px]" asChild>
-                <a href="/plans">
-                  <Search className="h-5 w-5" />
-                  Browse Plans
-                  <ArrowRight className="h-5 w-5" />
-                </a>
+              <Button 
+                size="lg" 
+                className="bg-gradient-to-r from-primary to-primary-hover hover:from-primary-hover hover:to-primary text-primary-foreground px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                asChild
+              >
+                <a href="/plans">Browse Plans</a>
               </Button>
               <Button 
-                variant="cta" 
+                variant="outline" 
                 size="lg" 
-                className="min-w-[200px]"
+                className="px-8 py-4 text-lg font-semibold border-2 bg-background/20 backdrop-blur-sm hover:bg-background/40 transition-all duration-300"
                 onClick={handleAuthClick}
               >
-                Sign In
-                <ArrowRight className="h-5 w-5" />
+                Get Started Free
               </Button>
             </div>
 
