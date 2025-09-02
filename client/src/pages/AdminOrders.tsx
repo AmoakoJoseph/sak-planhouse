@@ -15,14 +15,56 @@ const AdminOrders = () => {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
+  const [filteredOrders, setFilteredOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [loadingOrders, setLoadingOrders] = useState(true);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
       navigate('/admin/login');
     }
   }, [user, isAdmin, loading, navigate]);
+
+  useEffect(() => {
+    if (user && isAdmin) {
+      fetchOrders();
+    }
+  }, [user, isAdmin]);
+
+  useEffect(() => {
+    filterOrders();
+  }, [orders, searchTerm, statusFilter]);
+
+  const fetchOrders = async () => {
+    try {
+      const response = await fetch('/api/orders');
+      const data = await response.json();
+      setOrders(data || []);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    } finally {
+      setLoadingOrders(false);
+    }
+  };
+
+  const filterOrders = () => {
+    let filtered = orders;
+
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter((order: any) => order.status === statusFilter);
+    }
+
+    if (searchTerm) {
+      filtered = filtered.filter((order: any) => 
+        order.plan_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.profile_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        `${order.profile_first_name} ${order.profile_last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    setFilteredOrders(filtered);
+  };
 
   if (loading || !user || !isAdmin) {
     return (
@@ -95,11 +137,22 @@ const AdminOrders = () => {
             <CardDescription>Latest customer orders and their status</CardDescription>
           </CardHeader>
           <CardContent>
-            {orders.length === 0 ? (
+            {loadingOrders ? (
+              <div className="space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-16 bg-muted animate-pulse rounded"></div>
+                ))}
+              </div>
+            ) : filteredOrders.length === 0 ? (
               <div className="text-center py-12">
                 <ShoppingCart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-muted-foreground mb-2">No Orders Yet</h3>
-                <p className="text-sm text-muted-foreground">Orders will appear here once customers start purchasing plans.</p>
+                <h3 className="text-lg font-medium text-muted-foreground mb-2">No Orders Found</h3>
+                <p className="text-sm text-muted-foreground">
+                  {orders.length === 0 
+                    ? "Orders will appear here once customers start purchasing plans."
+                    : "Try adjusting your search or filter criteria."
+                  }
+                </p>
               </div>
             ) : (
               <Table>
@@ -116,7 +169,52 @@ const AdminOrders = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {/* Orders would be mapped here */}
+                  {filteredOrders.map((order: any) => (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-mono text-xs">
+                        {order.id.substring(0, 8)}...
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">
+                            {order.profile_first_name} {order.profile_last_name}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {order.profile_email}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{order.plan_title}</div>
+                          <div className="text-sm text-muted-foreground capitalize">
+                            {order.plan_type}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="capitalize">
+                          {order.tier}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        ₵{Number(order.amount).toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>
+                          {order.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(order.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Button size="sm" variant="ghost">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             )}

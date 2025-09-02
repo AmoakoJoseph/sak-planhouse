@@ -15,13 +15,50 @@ const AdminUsers = () => {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loadingUsers, setLoadingUsers] = useState(true);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
       navigate('/admin/login');
     }
   }, [user, isAdmin, loading, navigate]);
+
+  useEffect(() => {
+    if (user && isAdmin) {
+      fetchUsers();
+    }
+  }, [user, isAdmin]);
+
+  useEffect(() => {
+    filterUsers();
+  }, [users, searchTerm]);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/users');
+      const data = await response.json();
+      setUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const filterUsers = () => {
+    let filtered = users;
+
+    if (searchTerm) {
+      filtered = filtered.filter((user: any) => 
+        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        `${user.first_name} ${user.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    setFilteredUsers(filtered);
+  };
 
   if (loading || !user || !isAdmin) {
     return (
@@ -81,11 +118,22 @@ const AdminUsers = () => {
             <CardDescription>All users registered on the platform</CardDescription>
           </CardHeader>
           <CardContent>
-            {users.length === 0 ? (
+            {loadingUsers ? (
+              <div className="space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-16 bg-muted animate-pulse rounded"></div>
+                ))}
+              </div>
+            ) : filteredUsers.length === 0 ? (
               <div className="text-center py-12">
                 <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-muted-foreground mb-2">No Users Yet</h3>
-                <p className="text-sm text-muted-foreground">Users will appear here once they register on the platform.</p>
+                <h3 className="text-lg font-medium text-muted-foreground mb-2">No Users Found</h3>
+                <p className="text-sm text-muted-foreground">
+                  {users.length === 0 
+                    ? "Users will appear here once they register on the platform."
+                    : "Try adjusting your search criteria."
+                  }
+                </p>
               </div>
             ) : (
               <Table>
@@ -101,7 +149,46 @@ const AdminUsers = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {/* Users would be mapped here */}
+                  {filteredUsers.map((userData: any) => (
+                    <TableRow key={userData.id}>
+                      <TableCell>
+                        <div className="flex items-center space-x-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={userData.avatar_url} />
+                            <AvatarFallback>
+                              {`${userData.first_name?.[0] || ''}${userData.last_name?.[0] || ''}`}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-medium">
+                              {userData.first_name} {userData.last_name}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {userData.company}
+                            </div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{userData.email}</TableCell>
+                      <TableCell>
+                        <Badge variant={userData.role === 'admin' ? 'default' : 'secondary'}>
+                          {userData.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>0</TableCell> {/* You'd need to calculate this */}
+                      <TableCell>
+                        {new Date(userData.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">Active</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button size="sm" variant="ghost">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             )}

@@ -134,13 +134,85 @@ const AdminAnalytics = () => {
 
   const fetchAnalytics = async () => {
     try {
-      // In a real app, this would fetch from your API
-      // For now, we're using mock data
-      setTimeout(() => {
-        setLoadingAnalytics(false);
-      }, 1000);
+      const [analyticsResponse, ordersResponse, plansResponse] = await Promise.all([
+        fetch('/api/analytics'),
+        fetch('/api/orders'),
+        fetch('/api/plans')
+      ]);
+
+      const analyticsData = await analyticsResponse.json();
+      const ordersData = await ordersResponse.json();
+      const plansData = await plansResponse.json();
+
+      // Calculate growth rates (mock for now since we need historical data)
+      const revenueGrowth = 12.5;
+      const ordersGrowth = 8.2;
+      const usersGrowth = 15.3;
+      const downloadsGrowth = 22.1;
+
+      // Calculate plan metrics
+      const basicSales = ordersData.filter((order: any) => order.tier === 'basic').length;
+      const standardSales = ordersData.filter((order: any) => order.tier === 'standard').length;
+      const premiumSales = ordersData.filter((order: any) => order.tier === 'premium').length;
+
+      // Generate recent activity
+      const recentActivity = ordersData.slice(0, 5).map((order: any, index: number) => ({
+        id: order.id,
+        type: 'order' as const,
+        description: `${order.tier} ${order.plan_title} purchased by ${order.profile_first_name} ${order.profile_last_name}`,
+        timestamp: new Date(order.created_at).toLocaleDateString(),
+        amount: parseFloat(order.amount)
+      }));
+
+      // Calculate top plans
+      const planSales: { [key: string]: { plan: any, sales: number, revenue: number } } = {};
+      ordersData.forEach((order: any) => {
+        if (!planSales[order.plan_id]) {
+          planSales[order.plan_id] = {
+            plan: plansData.find((p: any) => p.id === order.plan_id),
+            sales: 0,
+            revenue: 0
+          };
+        }
+        planSales[order.plan_id].sales++;
+        planSales[order.plan_id].revenue += parseFloat(order.amount);
+      });
+
+      const topPlans = Object.values(planSales)
+        .filter(item => item.plan)
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 3)
+        .map(item => ({
+          id: item.plan.id,
+          title: item.plan.title,
+          sales: item.sales,
+          revenue: item.revenue,
+          category: item.plan.plan_type
+        }));
+
+      setAnalytics({
+        overview: {
+          totalRevenue: analyticsData.totalRevenue,
+          revenueGrowth,
+          totalOrders: analyticsData.totalOrders,
+          ordersGrowth,
+          totalUsers: analyticsData.totalUsers,
+          usersGrowth,
+          totalDownloads: analyticsData.totalOrders * 3, // Estimate
+          downloadsGrowth,
+        },
+        planMetrics: {
+          basicSales,
+          standardSales,
+          premiumSales,
+          totalPlans: analyticsData.totalPlans,
+        },
+        recentActivity,
+        topPlans,
+      });
     } catch (error) {
       console.error('Error fetching analytics:', error);
+    } finally {
       setLoadingAnalytics(false);
     }
   };

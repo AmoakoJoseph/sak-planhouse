@@ -43,17 +43,34 @@ const AdminDashboard = () => {
 
   const fetchDashboardStats = async () => {
     try {
-      // Mock data for now
+      const [analyticsResponse, ordersResponse, plansResponse] = await Promise.all([
+        fetch('/api/analytics'),
+        fetch('/api/orders'),
+        fetch('/api/plans?featured=true')
+      ]);
+
+      const analytics = await analyticsResponse.json();
+      const allOrders = await ordersResponse.json();
+      const featuredPlans = await plansResponse.json();
+
+      setStats({
+        totalUsers: analytics.totalUsers || 0,
+        totalPlans: analytics.totalPlans || 0,
+        totalOrders: analytics.totalOrders || 0,
+        totalRevenue: analytics.totalRevenue || 0,
+        recentOrders: allOrders.slice(0, 5) || [],
+        featuredPlans: featuredPlans.slice(0, 5) || []
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
       setStats({
         totalUsers: 0,
-        totalPlans: 4,
+        totalPlans: 0,
         totalOrders: 0,
         totalRevenue: 0,
         recentOrders: [],
         featuredPlans: []
       });
-    } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
     } finally {
       setLoadingStats(false);
     }
@@ -181,9 +198,9 @@ const AdminDashboard = () => {
                   {stats.recentOrders.map((order) => (
                     <div key={order.id} className="flex items-center justify-between p-3 border rounded-lg">
                       <div>
-                        <p className="font-medium">{order.plans?.title}</p>
+                        <p className="font-medium">{order.plan_title || 'Unknown Plan'}</p>
                         <p className="text-sm text-muted-foreground">
-                          {order.profiles?.first_name} {order.profiles?.last_name}
+                          {order.profile_first_name} {order.profile_last_name} ({order.profile_email})
                         </p>
                       </div>
                       <div className="text-right">

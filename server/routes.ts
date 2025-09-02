@@ -229,6 +229,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Analytics API
+  app.get("/api/analytics", async (req, res) => {
+    try {
+      const analytics = await storage.getAnalytics();
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+      res.status(500).json({ error: "Failed to fetch analytics" });
+    }
+  });
+
+  // Users API
+  app.get("/api/users", async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
   // Authentication API
   app.post("/api/auth/signin", async (req, res) => {
     try {

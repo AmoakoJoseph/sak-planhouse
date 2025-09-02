@@ -1,33 +1,33 @@
 import { users, profiles, plans, orders, downloads } from "@shared/schema";
 import type { User, Profile, Plan, Order, Download, InsertUser } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User management
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   // Profile management
   getProfile(userId: string): Promise<Profile | undefined>;
   getProfileByEmail(email: string): Promise<Profile | undefined>;
   createProfile(profile: Omit<Profile, 'id' | 'created_at' | 'updated_at'>): Promise<Profile>;
   updateProfile(userId: string, updates: Partial<Profile>): Promise<Profile | undefined>;
-  
+
   // Plans management
   getPlans(filters?: { status?: string; featured?: boolean }): Promise<Plan[]>;
   getPlan(id: string): Promise<Plan | undefined>;
   createPlan(plan: Omit<Plan, 'id' | 'created_at' | 'updated_at'>): Promise<Plan>;
   updatePlan(id: string, updates: Partial<Plan>): Promise<Plan | undefined>;
   deletePlan(id: string): Promise<boolean>;
-  
+
   // Orders management
   getOrders(userId?: string): Promise<Order[]>;
   getOrder(id: string): Promise<Order | undefined>;
   createOrder(order: Omit<Order, 'id' | 'created_at' | 'updated_at'>): Promise<Order>;
   updateOrder(id: string, updates: Partial<Order>): Promise<Order | undefined>;
-  
+
   // Downloads management
   getDownloads(userId?: string): Promise<Download[]>;
   recordDownload(download: Omit<Download, 'id' | 'downloaded_at'>): Promise<Download>;
@@ -77,15 +77,15 @@ export class DatabaseStorage implements IStorage {
   // Plans methods
   async getPlans(filters?: { status?: string; featured?: boolean }): Promise<Plan[]> {
     let conditions = [];
-    
+
     if (filters?.status) {
       conditions.push(eq(plans.status, filters.status));
     }
-    
+
     const result = await db.select().from(plans)
       .where(conditions.length ? and(...conditions) : undefined)
       .orderBy(desc(plans.featured), desc(plans.created_at));
-    
+
     return result;
   }
 
@@ -115,15 +115,15 @@ export class DatabaseStorage implements IStorage {
   // Orders methods
   async getOrders(userId?: string): Promise<Order[]> {
     const conditions = [];
-    
+
     if (userId) {
       conditions.push(eq(orders.user_id, userId));
     }
-    
+
     const result = await db.select().from(orders)
       .where(conditions.length ? and(...conditions) : undefined)
       .orderBy(desc(orders.created_at));
-    
+
     return result;
   }
 
@@ -152,15 +152,15 @@ export class DatabaseStorage implements IStorage {
   // Downloads methods
   async getDownloads(userId?: string): Promise<Download[]> {
     const conditions = [];
-    
+
     if (userId) {
       conditions.push(eq(downloads.user_id, userId));
     }
-    
+
     const result = await db.select().from(downloads)
       .where(conditions.length ? and(...conditions) : undefined)
       .orderBy(desc(downloads.downloaded_at));
-    
+
     return result;
   }
 
