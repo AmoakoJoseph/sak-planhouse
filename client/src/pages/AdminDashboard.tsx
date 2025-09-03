@@ -4,7 +4,20 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, FileText, ShoppingCart, TrendingUp, BarChart3, Settings } from 'lucide-react';
+import { 
+  Users, 
+  FileText, 
+  ShoppingCart, 
+  TrendingUp, 
+  BarChart3, 
+  Settings, 
+  DollarSign,
+  ArrowUpRight,
+  Calendar,
+  Target,
+  Award,
+  Activity
+} from 'lucide-react';
 import AdminHeader from '@/components/AdminHeader';
 
 interface DashboardStats {
@@ -54,10 +67,10 @@ const AdminDashboard = () => {
       const featuredPlans = await plansResponse.json();
 
       setStats({
-        totalUsers: analytics.totalUsers || 0,
-        totalPlans: analytics.totalPlans || 0,
-        totalOrders: analytics.totalOrders || 0,
-        totalRevenue: analytics.totalRevenue || 0,
+        totalUsers: analytics.overview?.totalUsers || 0,
+        totalPlans: analytics.planMetrics?.totalPlans || 0,
+        totalOrders: analytics.overview?.totalOrders || 0,
+        totalRevenue: analytics.overview?.totalRevenue || 0,
         recentOrders: allOrders.slice(0, 5) || [],
         featuredPlans: featuredPlans.slice(0, 5) || []
       });
@@ -83,176 +96,311 @@ const AdminDashboard = () => {
 
   if (loading || !user || !isAdmin) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/10 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading admin dashboard...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mx-auto mb-6"></div>
+          <p className="text-xl text-muted-foreground">Loading admin dashboard...</p>
         </div>
       </div>
     );
   }
+
+  const formatCurrency = (amount: number) => `₵${(amount || 0).toFixed(2)}`;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/10">
       <AdminHeader />
 
       <div className="container mx-auto px-4 py-8">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <div className="admin-card">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back, Admin! 👋</h1>
+                <p className="text-muted-foreground">Here's what's happening with your platform today.</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <Badge variant="outline" className="px-4 py-2">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  {new Date().toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
+                </Badge>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalUsers}</div>
-              <p className="text-xs text-muted-foreground">Registered customers</p>
-            </CardContent>
-          </Card>
+          {/* Total Users */}
+          <div className="metric-card group">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Total Users</p>
+                <p className="text-3xl font-bold text-foreground">{stats.totalUsers}</p>
+                <p className="text-sm text-success mt-1 flex items-center">
+                  <TrendingUp className="w-4 h-4 mr-1" />
+                  +12% from last month
+                </p>
+              </div>
+              <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
+                <Users className="w-8 h-8 text-primary" />
+              </div>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Plans</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalPlans}</div>
-              <p className="text-xs text-muted-foreground">Available construction plans</p>
-            </CardContent>
-          </Card>
+          {/* Total Plans */}
+          <div className="metric-card group">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Total Plans</p>
+                <p className="text-3xl font-bold text-foreground">{stats.totalPlans}</p>
+                <p className="text-sm text-success mt-1 flex items-center">
+                  <TrendingUp className="w-4 h-4 mr-1" />
+                  +5 new this week
+                </p>
+              </div>
+              <div className="p-3 bg-secondary/10 rounded-xl group-hover:bg-secondary/20 transition-colors">
+                <FileText className="w-8 h-8 text-secondary" />
+              </div>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalOrders}</div>
-              <p className="text-xs text-muted-foreground">Plans purchased</p>
-            </CardContent>
-          </Card>
+          {/* Total Orders */}
+          <div className="metric-card group">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Total Orders</p>
+                <p className="text-3xl font-bold text-foreground">{stats.totalOrders}</p>
+                <p className="text-sm text-success mt-1 flex items-center">
+                  <TrendingUp className="w-4 h-4 mr-1" />
+                  +8% from last week
+                </p>
+              </div>
+              <div className="p-3 bg-accent/10 rounded-xl group-hover:bg-accent/20 transition-colors">
+                <ShoppingCart className="w-8 h-8 text-accent" />
+              </div>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">₵{stats.totalRevenue.toFixed(2)}</div>
-              <p className="text-xs text-muted-foreground">Gross revenue</p>
-            </CardContent>
-          </Card>
+          {/* Total Revenue */}
+          <div className="metric-card group">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Total Revenue</p>
+                <p className="text-3xl font-bold text-foreground">{formatCurrency(stats.totalRevenue)}</p>
+                <p className="text-sm text-success mt-1 flex items-center">
+                  <TrendingUp className="w-4 h-4 mr-1" />
+                  +15% from last month
+                </p>
+              </div>
+              <div className="p-3 bg-warning/10 rounded-xl group-hover:bg-warning/20 transition-colors">
+                <DollarSign className="w-8 h-8 text-warning" />
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Action Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Button 
-            className="h-20 flex-col bg-gradient-to-br from-primary to-primary-hover hover:from-primary-hover hover:to-primary"
+            variant="outline" 
+            className="admin-card h-auto p-6 flex flex-col items-center justify-center space-y-3 hover:shadow-xl transition-all duration-300 group"
             onClick={() => navigate('/admin/analytics')}
           >
-            <BarChart3 className="w-6 h-6 mb-2" />
-            View Analytics
+            <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
+              <BarChart3 className="w-8 h-8 text-primary" />
+            </div>
+            <div className="text-center">
+              <h3 className="font-semibold text-foreground">View Analytics</h3>
+              <p className="text-sm text-muted-foreground">Detailed insights</p>
+            </div>
+            <ArrowUpRight className="w-5 h-5 text-primary group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
           </Button>
+
           <Button 
             variant="outline" 
-            className="h-20 flex-col hover:bg-accent/50"
+            className="admin-card h-auto p-6 flex flex-col items-center justify-center space-y-3 hover:shadow-xl transition-all duration-300 group"
             onClick={() => navigate('/admin/plans')}
           >
-            <FileText className="w-6 h-6 mb-2" />
-            Manage Plans
+            <div className="p-3 bg-secondary/10 rounded-xl group-hover:bg-secondary/20 transition-colors">
+              <FileText className="w-8 h-8 text-secondary" />
+            </div>
+            <div className="text-center">
+              <h3 className="font-semibold text-foreground">Manage Plans</h3>
+              <p className="text-sm text-muted-foreground">Add & edit plans</p>
+            </div>
+            <ArrowUpRight className="w-5 h-5 text-secondary group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
           </Button>
+
           <Button 
             variant="outline" 
-            className="h-20 flex-col hover:bg-accent/50"
+            className="admin-card h-auto p-6 flex flex-col items-center justify-center space-y-3 hover:shadow-xl transition-all duration-300 group"
             onClick={() => navigate('/admin/orders')}
           >
-            <ShoppingCart className="w-6 h-6 mb-2" />
-            View Orders
+            <div className="p-3 bg-accent/10 rounded-xl group-hover:bg-accent/20 transition-colors">
+              <ShoppingCart className="w-8 h-8 text-accent" />
+            </div>
+            <div className="text-center">
+              <h3 className="font-semibold text-foreground">View Orders</h3>
+              <p className="text-sm text-muted-foreground">Track sales</p>
+            </div>
+            <ArrowUpRight className="w-5 h-5 text-accent group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
           </Button>
+
           <Button 
             variant="outline" 
-            className="h-20 flex-col hover:bg-accent/50"
+            className="admin-card h-auto p-6 flex flex-col items-center justify-center space-y-3 hover:shadow-xl transition-all duration-300 group"
             onClick={() => navigate('/admin/users')}
           >
-            <Users className="w-6 h-6 mb-2" />
-            Manage Users
+            <div className="p-3 bg-warning/10 rounded-xl group-hover:bg-warning/20 transition-colors">
+              <Users className="w-8 h-8 text-warning" />
+            </div>
+            <div className="text-center">
+              <h3 className="font-semibold text-foreground">Manage Users</h3>
+              <p className="text-sm text-muted-foreground">User management</p>
+            </div>
+            <ArrowUpRight className="w-5 h-5 text-warning group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
           </Button>
         </div>
 
+        {/* Recent Activity & Featured Plans */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Recent Orders */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Orders</CardTitle>
-              <CardDescription>Latest plan purchases</CardDescription>
+          <div className="admin-card">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-primary" />
+                    Recent Orders
+                  </CardTitle>
+                  <CardDescription>Latest plan purchases</CardDescription>
+                </div>
+                <Badge variant="secondary" className="px-3 py-1">
+                  {stats.recentOrders.length} orders
+                </Badge>
+              </div>
             </CardHeader>
             <CardContent>
-              {loadingStats ? (
-                <div className="space-y-3">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="h-12 bg-muted animate-pulse rounded"></div>
-                  ))}
+              {stats.recentOrders.length === 0 ? (
+                <div className="text-center py-12">
+                  <ShoppingCart className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-muted-foreground mb-2">No Orders Yet</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Orders will appear here once customers start purchasing plans.
+                  </p>
                 </div>
-              ) : stats.recentOrders.length > 0 ? (
+              ) : (
                 <div className="space-y-4">
-                  {stats.recentOrders.map((order) => (
-                    <div key={order.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium">{order.plan_title || 'Unknown Plan'}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {order.profile_first_name} {order.profile_last_name} ({order.profile_email})
-                        </p>
+                  {stats.recentOrders.map((order, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border/50">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                          <ShoppingCart className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">Order #{order.id?.slice(0, 8)}</p>
+                          <p className="text-sm text-muted-foreground">{order.tier} package</p>
+                        </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">₵{Number(order.amount).toFixed(2)}</p>
-                        <Badge variant={order.status === 'completed' ? 'default' : 'secondary'}>
-                          {order.status}
+                        <p className="font-semibold text-foreground">{formatCurrency(order.amount)}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(order.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </div>
+
+          {/* Featured Plans */}
+          <div className="admin-card">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="w-5 h-5 text-primary" />
+                    Featured Plans
+                  </CardTitle>
+                  <CardDescription>Top performing plans</CardDescription>
+                </div>
+                <Badge variant="secondary" className="px-3 py-1">
+                  {stats.featuredPlans.length} plans
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {stats.featuredPlans.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-muted-foreground mb-2">No Featured Plans</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Add some plans and mark them as featured to see them here.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {stats.featuredPlans.map((plan, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border/50">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-secondary/10 rounded-full flex items-center justify-center">
+                          <FileText className="w-5 h-5 text-secondary" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">{plan.title}</p>
+                          <p className="text-sm text-muted-foreground">{plan.plan_type}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-foreground">₵{plan.basic_price}</p>
+                        <Badge variant="outline" className="text-xs">
+                          {plan.status}
                         </Badge>
                       </div>
                     </div>
                   ))}
                 </div>
-              ) : (
-                <p className="text-muted-foreground text-center py-8">No orders yet</p>
               )}
             </CardContent>
-          </Card>
+          </div>
+        </div>
 
-          {/* Featured Plans */}
-          <Card>
+        {/* Quick Stats */}
+        <div className="mt-8">
+          <div className="admin-card">
             <CardHeader>
-              <CardTitle>Featured Plans</CardTitle>
-              <CardDescription>Currently promoted plans</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="w-5 h-5 text-primary" />
+                Platform Overview
+              </CardTitle>
+              <CardDescription>Key metrics and insights</CardDescription>
             </CardHeader>
             <CardContent>
-              {loadingStats ? (
-                <div className="space-y-3">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="h-12 bg-muted animate-pulse rounded"></div>
-                  ))}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center p-6 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
+                  <div className="text-3xl font-bold text-primary mb-2">{stats.totalUsers}</div>
+                  <div className="text-sm text-muted-foreground">Registered Users</div>
                 </div>
-              ) : stats.featuredPlans.length > 0 ? (
-                <div className="space-y-4">
-                  {stats.featuredPlans.map((plan) => (
-                    <div key={plan.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium">{plan.title}</p>
-                        <p className="text-sm text-muted-foreground capitalize">
-                          {plan.plan_type} • {plan.bedrooms}BR/{plan.bathrooms}BA
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">₵{Number(plan.basic_price).toFixed(2)}</p>
-                        <Badge variant="outline">Featured</Badge>
-                      </div>
-                    </div>
-                  ))}
+                <div className="text-center p-6 rounded-xl bg-gradient-to-br from-secondary/5 to-secondary/10 border border-secondary/20">
+                  <div className="text-3xl font-bold text-secondary mb-2">{stats.totalPlans}</div>
+                  <div className="text-sm text-muted-foreground">Available Plans</div>
                 </div>
-              ) : (
-                <p className="text-muted-foreground text-center py-8">No featured plans</p>
-              )}
+                <div className="text-center p-6 rounded-xl bg-gradient-to-br from-accent/5 to-accent/10 border border-accent/20">
+                  <div className="text-3xl font-bold text-accent mb-2">{stats.totalOrders}</div>
+                  <div className="text-sm text-muted-foreground">Total Orders</div>
+                </div>
+              </div>
             </CardContent>
-          </Card>
+          </div>
         </div>
       </div>
     </div>

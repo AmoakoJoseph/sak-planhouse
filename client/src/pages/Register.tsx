@@ -105,7 +105,7 @@ const Register = () => {
           <CardHeader className="text-center space-y-4">
             {/* Logo */}
             <div className="flex items-center justify-center space-x-2">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-hover">
+                              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary">
                 <span className="text-xl font-bold text-primary-foreground">S</span>
               </div>
               <div className="flex flex-col">
@@ -242,11 +242,11 @@ const Register = () => {
                   />
                   <Label htmlFor="agreeToTerms" className="text-sm text-muted-foreground leading-relaxed">
                     I agree to the{' '}
-                    <Link to="/terms" className="text-primary hover:text-primary-hover">
+                    <Link to="/terms" className="text-primary hover:text-primary/80">
                       Terms of Service
                     </Link>{' '}
                     and{' '}
-                    <Link to="/privacy" className="text-primary hover:text-primary-hover">
+                    <Link to="/privacy" className="text-primary hover:text-primary/80">
                       Privacy Policy
                     </Link>
                   </Label>
@@ -304,7 +304,7 @@ const Register = () => {
             <div className="text-center mt-6">
               <p className="text-sm text-muted-foreground">
                 Already have an account?{' '}
-                <Link to="/login" className="text-primary hover:text-primary-hover font-medium transition-colors">
+                <Link to="/login" className="text-primary hover:text-primary/80 font-medium transition-colors">
                   Sign in
                 </Link>
               </p>

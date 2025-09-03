@@ -52,7 +52,7 @@ const Features = () => {
           </Badge>
           <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
             Professional
-            <span className="bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent"> Construction Solutions</span>
+                            <span className="bg-gradient-to-r from-primary to-primary bg-clip-text text-transparent"> Construction Solutions</span>
           </h2>
           <p className="text-lg text-muted-foreground">
             We provide comprehensive architectural services that make building your dream home 

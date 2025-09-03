@@ -1,217 +1,244 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Menu, Home, Search, User, ShoppingCart, LogOut, Settings, Heart, ShoppingBag } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Menu, 
+  X, 
+  Building2, 
+  Home, 
+  FileText, 
+  Info, 
+  Phone, 
+  User, 
+  ShoppingCart,
+  Heart,
+  LogOut,
+  Settings
+} from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import AuthModal from './AuthModal';
 
 const Header = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const { user, signOut, profile } = useAuth();
-  const navigate = useNavigate();
+  const [isScrolled, setIsScrolled] = useState(false);
+  const { user, isAuthenticated, signOut } = useAuth();
+  const location = useLocation();
 
-  const navItems = [
-    { icon: Home, label: 'Home', href: '/' },
-    { icon: Search, label: 'Browse Plans', href: '/plans' },
-    { icon: User, label: 'About', href: '/about' },
-  ];
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleAuthClick = () => {
-    if (user) {
-      signOut();
-    } else {
-      setAuthModalOpen(true);
-    }
+    setAuthModalOpen(true);
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    setIsMenuOpen(false);
+  };
 
+  const navigation = [
+    { name: 'Home', href: '/', icon: Home },
+    { name: 'Plans', href: '/plans', icon: FileText },
+    { name: 'About', href: '/about', icon: Info },
+    { name: 'Contact', href: '/contact', icon: Phone },
+  ];
+
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center space-x-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-hover">
-              <span className="text-lg font-bold text-primary-foreground">S</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-lg font-bold text-foreground">SAK CONSTRUCTIONS</span>
-              <span className="text-xs text-muted-foreground">GH</span>
-            </div>
-          </div>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-6">
-            {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className="flex items-center space-x-2 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-              >
-                <item.icon className="h-4 w-4" />
-                <span>{item.label}</span>
-              </a>
-            ))}
-          </nav>
-
-          {/* Desktop Actions */}
-          <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" size="sm">
-              <ShoppingCart className="h-4 w-4" />
-              Cart (0)
-            </Button>
-            {user ? (
-              <div className="flex items-center space-x-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="relative h-8 w-8 rounded-full">
-                                             <Avatar className="h-8 w-8">
-                         <AvatarImage src={profile?.avatar_url} alt={profile?.first_name || 'User'} />
-                         <AvatarFallback className="text-sm">
-                           {profile?.first_name?.[0] || 'U'}{profile?.last_name?.[0] || ''}
-                         </AvatarFallback>
-                       </Avatar>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="end" forceMount>
-                                         <div className="flex items-center justify-start gap-2 p-2">
-                       <div className="flex flex-col space-y-1 leading-none">
-                         <p className="font-medium">{profile?.first_name || 'User'} {profile?.last_name || ''}</p>
-                         <p className="w-[200px] truncate text-sm text-muted-foreground">
-                           {profile?.email || user?.email || 'user@example.com'}
-                         </p>
-                       </div>
-                     </div>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link to="/user/dashboard">
-                        <User className="mr-2 h-4 w-4" />
-                        <span>Dashboard</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/user/profile">
-                        <User className="mr-2 h-4 w-4" />
-                        <span>Profile</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/user/orders">
-                        <ShoppingBag className="mr-2 h-4 w-4" />
-                        <span>My Orders</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/user/favorites">
-                        <Heart className="mr-2 h-4 w-4" />
-                        <span>Favorites</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/user/settings">
-                        <Settings className="mr-2 h-4 w-4" />
-                        <span>Settings</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleAuthClick}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Sign Out</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-                         ) : (
-               <div className="flex items-center space-x-2">
-                 <Button variant="cta" size="sm" onClick={handleAuthClick}>
-                   Sign In
-                 </Button>
-               </div>
-             )}
-          </div>
-
-          {/* Mobile Menu */}
-          <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-80">
-              <div className="flex flex-col space-y-6 mt-6">
-                {navItems.map((item) => (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    className="flex items-center space-x-3 text-lg font-medium text-foreground hover:text-primary transition-colors"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <item.icon className="h-5 w-5" />
-                    <span>{item.label}</span>
-                  </a>
-                ))}
-                <div className="pt-6 border-t">
-                  {user ? (
-                    <div className="flex flex-col space-y-3">
-                      <Button variant="ghost" className="w-full justify-start" asChild>
-                        <Link to="/user/dashboard" onClick={() => setIsOpen(false)}>
-                          <User className="h-4 w-4 mr-2" />
-                          Dashboard
-                        </Link>
-                      </Button>
-                      <Button variant="ghost" className="w-full justify-start" asChild>
-                        <Link to="/user/orders" onClick={() => setIsOpen(false)}>
-                          <ShoppingBag className="h-4 w-4 mr-2" />
-                          My Orders
-                        </Link>
-                      </Button>
-                      <Button variant="ghost" className="w-full justify-start" asChild>
-                        <Link to="/user/favorites" onClick={() => setIsOpen(false)}>
-                          <Heart className="h-4 w-4 mr-2" />
-                          Favorites
-                        </Link>
-                      </Button>
-                      <Button variant="ghost" className="w-full justify-start" asChild>
-                        <Link to="/user/settings" onClick={() => setIsOpen(false)}>
-                          <Settings className="h-4 w-4 mr-2" />
-                          Settings
-                        </Link>
-                      </Button>
-                      <Button variant="outline" className="w-full" onClick={() => {
-                        handleAuthClick();
-                        setIsOpen(false);
-                      }}>
-                        <LogOut className="h-4 w-4 mr-2" />
-                        Sign Out
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col space-y-3">
-                      <Button variant="cta" className="w-full" onClick={() => {
-                        handleAuthClick();
-                        setIsOpen(false);
-                      }}>
-                        Sign In
-                      </Button>
-                    </div>
-                  )}
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled 
+          ? 'bg-background/80 backdrop-blur-xl border-b border-border/50 shadow-lg' 
+          : 'bg-transparent'
+      }`}>
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16 lg:h-20">
+            {/* Logo */}
+            <Link to="/" className="flex items-center space-x-3 group">
+              <div className="relative">
+                <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+                  <Building2 className="w-6 h-6 text-white" />
                 </div>
+                <div className="absolute -inset-1 bg-gradient-to-br from-primary to-secondary rounded-xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
               </div>
-            </SheetContent>
-          </Sheet>
+              <div className="hidden sm:block">
+                <h1 className="text-xl lg:text-2xl font-bold gradient-text">SAK Constructions</h1>
+                <p className="text-xs text-muted-foreground">Premium Plans Platform</p>
+              </div>
+            </Link>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden lg:flex items-center space-x-8">
+              {navigation.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-300 group ${
+                      isActive(item.href)
+                        ? 'text-primary bg-primary/10 border border-primary/20'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span className="font-medium">{item.name}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {/* Desktop Actions */}
+            <div className="hidden lg:flex items-center space-x-4">
+              {isAuthenticated ? (
+                <>
+                  <Link to="/dashboard">
+                    <Button variant="outline" className="btn-outline-modern">
+                      <User className="w-4 h-4 mr-2" />
+                      Dashboard
+                    </Button>
+                  </Link>
+                  <Link to="/favorites">
+                    <Button variant="outline" className="btn-outline-modern">
+                      <Heart className="w-4 h-4 mr-2" />
+                      Favorites
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleSignOut}
+                    className="btn-outline-modern"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleAuthClick}
+                    className="btn-outline-modern"
+                  >
+                    <User className="w-4 h-4 mr-2" />
+                    Sign In
+                  </Button>
+                  <Button 
+                    onClick={handleAuthClick}
+                    className="btn-primary"
+                  >
+                    Get Started
+                  </Button>
+                </>
+              )}
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="lg:hidden p-2 rounded-xl bg-muted/50 hover:bg-muted/80 transition-colors"
+            >
+              {isMenuOpen ? (
+                <X className="w-6 h-6 text-foreground" />
+              ) : (
+                <Menu className="w-6 h-6 text-foreground" />
+              )}
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <div className="lg:hidden border-t border-border/50 bg-background/95 backdrop-blur-xl">
+            <div className="container mx-auto px-4 py-6">
+              <nav className="space-y-4">
+                {navigation.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      onClick={() => setIsMenuOpen(false)}
+                      className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 ${
+                        isActive(item.href)
+                          ? 'text-primary bg-primary/10 border border-primary/20'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span className="font-medium">{item.name}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+
+              <div className="mt-6 pt-6 border-t border-border/50 space-y-4">
+                {isAuthenticated ? (
+                  <>
+                    <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>
+                      <Button variant="outline" className="w-full btn-outline-modern">
+                        <User className="w-4 h-4 mr-2" />
+                        Dashboard
+                      </Button>
+                    </Link>
+                    <Link to="/favorites" onClick={() => setIsMenuOpen(false)}>
+                      <Button variant="outline" className="w-full btn-outline-modern">
+                        <Heart className="w-4 h-4 mr-2" />
+                        Favorites
+                      </Button>
+                    </Link>
+                    <Button 
+                      variant="outline" 
+                      onClick={handleSignOut}
+                      className="w-full btn-outline-modern"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign Out
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        handleAuthClick();
+                        setIsMenuOpen(false);
+                      }}
+                      className="w-full btn-outline-modern"
+                    >
+                      <User className="w-4 h-4 mr-2" />
+                      Sign In
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        handleAuthClick();
+                        setIsMenuOpen(false);
+                      }}
+                      className="w-full btn-primary"
+                    >
+                      Get Started
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
-      {/* Auth Modal */}
-      <AuthModal 
-        isOpen={authModalOpen} 
-        onClose={() => setAuthModalOpen(false)}
-      />
+      {/* Spacer for fixed header */}
+      <div className="h-16 lg:h-20"></div>
+
+      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </>
   );
 };

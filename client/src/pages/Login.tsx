@@ -43,7 +43,7 @@ const Login = () => {
           <CardHeader className="text-center space-y-4">
             {/* Logo */}
             <div className="flex items-center justify-center space-x-2">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary-hover">
+                              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary">
                 <span className="text-xl font-bold text-primary-foreground">S</span>
               </div>
               <div className="flex flex-col">
@@ -115,7 +115,7 @@ const Login = () => {
                     Remember me
                   </Label>
                 </div>
-                <Link to="/forgot-password" className="text-sm text-primary hover:text-primary-hover transition-colors">
+                <Link to="/forgot-password" className="text-sm text-primary hover:text-primary/80 transition-colors">
                   Forgot password?
                 </Link>
               </div>
@@ -159,7 +159,7 @@ const Login = () => {
             <div className="text-center mt-6">
               <p className="text-sm text-muted-foreground">
                 Don't have an account?{' '}
-                <Link to="/register" className="text-primary hover:text-primary-hover font-medium transition-colors">
+                <Link to="/register" className="text-primary hover:text-primary/80 font-medium transition-colors">
                   Create account
                 </Link>
               </p>

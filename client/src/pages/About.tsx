@@ -87,7 +87,7 @@ const About = () => {
             </Badge>
             <h1 className="text-3xl md:text-5xl font-bold text-foreground">
               Building Dreams with
-              <span className="bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent"> Quality Designs</span>
+                              <span className="bg-gradient-to-r from-primary to-primary bg-clip-text text-transparent"> Quality Designs</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
               For over a decade, SAK Constructions GH has been Ghana's trusted partner in 

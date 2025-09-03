@@ -159,15 +159,15 @@ export class DatabaseStorage implements IStorage {
 
     const result = await db.select().from(downloads)
       .where(conditions.length ? and(...conditions) : undefined)
-      .orderBy(desc(downloads.downloaded_at));
+      .orderBy(desc(downloads.last_downloaded));
 
     return result;
   }
 
-  async recordDownload(download: Omit<Download, 'id' | 'downloaded_at'>): Promise<Download> {
+  async recordDownload(download: Omit<Download, 'id' | 'last_downloaded'>): Promise<Download> {
     const result = await db.insert(downloads).values({
       ...download,
-      downloaded_at: new Date(),
+      last_downloaded: new Date(),
     }).returning();
     return result[0];
   }
@@ -179,7 +179,7 @@ export class DatabaseStorage implements IStorage {
       const revenueResult = await db.select({
         totalRevenue: sql<number>`SUM(${orders.amount})`.mapWith(Number),
         totalOrders: sql<number>`COUNT(*)`.mapWith(Number),
-      }).from(orders).where(eq(orders.payment_status, 'completed'));
+      }).from(orders).where(eq(orders.status, 'completed'));
 
       // Get total users count
       const usersResult = await db.select({
@@ -193,11 +193,11 @@ export class DatabaseStorage implements IStorage {
 
       // Get plan metrics
       const planMetricsResult = await db.select({
-        packageType: orders.package_type,
+        packageType: orders.tier,
         count: sql<number>`COUNT(*)`.mapWith(Number),
       }).from(orders)
-        .where(eq(orders.payment_status, 'completed'))
-        .groupBy(orders.package_type);
+        .where(eq(orders.status, 'completed'))
+        .groupBy(orders.tier);
 
       // Get recent activity (orders)
       const recentOrdersResult = await db.select().from(orders)
@@ -210,7 +210,7 @@ export class DatabaseStorage implements IStorage {
         sales: sql<number>`COUNT(*)`.mapWith(Number),
         revenue: sql<number>`SUM(${orders.amount})`.mapWith(Number),
       }).from(orders)
-        .where(eq(orders.payment_status, 'completed'))
+        .where(eq(orders.status, 'completed'))
         .groupBy(orders.plan_id)
         .orderBy(desc(sql`COUNT(*)`))
         .limit(5);
@@ -232,7 +232,7 @@ export class DatabaseStorage implements IStorage {
       const recentActivity = recentOrdersResult.map((order, index) => ({
         id: order.id,
         type: 'order' as const,
-        description: `${order.package_type} package purchased`,
+        description: `${order.tier} package purchased`,
         timestamp: new Date(order.created_at).toLocaleString(),
         amount: order.amount,
       }));
@@ -246,7 +246,7 @@ export class DatabaseStorage implements IStorage {
             title: plan?.title || 'Unknown Plan',
             sales: topPlan.sales,
             revenue: topPlan.revenue,
-            category: plan?.category || 'Unknown',
+            category: plan?.plan_type || 'Unknown',
           };
         })
       );

@@ -232,11 +232,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Analytics API
   app.get("/api/analytics", async (req, res) => {
     try {
+      console.log("Analytics endpoint called");
       const analytics = await storage.getAnalytics();
+      console.log("Analytics fetched successfully:", analytics);
       res.json(analytics);
     } catch (error) {
       console.error("Error fetching analytics:", error);
-      res.status(500).json({ error: "Failed to fetch analytics" });
+      console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace');
+      res.status(500).json({ error: "Failed to fetch analytics", details: error instanceof Error ? error.message : String(error) });
     }
   });
 
@@ -352,11 +355,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const orderData = {
           user_id: 'guest', // You may want to implement user sessions
           plan_id: verification.data.metadata.planId,
-          package_type: verification.data.metadata.packageType,
-          amount: verification.data.amount / 100, // Convert back to cedis
-          payment_reference: reference,
-          payment_status: 'completed',
-          payment_method: 'paystack',
+          tier: verification.data.metadata.packageType,
+          amount: String(verification.data.amount / 100), // Convert back to cedis
+          payment_intent_id: reference,
+          status: 'completed',
         };
 
         const order = await storage.createOrder(orderData);
@@ -409,7 +411,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Order not found" });
       }
 
-      if (order.payment_status !== 'completed') {
+      if (order.status !== 'completed') {
         return res.status(403).json({ error: "Payment not completed" });
       }
 
@@ -422,14 +424,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let availableFiles: string[] = [];
       const planFiles = plan.plan_files || {};
       
-      if (order.package_type === 'basic') {
+      if (order.tier === 'basic') {
         availableFiles = planFiles.basic || [];
-      } else if (order.package_type === 'standard') {
+      } else if (order.tier === 'standard') {
         availableFiles = [
           ...(planFiles.basic || []),
           ...(planFiles.standard || [])
         ];
-      } else if (order.package_type === 'premium') {
+      } else if (order.tier === 'premium') {
         availableFiles = [
           ...(planFiles.basic || []),
           ...(planFiles.standard || []),
@@ -444,7 +446,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         orderId,
         planTitle: plan.title,
-        packageType: order.package_type,
+        packageType: order.tier,
         files: availableFiles,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
       });
@@ -469,7 +471,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Order not found" });
       }
 
-      if (order.payment_status !== 'completed') {
+      if (order.status !== 'completed') {
         return res.status(403).json({ error: "Payment not completed" });
       }
 
@@ -482,14 +484,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let availableFiles: string[] = [];
       const planFiles = plan.plan_files || {};
       
-      if (order.package_type === 'basic') {
+      if (order.tier === 'basic') {
         availableFiles = planFiles.basic || [];
-      } else if (order.package_type === 'standard') {
+      } else if (order.tier === 'standard') {
         availableFiles = [
           ...(planFiles.basic || []),
           ...(planFiles.standard || [])
         ];
-      } else if (order.package_type === 'premium') {
+      } else if (order.tier === 'premium') {
         availableFiles = [
           ...(planFiles.basic || []),
           ...(planFiles.standard || []),

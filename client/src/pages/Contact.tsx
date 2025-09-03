@@ -89,7 +89,7 @@ const Contact = () => {
             </Badge>
             <h1 className="text-3xl md:text-5xl font-bold text-foreground">
               Let's Build Something
-              <span className="bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent"> Amazing Together</span>
+                              <span className="bg-gradient-to-r from-primary to-primary bg-clip-text text-transparent"> Amazing Together</span>
             </h1>
             <p className="text-lg text-muted-foreground">
               Have questions about our plans? Need custom designs? Our team of experts is 

@@ -70,7 +70,7 @@ const PlanCategories = () => {
           </Badge>
           <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
             Choose Your Perfect
-            <span className="bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent"> Home Design</span>
+                            <span className="bg-gradient-to-r from-primary to-primary bg-clip-text text-transparent"> Home Design</span>
           </h2>
           <p className="text-lg text-muted-foreground">
             Explore our extensive collection of 30+ professionally designed house plans, 

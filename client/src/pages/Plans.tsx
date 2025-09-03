@@ -107,7 +107,7 @@ const Plans = () => {
             </Badge>
             <h1 className="text-3xl md:text-5xl font-bold text-foreground">
               Discover Your Perfect
-              <span className="bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent"> House Plan</span>
+                              <span className="bg-gradient-to-r from-primary to-primary bg-clip-text text-transparent"> House Plan</span>
             </h1>
             <p className="text-lg text-muted-foreground">
               Browse our comprehensive collection of professionally designed architectural plans. 
