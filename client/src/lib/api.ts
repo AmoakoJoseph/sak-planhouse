@@ -1,5 +1,18 @@
 // API client to replace Supabase calls
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+const getApiBase = () => {
+  // Try runtime config first, then build-time env var, then fallback
+  if (typeof window !== 'undefined' && (window as any).APP_CONFIG?.API_URL) {
+    return (window as any).APP_CONFIG.API_URL;
+  }
+  return import.meta.env.VITE_API_URL || '/api';
+};
+
+const API_BASE = getApiBase();
+
+// Debug logging
+console.log('API_BASE:', API_BASE);
+console.log('VITE_API_URL:', import.meta.env.VITE_API_URL);
+console.log('Runtime config:', typeof window !== 'undefined' ? (window as any).APP_CONFIG : 'Not available');
 
 export interface Plan {
   id: string;
@@ -59,9 +72,21 @@ class ApiClient {
     if (filters?.status) params.append('status', filters.status);
     if (filters?.featured !== undefined) params.append('featured', filters.featured.toString());
 
-    const response = await fetch(`${API_BASE}/plans?${params}`);
-    if (!response.ok) throw new Error('Failed to fetch plans');
-    return response.json();
+    const url = `${API_BASE}/plans?${params}`;
+    console.log('Fetching plans from:', url);
+    
+    try {
+      const response = await fetch(url);
+      console.log('Plans response status:', response.status);
+      if (!response.ok) {
+        console.error('Plans fetch failed:', response.status, response.statusText);
+        throw new Error(`Failed to fetch plans: ${response.status} ${response.statusText}`);
+      }
+      return response.json();
+    } catch (error) {
+      console.error('Plans fetch error:', error);
+      throw error;
+    }
   }
 
   async getPlan(id: string): Promise<Plan> {
