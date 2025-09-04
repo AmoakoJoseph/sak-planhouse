@@ -7,26 +7,28 @@
   "outputDirectory": "dist",
   "builds": [
     {
-      "src": "package.json",
+      "src": "server/index.ts",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["server/**/*", "shared/**/*"]
+      }
+    },
+    {
+      "src": "client/package.json",
       "use": "@vercel/static-build",
       "config": {
         "distDir": "dist"
       }
     }
   ],
-  "functions": {
-    "api/*.ts": {
-      "runtime": "nodejs20.x"
-    }
-  },
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/api/index.ts"
+      "dest": "/server/index.ts"
     },
     {
       "src": "/uploads/(.*)",
-      "dest": "/api/index.ts"
+      "dest": "/server/index.ts"
     },
     {
       "src": "/_next/static/(.*)",

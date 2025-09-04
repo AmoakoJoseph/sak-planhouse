@@ -105,7 +105,10 @@ const AdminDashboard = () => {
     );
   }
 
-  const formatCurrency = (amount: number) => `₵${(amount || 0).toFixed(2)}`;
+  const formatCurrency = (amount: any) => {
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : Number(amount);
+    return `₵${(isNaN(numAmount) ? 0 : numAmount).toFixed(2)}`;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/10">
