@@ -1,4 +1,4 @@
-// API client for Netlify Functions
+// API client to replace Supabase calls
 const API_BASE = '/api';
 
 export interface Plan {
