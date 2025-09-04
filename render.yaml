@@ -25,7 +25,7 @@ services:
   # Static Site for the React frontend
   - type: static
     name: sak-planhouse-frontend
-    buildCommand: cd client && npm install && npm run build
+    buildCommand: npm run build:client
     staticPublishPath: ./client/dist
     envVars:
       - key: VITE_API_URL
