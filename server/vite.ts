@@ -72,25 +72,36 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  // In production (Vercel), the client is built to client/dist
-  // In development, it might be in the root
-  let distPath = path.resolve(import.meta.dirname, "..", "client", "dist");
+  // Try multiple possible paths for the built client files
+  const possiblePaths = [
+    path.resolve(process.cwd(), "client", "dist"),
+    path.resolve(process.cwd(), "dist"),
+    path.resolve(import.meta.dirname, "..", "client", "dist"),
+    path.resolve(import.meta.dirname, "..", "dist"),
+  ];
+
+  let distPath: string | null = null;
   
-  if (!fs.existsSync(distPath)) {
-    // Fallback to root directory for local development
-    distPath = path.resolve(import.meta.dirname, "..");
+  for (const testPath of possiblePaths) {
+    if (fs.existsSync(testPath)) {
+      distPath = testPath;
+      break;
+    }
   }
 
-  if (!fs.existsSync(distPath)) {
+  if (!distPath) {
+    console.error("Available directories:", fs.readdirSync(process.cwd()));
+    console.error("Tried paths:", possiblePaths);
     throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
+      `Could not find the build directory. Tried: ${possiblePaths.join(", ")}`,
     );
   }
 
+  console.log(`Serving static files from: ${distPath}`);
   app.use(express.static(distPath));
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+    res.sendFile(path.resolve(distPath!, "index.html"));
   });
 }
