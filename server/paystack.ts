@@ -142,6 +142,10 @@ export class PaystackService {
       console.log('Verifying payment with reference:', reference);
       console.log('PAYSTACK_SECRET_KEY exists:', !!this.SECRET_KEY);
       
+      if (!reference || reference.trim() === '') {
+        throw new Error('Payment reference is required and cannot be empty');
+      }
+      
       // Check if Paystack is properly configured
       if (!this.SECRET_KEY) {
         throw new Error('PAYSTACK_SECRET_KEY not configured. Please set your Paystack secret key in .env file');
@@ -169,9 +173,17 @@ export class PaystackService {
       console.log('Paystack verification response data:', responseData);
 
       if (!responseData.status) {
+        console.log('Paystack API returned status false:', responseData.message);
         throw new Error(`Paystack verification returned error: ${responseData.message || 'Unknown error'}`);
       }
 
+      // Additional validation for successful payments
+      if (responseData.data && responseData.data.status !== 'success') {
+        console.log('Payment status is not success:', responseData.data.status);
+        throw new Error(`Payment not successful. Status: ${responseData.data.status}`);
+      }
+
+      console.log('Payment verification successful');
       return responseData;
     } catch (error) {
       console.error('Paystack verification error:', error);
