@@ -1,6 +1,13 @@
-# Vercel Deployment Guide
+# Vercel Deployment Guide - UPDATED
 
-This application is configured for deployment on Vercel with both frontend and backend support.
+This application is now properly configured for deployment on Vercel with both frontend and backend support.
+
+## What Was Fixed
+
+1. **Client Build Process**: Added proper client package.json and build configuration
+2. **File Copying**: Fixed build script to copy files to correct location
+3. **Static Serving**: Updated server to serve files from root directory
+4. **Vercel Configuration**: Simplified vercel.json to handle routing correctly
 
 ## Prerequisites
 
@@ -12,7 +19,7 @@ This application is configured for deployment on Vercel with both frontend and b
 Create a `.env` file in your Vercel project with these variables:
 
 ```env
-DATABASE_URL=your_database_connection_string
+DATABASE_URL=your_supabase_database_connection_string
 PAYSTACK_SECRET_KEY=your_paystack_secret_key
 NODE_ENV=production
 ```
@@ -34,7 +41,10 @@ NODE_ENV=production
    - Install Command: `npm install`
 
 3. **Environment Variables**:
-   - Add all required environment variables in the Vercel dashboard
+   - Add all required environment variables in the Vercel dashboard:
+     - `DATABASE_URL`
+     - `PAYSTACK_SECRET_KEY`
+     - `NODE_ENV=production`
 
 4. **Deploy**:
    - Click "Deploy"
@@ -57,15 +67,15 @@ NODE_ENV=production
    vercel --prod
    ```
 
-## How It Works
+## How It Works Now
 
 ### Build Process
-1. **Client Build**: The `build-client.js` script builds the React app using Vite
+1. **Client Build**: The `build:vercel` script builds the React app using Vite
 2. **File Copy**: Built files are copied to the root directory for Vercel to serve
 3. **Server Build**: Vercel builds the Node.js server as serverless functions
 
 ### Routing
-- **API Routes** (`/api/*`): Handled by the Express server
+- **API Routes** (`/api/*`): Handled by the Express server (serverless functions)
 - **Static Files** (`/uploads/*`): Handled by the Express server
 - **Frontend Routes** (`/*`): Served as static files, with React Router handling client-side routing
 
@@ -80,18 +90,13 @@ NODE_ENV=production
 └── build-client.js    # Build script
 ```
 
-## Custom Domains
+## Build Scripts
 
-1. Go to your Vercel project dashboard
-2. Navigate to "Settings" → "Domains"
-3. Add your custom domain
-4. Configure DNS records as instructed
+The project now has these build scripts:
 
-## Monitoring
-
-- **Logs**: View function logs in the Vercel dashboard
-- **Analytics**: Built-in analytics for performance monitoring
-- **Functions**: Monitor serverless function performance
+- `npm run build:vercel`: Builds client and prepares for Vercel deployment
+- `npm run build:client`: Builds only the client
+- `npm run build`: Builds both client and server for local deployment
 
 ## Troubleshooting
 
@@ -102,15 +107,20 @@ NODE_ENV=production
    - Verify all dependencies are in `package.json`
    - Check build logs in Vercel dashboard
 
-2. **API Routes Not Working**:
+2. **Frontend Not Loading**:
+   - Ensure `build:vercel` script ran successfully
+   - Verify `index.html` exists in the root after build
+   - Check Vercel build logs for client build errors
+
+3. **API Routes Not Working**:
    - Ensure `DATABASE_URL` is set correctly
    - Check function logs for database connection errors
    - Verify database is accessible from Vercel's servers
 
-3. **Static Files Not Loading**:
-   - Check if `build-client.js` ran successfully
-   - Verify `index.html` exists in the root after build
-   - Check Vercel build logs
+4. **404 Errors**:
+   - Check that the build process completed successfully
+   - Verify all static files were copied to root
+   - Check Vercel routing configuration
 
 ### Debug Mode
 
@@ -144,3 +154,10 @@ NODE_ENV=development
 - **Vercel Documentation**: [vercel.com/docs](https://vercel.com/docs)
 - **Vercel Community**: [github.com/vercel/vercel/discussions](https://github.com/vercel/vercel/discussions)
 - **Project Issues**: Check your repository's issue tracker
+
+## Next Steps After Deployment
+
+1. **Test the Application**: Verify all routes work correctly
+2. **Check API Endpoints**: Test database connections and payment processing
+3. **Monitor Performance**: Use Vercel analytics to monitor function performance
+4. **Set Up Custom Domain**: Configure your custom domain if needed
