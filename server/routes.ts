@@ -495,8 +495,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Payment successful, creating order...');
         console.log('Verification metadata:', verification.data.metadata);
         
+        // Validate required metadata
+        const metadata = verification.data.metadata || {};
+        const planId = metadata.planId;
+        const packageType = metadata.packageType;
+        
+        if (!planId) {
+          console.error('Missing planId in payment metadata:', metadata);
+          return res.status(400).json({ 
+            error: "Invalid payment: missing plan information",
+            details: "Plan ID not found in payment metadata"
+          });
+        }
+        
+        if (!packageType || !['basic', 'standard', 'premium'].includes(packageType)) {
+          console.error('Missing or invalid packageType in payment metadata:', metadata);
+          return res.status(400).json({ 
+            error: "Invalid payment: missing or invalid package type",
+            details: "Package type must be basic, standard, or premium"
+          });
+        }
+        
         // Get user ID from metadata or find/create user
-        let orderUserId = verification.data.metadata?.userId;
+        let orderUserId = metadata.userId;
         
         if (!orderUserId) {
           console.log('No user ID in metadata, checking if user exists by email...');
@@ -515,9 +536,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const profileData = {
                 user_id: orderUserId,
                 email: userEmail,
-                first_name: null,
-                last_name: null,
-                phone: null,
+                first_name: verification.data.customer?.first_name || null,
+                last_name: verification.data.customer?.last_name || null,
+                phone: verification.data.customer?.phone || null,
                 role: 'user',
                 avatar_url: null,
                 address: null,
@@ -531,19 +552,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log('Created new user profile:', orderUserId);
             }
           } else {
-            console.log('No email found in Paystack response, creating guest user...');
-            const { randomUUID } = await import('crypto');
-            orderUserId = randomUUID();
+            console.error('No email found in Paystack response for guest user creation');
+            return res.status(400).json({ 
+              error: "Invalid payment: no customer email provided",
+              details: "Cannot create order without user identification"
+            });
           }
         }
         
         console.log('Final user ID for order:', orderUserId);
         
+        // Verify plan exists before creating order
+        const plan = await storage.getPlan(planId);
+        if (!plan) {
+          console.error('Plan not found:', planId);
+          return res.status(400).json({ 
+            error: "Invalid payment: plan not found",
+            details: `Plan with ID ${planId} does not exist`
+          });
+        }
+        
         // Create order record
         const orderData = {
           user_id: orderUserId,
-          plan_id: verification.data.metadata.planId,
-          tier: verification.data.metadata.packageType,
+          plan_id: planId,
+          tier: packageType,
           amount: String(verification.data.amount / 100), // Convert back to cedis
           payment_intent_id: reference,
           status: 'completed',

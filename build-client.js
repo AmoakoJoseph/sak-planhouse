@@ -9,10 +9,16 @@ const __dirname = path.dirname(__filename);
 console.log('Building client for Vercel...');
 
 try {
-  // Change to client directory
-  process.chdir('client');
+  const rootPath = __dirname;
   
   // Install dependencies if node_modules doesn't exist
+  if (!fs.existsSync('node_modules')) {
+    console.log('Installing root dependencies...');
+    execSync('npm install', { stdio: 'inherit' });
+  }
+  
+  // Change to client directory and install its dependencies
+  process.chdir('client');
   if (!fs.existsSync('node_modules')) {
     console.log('Installing client dependencies...');
     execSync('npm install', { stdio: 'inherit' });
@@ -25,19 +31,22 @@ try {
   // Copy the built files to the root for Vercel
   console.log('Copying built files to root...');
   const distPath = path.join(process.cwd(), 'dist');
-  const rootPath = path.join(process.cwd(), '..');
+  const rootDistPath = path.join(rootPath, 'dist');
   
-  // Copy dist contents to root
+  // Create root dist directory
+  if (fs.existsSync(rootDistPath)) {
+    fs.rmSync(rootDistPath, { recursive: true, force: true });
+  }
+  fs.mkdirSync(rootDistPath, { recursive: true });
+  
+  // Copy dist contents to root dist
   if (fs.existsSync(distPath)) {
     const files = fs.readdirSync(distPath);
     files.forEach(file => {
       const sourcePath = path.join(distPath, file);
-      const destPath = path.join(rootPath, file);
+      const destPath = path.join(rootDistPath, file);
       
       if (fs.statSync(sourcePath).isDirectory()) {
-        if (fs.existsSync(destPath)) {
-          fs.rmSync(destPath, { recursive: true, force: true });
-        }
         fs.cpSync(sourcePath, destPath, { recursive: true });
       } else {
         fs.copyFileSync(sourcePath, destPath);
