@@ -1,7 +1,7 @@
 services:
-  # Web Service for the Express.js backend
+  # Single Web Service for both Express.js backend and React frontend
   - type: web
-    name: sak-planhouse-api
+    name: sak-planhouse
     env: node
     plan: starter
     buildCommand: npm install && npm run build
@@ -21,17 +21,6 @@ services:
         sync: false
     healthCheckPath: /api/health
     autoDeploy: true
-
-  # Static Site for the React frontend
-  - type: static
-    name: sak-planhouse-frontend
-    buildCommand: npm run build:client
-    staticPublishPath: ./client/dist
-    envVars:
-      - key: VITE_API_URL
-        value: https://sak-planhouse-api.onrender.com
-    autoDeploy: true
-    pullRequestPreviewsEnabled: true
 
 databases:
   # PostgreSQL database

@@ -1,18 +1,8 @@
 // API client to replace Supabase calls
-const getApiBase = () => {
-  // Try runtime config first, then build-time env var, then fallback
-  if (typeof window !== 'undefined' && (window as any).APP_CONFIG?.API_URL) {
-    return (window as any).APP_CONFIG.API_URL;
-  }
-  return import.meta.env.VITE_API_URL || '/api';
-};
-
-const API_BASE = getApiBase();
+const API_BASE = '/api';
 
 // Debug logging
 console.log('API_BASE:', API_BASE);
-console.log('VITE_API_URL:', import.meta.env.VITE_API_URL);
-console.log('Runtime config:', typeof window !== 'undefined' ? (window as any).APP_CONFIG : 'Not available');
 
 export interface Plan {
   id: string;
