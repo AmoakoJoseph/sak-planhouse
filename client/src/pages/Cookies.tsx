@@ -14,7 +14,7 @@ import {
   Info
 } from 'lucide-react';
 import Header from '@/components/Header';
-import Footer from '@/components/Footer';
+
 
 const Cookies = () => {
   const cookieTypes = [
@@ -70,9 +70,9 @@ const Cookies = () => {
   ];
 
   const contactInfo = {
-    email: "cookies@sakconstructions.com",
-    phone: "+233 20 123 4567",
-    address: "Accra, Ghana"
+          email: "sakconstructiongh@gmail.com",
+            phone: "0246798967",
+          address: "Tema com 25, Greater Accra, around Devtraco Estates"
   };
 
   return (
@@ -336,7 +336,7 @@ const Cookies = () => {
         </div>
       </section>
 
-      <Footer />
+
     </>
   );
 };

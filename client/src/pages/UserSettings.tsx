@@ -31,6 +31,7 @@ import {
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import UserHeader from '@/components/UserHeader';
 
 const UserSettings = () => {
   const { user, profile, signOut } = useAuth();
@@ -79,7 +80,7 @@ const UserSettings = () => {
 
   useEffect(() => {
     if (!user) {
-      navigate('/login');
+      navigate('/');
     }
   }, [user, navigate]);
 
@@ -187,36 +188,20 @@ const UserSettings = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-construction-gray-light">
-      {/* Header */}
-      <section className="py-16 bg-gradient-to-r from-primary/10 to-primary/5">
-        <div className="container px-4">
-          <div className="max-w-6xl mx-auto">
-            <div className="flex items-center gap-4 mb-8">
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/user/dashboard">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Dashboard
-                </Link>
-              </Button>
-            </div>
-
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h1 className="text-3xl font-bold text-foreground mb-2">Account Settings</h1>
-                <p className="text-muted-foreground">Manage your account preferences and security</p>
-              </div>
-              <Button onClick={saveSettings} disabled={isLoading}>
-                {isLoading ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                ) : (
-                  <Save className="h-4 w-4 mr-2" />
-                )}
-                Save Changes
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
+      <UserHeader 
+        title="Account Settings"
+        subtitle="Manage your account preferences and security"
+        actions={
+          <Button onClick={saveSettings} disabled={isLoading}>
+            {isLoading ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
+            Save Changes
+          </Button>
+        }
+      />
 
       {/* Settings Content */}
       <section className="py-16">

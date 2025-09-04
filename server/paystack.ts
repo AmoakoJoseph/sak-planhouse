@@ -1,8 +1,6 @@
 
-import Paystack from 'paystack-node';
-
-// Initialize Paystack with your secret key
-const paystack = new Paystack(process.env.PAYSTACK_SECRET_KEY || '');
+// Paystack service using direct HTTP API calls
+// Based on official Paystack API documentation: https://api.paystack.co/transaction/initialize
 
 export interface PaymentData {
   email: string;
@@ -10,6 +8,8 @@ export interface PaymentData {
   reference?: string;
   callback_url?: string;
   metadata?: Record<string, any>;
+  planId?: string;
+  packageType?: string;
 }
 
 export interface PaymentVerification {
@@ -70,38 +70,112 @@ export interface PaymentVerification {
 }
 
 export class PaystackService {
+  private static readonly PAYSTACK_BASE_URL = 'https://api.paystack.co';
+  private static readonly SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+
   // Initialize payment transaction
   static async initializePayment(paymentData: PaymentData) {
     try {
-      const response = await paystack.transaction.initialize({
-        email: paymentData.email,
-        amount: paymentData.amount,
-        reference: paymentData.reference,
-        callback_url: paymentData.callback_url,
-        metadata: paymentData.metadata,
+      console.log('=== PAYSTACK SERVICE DEBUG ===');
+      console.log('PAYSTACK_SECRET_KEY exists:', !!this.SECRET_KEY);
+      console.log('PAYSTACK_SECRET_KEY length:', this.SECRET_KEY?.length || 0);
+      console.log('Payment data received:', paymentData);
+      
+      // Check if Paystack is properly configured
+      if (!this.SECRET_KEY) {
+        throw new Error('PAYSTACK_SECRET_KEY not configured. Please set your Paystack secret key in .env file');
+      }
+
+      console.log('Using real Paystack API...');
+      console.log('Making request to:', `${this.PAYSTACK_BASE_URL}/transaction/initialize`);
+      
+      const response = await fetch(`${this.PAYSTACK_BASE_URL}/transaction/initialize`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.SECRET_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: paymentData.email,
+          amount: paymentData.amount,
+          reference: paymentData.reference,
+          callback_url: paymentData.callback_url,
+          metadata: paymentData.metadata,
+        }),
       });
+
+      console.log('Paystack API response status:', response.status);
+      console.log('Paystack API response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Paystack API error response:', errorText);
+        throw new Error(`Paystack API error: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const responseData = await response.json();
+      console.log('Paystack API response data:', responseData);
+
+      if (!responseData.status) {
+        throw new Error(`Paystack API returned error: ${responseData.message || 'Unknown error'}`);
+      }
 
       return {
         success: true,
-        data: response.data,
+        data: responseData.data,
       };
     } catch (error) {
       console.error('Paystack initialization error:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Payment initialization failed',
-      };
+      console.error('Error details:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : 'No stack trace'
+      });
+      throw error;
     }
   }
 
   // Verify payment transaction
   static async verifyPayment(reference: string): Promise<PaymentVerification | null> {
     try {
-      const response = await paystack.transaction.verify(reference);
-      return response;
+      console.log('=== PAYSTACK VERIFICATION DEBUG ===');
+      console.log('Verifying payment with reference:', reference);
+      console.log('PAYSTACK_SECRET_KEY exists:', !!this.SECRET_KEY);
+      
+      // Check if Paystack is properly configured
+      if (!this.SECRET_KEY) {
+        throw new Error('PAYSTACK_SECRET_KEY not configured. Please set your Paystack secret key in .env file');
+      }
+
+      console.log('Making verification request to:', `${this.PAYSTACK_BASE_URL}/transaction/verify/${reference}`);
+      
+      const response = await fetch(`${this.PAYSTACK_BASE_URL}/transaction/verify/${reference}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.SECRET_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('Paystack verification response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Paystack verification error response:', errorText);
+        throw new Error(`Paystack verification error: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const responseData = await response.json();
+      console.log('Paystack verification response data:', responseData);
+
+      if (!responseData.status) {
+        throw new Error(`Paystack verification returned error: ${responseData.message || 'Unknown error'}`);
+      }
+
+      return responseData;
     } catch (error) {
       console.error('Paystack verification error:', error);
-      return null;
+      throw error;
     }
   }
 

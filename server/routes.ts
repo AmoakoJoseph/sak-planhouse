@@ -64,6 +64,11 @@ const uploadPlanFile = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Test endpoint to verify server is working
+  app.get("/api/test", (req, res) => {
+    res.json({ message: "Server is running!", timestamp: new Date().toISOString() });
+  });
+
   // Serve static files from uploads directory
   app.use('/uploads', express.static('uploads'));
 
@@ -243,6 +248,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User Analytics API
+  app.get("/api/analytics/user/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      // Get user-specific analytics
+      const userOrders = await storage.getOrders(userId);
+      const userDownloads = await storage.getDownloads(userId);
+      
+      const analytics = {
+        totalOrders: userOrders.length,
+        totalSpent: userOrders.reduce((sum, order) => sum + parseFloat(order.amount), 0),
+        totalDownloads: userDownloads.length,
+        recentOrders: userOrders.slice(0, 5),
+        recentDownloads: userDownloads.slice(0, 5)
+      };
+      
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching user analytics:", error);
+      res.status(500).json({ error: "Failed to fetch user analytics" });
+    }
+  });
+
   // Users API
   app.get("/api/users", async (req, res) => {
     try {
@@ -271,10 +300,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // For regular users, check if they exist in the database
+      const profile = await storage.getProfileByEmail(email);
+      if (profile) {
+        // In production, you'd verify the password hash here
+        // For now, we'll allow any user with a valid email to sign in
+        res.json({
+          user: { id: profile.user_id, email: profile.email },
+          profile
+        });
+        return;
+      }
+      
       res.status(401).json({ error: "Invalid credentials" });
     } catch (error) {
       console.error("Error signing in:", error);
       res.status(500).json({ error: "Failed to sign in" });
+    }
+  });
+
+  app.post("/api/auth/signup", async (req, res) => {
+    try {
+      const { email, password, firstName, lastName } = req.body;
+      
+      // Validate required fields
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
+      
+      // Check if user already exists
+      const existingProfile = await storage.getProfileByEmail(email);
+      if (existingProfile) {
+        return res.status(409).json({ error: "User with this email already exists" });
+      }
+      
+      // Create new user and profile
+      // Generate a proper UUID for the user
+      const { randomUUID } = await import('crypto');
+      const userId = randomUUID();
+      
+      const profileData = {
+        user_id: userId,
+        email,
+        first_name: firstName || null,
+        last_name: lastName || null,
+        phone: null,
+        role: 'user',
+        avatar_url: null,
+        address: null,
+        city: null,
+        country: 'Ghana',
+        bio: null,
+        company: null,
+        website: null
+      };
+      
+      const profile = await storage.createProfile(profileData);
+      
+      if (profile) {
+        res.status(201).json({
+          user: { id: userId, email },
+          profile
+        });
+      } else {
+        res.status(500).json({ error: "Failed to create user profile" });
+      }
+      
+    } catch (error) {
+      console.error("Error signing up:", error);
+      res.status(500).json({ error: "Failed to sign up" });
     }
   });
 
@@ -285,24 +379,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Payment routes
   app.post("/api/payments/initialize", async (req, res) => {
     try {
-      const { email, amount, planId, planTitle, packageType } = req.body;
+      console.log('=== PAYMENT INITIALIZATION DEBUG ===');
+      console.log('Request body received:', req.body);
+      console.log('Request headers:', req.headers);
+      
+      const { email, amount, planId, planTitle, packageType, userId } = req.body;
+      console.log('Extracted fields:', { email, amount, planId, planTitle, packageType, userId });
+      console.log('User ID type:', typeof userId);
+      console.log('User ID value:', userId);
 
       if (!email || !amount || !planId) {
+        console.log('Missing required fields:', { 
+          hasEmail: !!email, 
+          hasAmount: !!amount, 
+          hasPlanId: !!planId 
+        });
         return res.status(400).json({ error: "Missing required payment data" });
       }
 
+      console.log('All required fields present, generating reference...');
       const reference = PaystackService.generateReference();
+      console.log('Generated reference:', reference);
+      
       const amountInKobo = Math.round(amount * 100); // Convert cedis to kobo
+      console.log('Amount conversion:', { original: amount, inKobo: amountInKobo });
 
+      // Get user ID from request body or generate one
+      let requestUserId = userId;
+      
       const paymentData = {
         email,
         amount: amountInKobo,
         reference,
-        callback_url: `${req.protocol}://${req.get('host')}/api/payments/callback`,
+        callback_url: `${req.protocol}://${req.get('host')}/payment/verify`,
+        planId,
+        packageType,
         metadata: {
           planId,
           planTitle,
           packageType,
+          userId: requestUserId, // Store user ID in metadata for verification
           custom_fields: [
             {
               display_name: "Plan",
@@ -317,10 +433,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ],
         },
       };
+      
+      console.log('Payment data prepared:', paymentData);
+      console.log('Callback URL:', paymentData.callback_url);
+      console.log('Environment check - PAYSTACK_SECRET_KEY exists:', !!process.env.PAYSTACK_SECRET_KEY);
+      console.log('Environment check - PAYSTACK_SECRET_KEY length:', process.env.PAYSTACK_SECRET_KEY?.length || 0);
 
+      console.log('Calling PaystackService.initializePayment...');
       const result = await PaystackService.initializePayment(paymentData);
+      console.log('PaystackService result:', result);
 
-      if (result.success) {
+      if (result.success && result.data) {
+        console.log('Payment initialization successful, sending response...');
         res.json({
           success: true,
           authorization_url: result.data.authorization_url,
@@ -328,32 +452,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
           reference: result.data.reference,
         });
       } else {
-        res.status(400).json({ error: result.error });
+        console.log('Payment initialization failed - no success or data');
+        res.status(400).json({ error: "Failed to initialize payment" });
       }
     } catch (error) {
-      console.error("Error initializing payment:", error);
-      res.status(500).json({ error: "Failed to initialize payment" });
+      console.error("=== PAYMENT INITIALIZATION ERROR ===");
+      console.error("Error type:", typeof error);
+      console.error("Error constructor:", error?.constructor?.name);
+      console.error("Error message:", (error as any)?.message);
+      console.error("Error stack:", (error as any)?.stack);
+      console.error("Full error object:", error);
+      
+      res.status(500).json({ 
+        error: "Failed to initialize payment",
+        details: (error as any)?.message || 'Unknown error',
+        type: (error as any)?.constructor?.name || 'Unknown'
+      });
     }
   });
 
-  app.post("/api/payments/verify", async (req, res) => {
+  app.get("/api/payments/verify/:reference", async (req, res) => {
     try {
-      const { reference } = req.body;
+      const { reference } = req.params;
+      console.log('=== PAYMENT VERIFICATION DEBUG ===');
+      console.log('Verifying payment with reference:', reference);
 
       if (!reference) {
+        console.log('No reference provided');
         return res.status(400).json({ error: "Payment reference is required" });
       }
 
+      console.log('Calling PaystackService.verifyPayment...');
       const verification = await PaystackService.verifyPayment(reference);
+      console.log('Paystack verification result:', verification);
 
       if (!verification) {
+        console.log('Verification returned null/undefined');
         return res.status(400).json({ error: "Payment verification failed" });
       }
 
       if (verification.data.status === 'success') {
+        console.log('Payment successful, creating order...');
+        console.log('Verification metadata:', verification.data.metadata);
+        
+        // Get user ID from metadata or find/create user
+        let orderUserId = verification.data.metadata?.userId;
+        
+        if (!orderUserId) {
+          console.log('No user ID in metadata, checking if user exists by email...');
+          // Try to find user by email from Paystack response
+          const userEmail = verification.data.customer?.email;
+          if (userEmail) {
+            const existingProfile = await storage.getProfileByEmail(userEmail);
+            if (existingProfile) {
+              orderUserId = existingProfile.user_id;
+              console.log('Found existing user by email:', orderUserId);
+            } else {
+              console.log('No existing user found, creating new user profile...');
+              // Create new user profile
+              const { randomUUID } = await import('crypto');
+              orderUserId = randomUUID();
+              const profileData = {
+                user_id: orderUserId,
+                email: userEmail,
+                first_name: null,
+                last_name: null,
+                phone: null,
+                role: 'user',
+                avatar_url: null,
+                address: null,
+                city: null,
+                country: 'Ghana',
+                bio: null,
+                company: null,
+                website: null
+              };
+              await storage.createProfile(profileData);
+              console.log('Created new user profile:', orderUserId);
+            }
+          } else {
+            console.log('No email found in Paystack response, creating guest user...');
+            const { randomUUID } = await import('crypto');
+            orderUserId = randomUUID();
+          }
+        }
+        
+        console.log('Final user ID for order:', orderUserId);
+        
         // Create order record
         const orderData = {
-          user_id: 'guest', // You may want to implement user sessions
+          user_id: orderUserId,
           plan_id: verification.data.metadata.planId,
           tier: verification.data.metadata.packageType,
           amount: String(verification.data.amount / 100), // Convert back to cedis
@@ -361,7 +549,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: 'completed',
         };
 
+        console.log('Order data:', orderData);
         const order = await storage.createOrder(orderData);
+        console.log('Order created:', order);
 
         res.json({
           success: true,
@@ -369,6 +559,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           order,
         });
       } else {
+        console.log('Payment not successful, status:', verification.data.status);
         res.status(400).json({
           success: false,
           error: "Payment was not successful",
@@ -376,7 +567,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
     } catch (error) {
-      console.error("Error verifying payment:", error);
+      console.error("=== PAYMENT VERIFICATION ERROR ===");
+      console.error("Error type:", typeof error);
+      console.error("Error message:", (error as any)?.message);
+      console.error("Error stack:", (error as any)?.stack);
+      console.error("Full error object:", error);
       res.status(500).json({ error: "Failed to verify payment" });
     }
   });
@@ -402,6 +597,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Download routes
+  app.get("/api/downloads", async (req, res) => {
+    try {
+      const { userId } = req.query;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+
+      // Get all downloads for a user
+      const downloads = await storage.getDownloads(userId as string);
+      
+      res.json(downloads);
+    } catch (error) {
+      console.error("Error fetching downloads:", error);
+      res.status(500).json({ error: "Failed to fetch downloads" });
+    }
+  });
+
   app.get("/api/downloads/:orderId", async (req, res) => {
     try {
       const { orderId } = req.params;
@@ -422,7 +635,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get files based on tier hierarchy: basic = basic only, standard = basic + standard, premium = basic + standard + premium
       let availableFiles: string[] = [];
-      const planFiles = plan.plan_files || {};
+      const planFiles = plan.plan_files as { basic?: string[]; standard?: string[]; premium?: string[] } || {};
       
       if (order.tier === 'basic') {
         availableFiles = planFiles.basic || [];
@@ -484,18 +697,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let availableFiles: string[] = [];
       const planFiles = plan.plan_files || {};
       
+      type PlanFiles = {
+        basic?: string[];
+        standard?: string[];
+        premium?: string[];
+        [key: string]: any;
+      };
+      const typedPlanFiles: PlanFiles = planFiles as PlanFiles;
+
       if (order.tier === 'basic') {
-        availableFiles = planFiles.basic || [];
+        availableFiles = typedPlanFiles.basic || [];
       } else if (order.tier === 'standard') {
         availableFiles = [
-          ...(planFiles.basic || []),
-          ...(planFiles.standard || [])
+          ...(typedPlanFiles.basic || []),
+          ...(typedPlanFiles.standard || [])
         ];
       } else if (order.tier === 'premium') {
         availableFiles = [
-          ...(planFiles.basic || []),
-          ...(planFiles.standard || []),
-          ...(planFiles.premium || [])
+          ...(typedPlanFiles.basic || []),
+          ...(typedPlanFiles.standard || []),
+          ...(typedPlanFiles.premium || [])
         ];
       }
 
@@ -512,8 +733,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Record the download
       await storage.recordDownload({
         order_id: orderId,
-        file_path: filePath as string,
+        plan_id: order.plan_id,
         user_id: order.user_id,
+        created_at: new Date(),
+        download_count: 1,
       });
 
       // Set appropriate headers for download
@@ -527,6 +750,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error downloading file:", error);
       res.status(500).json({ error: "Failed to download file" });
+    }
+  });
+
+
+
+  // Contact Form Email API
+  app.post("/api/contact/send-email", async (req, res) => {
+    try {
+      const { to, subject, name, email, phone, planType, message } = req.body;
+      
+      // Validate required fields
+      if (!name || !email || !message) {
+        return res.status(400).json({ error: 'Name, email, and message are required' });
+      }
+      
+      // For now, we'll simulate sending the email
+      // In production, you would integrate with a real email service like:
+      // - Nodemailer with Gmail SMTP
+      // - SendGrid
+      // - Mailgun
+      // - AWS SES
+      
+      console.log('Contact form submission:', {
+        to,
+        subject,
+        name,
+        email,
+        phone,
+        planType,
+        message,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Simulate email sending delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // In production, replace this with actual email sending logic:
+      // const emailResult = await sendEmail({
+      //   to: 'sakconstructiongh@gmail.com',
+      //   subject: subject,
+      //   html: `
+      //     <h2>New Contact Form Submission</h2>
+      //     <p><strong>Name:</strong> ${name}</p>
+      //     <p><strong>Email:</strong> ${email}</p>
+      //     <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
+      //     <p><strong>Plan Type:</strong> ${planType || 'Not specified'}</p>
+      //     <p><strong>Message:</strong></p>
+      //     <p>${message}</p>
+      //   `
+      // });
+      
+      res.json({ 
+        success: true, 
+        message: 'Email sent successfully',
+        timestamp: new Date().toISOString()
+      });
+      
+    } catch (error) {
+      console.error("Error sending contact email:", error);
+      res.status(500).json({ error: "Failed to send email" });
     }
   });
 

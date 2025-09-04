@@ -73,12 +73,14 @@ const AdminLogin = () => {
           </Button>
           
           <div className="flex items-center justify-center mb-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary">
-              <Shield className="h-6 w-6 text-primary-foreground" />
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="SAK Constructions" 
+              className="h-12 w-auto"
+            />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Admin Access</h1>
-          <p className="text-muted-foreground">SAK Constructions Management Portal</p>
+          <p className="text-muted-foreground">Management Portal</p>
         </div>
 
         <Card>

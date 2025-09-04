@@ -105,13 +105,11 @@ const Register = () => {
           <CardHeader className="text-center space-y-4">
             {/* Logo */}
             <div className="flex items-center justify-center space-x-2">
-                              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary">
-                <span className="text-xl font-bold text-primary-foreground">S</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-lg font-bold text-foreground">SAK CONSTRUCTIONS</span>
-                <span className="text-xs text-muted-foreground">GH</span>
-              </div>
+              <img 
+                src="/logo.png" 
+                alt="SAK Constructions" 
+                className="h-12 w-auto"
+              />
             </div>
 
             <div className="space-y-2">
@@ -176,7 +174,7 @@ const Register = () => {
                   <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="phone"
-                    placeholder="+233 XX XXX XXXX"
+                                            placeholder="0246798967"
                     value={formData.phone}
                     onChange={(e) => setFormData({...formData, phone: e.target.value})}
                     className="pl-10"

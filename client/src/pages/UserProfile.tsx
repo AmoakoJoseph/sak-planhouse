@@ -14,23 +14,26 @@ import {
   Calendar,
   Camera,
   Save,
-  ArrowLeft,
   Edit,
   X,
   Check,
   Shield,
-  Building,
-  Home
+  Building
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
+import UserHeader from '@/components/UserHeader';
 
 const UserProfile = () => {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -43,10 +46,16 @@ const UserProfile = () => {
     company: '',
     website: ''
   });
+  const [userStats, setUserStats] = useState({
+    totalOrders: 0,
+    totalSpent: 0,
+    favoritePlans: 0,
+    downloads: 0
+  });
 
   useEffect(() => {
     if (!user) {
-      navigate('/login');
+      navigate('/');
       return;
     }
 
@@ -62,7 +71,29 @@ const UserProfile = () => {
       company: profile?.company || '',
       website: profile?.website || ''
     });
+
+    // Fetch real user statistics
+    if (user.id) {
+      fetchUserStats();
+    }
   }, [user, profile, navigate]);
+
+  const fetchUserStats = async () => {
+    try {
+      const response = await fetch(`/api/analytics/user/${user.id}`);
+      if (response.ok) {
+        const analytics = await response.json();
+        setUserStats({
+          totalOrders: analytics.totalOrders || 0,
+          totalSpent: analytics.totalSpent || 0,
+          favoritePlans: 0, // TODO: Implement favorites API
+          downloads: analytics.totalDownloads || 0
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching user stats:', error);
+    }
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -74,16 +105,31 @@ const UserProfile = () => {
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      // Here you would typically update the profile in your backend
-      // For now, we'll simulate the update
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      console.log('Profile updated:', formData);
-      setIsEditing(false);
-      // You could show a success toast here
+      // Update profile in backend
+      const response = await fetch(`/api/profiles/${profile?.user_id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Profile updated!",
+          description: "Your profile information has been saved successfully.",
+        });
+        setIsEditing(false);
+      } else {
+        throw new Error('Failed to update profile');
+      }
     } catch (error) {
       console.error('Error updating profile:', error);
-      // You could show an error toast here
+      toast({
+        title: "Update failed",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -106,6 +152,83 @@ const UserProfile = () => {
     setIsEditing(false);
   };
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file (JPG, PNG, GIF, etc.)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Image size must be less than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch('/api/upload/image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      const result = await response.json();
+      
+      // Update profile with new avatar URL
+      const updateResponse = await fetch(`/api/profiles/${profile?.user_id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          avatar_url: result.url
+        }),
+      });
+
+      if (updateResponse.ok) {
+        toast({
+          title: "Avatar updated!",
+          description: "Your profile picture has been updated successfully.",
+        });
+        // Refresh the page or update the profile state
+        window.location.reload();
+      } else {
+        throw new Error('Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload avatar. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -119,51 +242,33 @@ const UserProfile = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-construction-gray-light">
-      {/* Header */}
-      <section className="py-16 bg-gradient-to-r from-primary/10 to-primary/5">
-        <div className="container px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center gap-4 mb-8">
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/user/dashboard">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Dashboard
-                </Link>
+      <UserHeader 
+        title="Profile Settings"
+        subtitle="Manage your account information and preferences"
+        actions={
+          !isEditing ? (
+            <Button onClick={() => setIsEditing(true)}>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Profile
+            </Button>
+          ) : (
+            <>
+              <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
+                <X className="h-4 w-4 mr-2" />
+                Cancel
               </Button>
-            </div>
-
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h1 className="text-3xl font-bold text-foreground mb-2">Profile Settings</h1>
-                <p className="text-muted-foreground">Manage your account information and preferences</p>
-              </div>
-              <div className="flex items-center gap-3">
-                {!isEditing ? (
-                  <Button onClick={() => setIsEditing(true)}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Profile
-                  </Button>
+              <Button onClick={handleSave} disabled={isLoading}>
+                {isLoading ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 ) : (
-                  <>
-                    <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
-                      <X className="h-4 w-4 mr-2" />
-                      Cancel
-                    </Button>
-                    <Button onClick={handleSave} disabled={isLoading}>
-                      {isLoading ? (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      ) : (
-                        <Check className="h-4 w-4 mr-2" />
-                      )}
-                      Save Changes
-                    </Button>
-                  </>
+                  <Check className="h-4 w-4 mr-2" />
                 )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+                Save Changes
+              </Button>
+            </>
+          )
+        }
+      />
 
       {/* Profile Content */}
       <section className="py-16">
@@ -175,8 +280,8 @@ const UserProfile = () => {
                 <Card>
                   <CardContent className="p-6">
                     <div className="text-center space-y-4">
-                      <div className="relative inline-block">
-                        <Avatar className="h-24 w-24 mx-auto">
+                      <div className="relative inline-block group">
+                        <Avatar className="h-24 w-24 mx-auto transition-all duration-300 group-hover:scale-105">
                           <AvatarImage src={profile?.avatar_url} />
                           <AvatarFallback className="text-2xl">
                             {profile?.first_name?.[0]}{profile?.last_name?.[0] || 'U'}
@@ -186,10 +291,33 @@ const UserProfile = () => {
                           <Button
                             size="sm"
                             variant="secondary"
-                            className="absolute -bottom-2 -right-2 h-8 w-8 p-0 rounded-full"
+                            className="absolute -bottom-2 -right-2 h-8 w-8 p-0 rounded-full shadow-lg hover:scale-110 transition-transform duration-200"
+                            onClick={handleAvatarClick}
+                            disabled={isUploadingAvatar}
+                            title="Change avatar"
                           >
-                            <Camera className="h-4 w-4" />
+                            {isUploadingAvatar ? (
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                            ) : (
+                              <Camera className="h-4 w-4" />
+                            )}
                           </Button>
+                        )}
+                        
+                        {/* Hidden file input for avatar upload */}
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAvatarUpload}
+                          className="hidden"
+                        />
+                        
+                        {/* Upload hint */}
+                        {isEditing && (
+                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full flex items-center justify-center">
+                            <p className="text-white text-xs font-medium">Click to change</p>
+                          </div>
                         )}
                       </div>
                       
@@ -205,11 +333,11 @@ const UserProfile = () => {
 
                       <Separator />
 
-                      <div className="space-y-3 text-sm">
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
-                          <span>Member since {new Date(user.created_at).toLocaleDateString()}</span>
-                        </div>
+                                             <div className="space-y-3 text-sm">
+                         <div className="flex items-center gap-2 text-muted-foreground">
+                           <Calendar className="h-4 w-4" />
+                           <span>Member since {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Recently'}</span>
+                         </div>
                         {profile?.phone && (
                           <div className="flex items-center gap-2 text-muted-foreground">
                             <Phone className="h-4 w-4" />
@@ -227,32 +355,32 @@ const UserProfile = () => {
                   </CardContent>
                 </Card>
 
-                {/* Account Stats */}
-                <Card className="mt-6">
-                  <CardHeader>
-                    <CardTitle className="text-lg">Account Statistics</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Total Orders</span>
-                        <span className="font-semibold">3</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Favorite Plans</span>
-                        <span className="font-semibold">7</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Downloads</span>
-                        <span className="font-semibold">12</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Total Spent</span>
-                        <span className="font-semibold">₵8,500</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                                 {/* Account Stats */}
+                 <Card className="mt-6">
+                   <CardHeader>
+                     <CardTitle className="text-lg">Account Statistics</CardTitle>
+                   </CardHeader>
+                   <CardContent>
+                     <div className="space-y-4">
+                       <div className="flex items-center justify-between">
+                         <span className="text-sm text-muted-foreground">Total Orders</span>
+                         <span className="font-semibold">{userStats.totalOrders}</span>
+                       </div>
+                       <div className="flex items-center justify-between">
+                         <span className="text-sm text-muted-foreground">Favorite Plans</span>
+                         <span className="font-semibold">{userStats.favoritePlans}</span>
+                       </div>
+                       <div className="flex items-center justify-between">
+                         <span className="text-sm text-muted-foreground">Downloads</span>
+                         <span className="font-semibold">{userStats.downloads}</span>
+                       </div>
+                       <div className="flex items-center justify-between">
+                         <span className="text-sm text-muted-foreground">Total Spent</span>
+                         <span className="font-semibold">₵{userStats.totalSpent.toLocaleString()}</span>
+                       </div>
+                     </div>
+                   </CardContent>
+                 </Card>
               </div>
 
               {/* Profile Form */}
@@ -309,7 +437,7 @@ const UserProfile = () => {
                         value={formData.phone}
                         onChange={(e) => handleInputChange('phone', e.target.value)}
                         disabled={!isEditing}
-                        placeholder="+233 XX XXX XXXX"
+                        placeholder="0246798967"
                       />
                     </div>
 

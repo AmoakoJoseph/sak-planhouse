@@ -24,6 +24,7 @@ import {
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import UserHeader from '@/components/UserHeader';
 import villaImage from '@/assets/villa-plan.jpg';
 import bungalowImage from '@/assets/bungalow-plan.jpg';
 import townhouseImage from '@/assets/townhouse-plan.jpg';
@@ -138,7 +139,7 @@ const UserFavorites = () => {
 
   useEffect(() => {
     if (!user) {
-      navigate('/login');
+      navigate('/');
       return;
     }
 
@@ -187,33 +188,23 @@ const UserFavorites = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-construction-gray-light">
-      {/* Header */}
-      <section className="py-16 bg-gradient-to-r from-primary/10 to-primary/5">
+      <UserHeader 
+        title="My Favorites"
+        subtitle="Your saved house plans and designs"
+        actions={
+          <Button asChild>
+            <Link to="/plans">
+              <Plus className="h-4 w-4 mr-2" />
+              Browse More Plans
+            </Link>
+          </Button>
+        }
+      />
+
+      {/* Stats Cards */}
+      <section className="py-16">
         <div className="container px-4">
           <div className="max-w-7xl mx-auto">
-            <div className="flex items-center gap-4 mb-8">
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/user/dashboard">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Dashboard
-                </Link>
-              </Button>
-            </div>
-
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h1 className="text-3xl font-bold text-foreground mb-2">My Favorites</h1>
-                <p className="text-muted-foreground">Your saved house plans and designs</p>
-              </div>
-              <Button asChild>
-                <Link to="/plans">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Browse More Plans
-                </Link>
-              </Button>
-            </div>
-
-            {/* Stats Cards */}
             <div className="grid md:grid-cols-4 gap-6 mb-8">
               <Card>
                 <CardContent className="p-6">

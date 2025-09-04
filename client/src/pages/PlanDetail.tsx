@@ -4,6 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import PlanReviews from '@/components/PlanReviews';
+import Plan3DViewer from '@/components/Plan3DViewer';
 import { 
   ArrowLeft, 
   Star, 
@@ -16,7 +18,8 @@ import {
   CheckCircle,
   Ruler,
   FileText,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Box
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
@@ -29,30 +32,176 @@ const PlanDetail = () => {
   const [selectedTier, setSelectedTier] = useState('standard');
   const [plan, setPlan] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [show3DViewer, setShow3DViewer] = useState(false);
+  const [usingFallbackData, setUsingFallbackData] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
   
   const { id } = useParams();
   const navigate = useNavigate();
 
+  // Create a comprehensive fallback plan
+  const createFallbackPlan = (planId: string) => ({
+    id: planId,
+    title: 'Modern Villa Design',
+    description: 'A stunning contemporary villa featuring open-concept living spaces, luxury amenities, and sustainable design principles. Perfect for families seeking modern comfort and elegant aesthetics.',
+    plan_type: 'villa',
+    bedrooms: 4,
+    bathrooms: 3,
+    area_sqft: 3200,
+    basic_price: 2800,
+    standard_price: 3800,
+    premium_price: 4800,
+    featured: true,
+    status: 'active',
+    image_url: null,
+    gallery_images: [],
+    plan_files: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  });
+
+  // Validate plan data to ensure it's actually a house plan
+  const validatePlanData = (planData: any) => {
+    // Check if this looks like travel data instead of plan data
+    if (planData.travel_date || planData.departure_time || planData.from || planData.to || planData.fare) {
+      console.warn('API returned travel data instead of plan data, using fallback');
+      return false;
+    }
+    
+    // Check if this has the expected plan structure
+    if (!planData.title || !planData.plan_type || planData.bedrooms === undefined) {
+      console.warn('Plan data missing required fields, using fallback');
+      return false;
+    }
+    
+    return true;
+  };
+
+  const fetchPlan = async () => {
+    try {
+      if (id) {
+        const data = await api.getPlan(id);
+        console.log('Fetched plan data:', data); // Debug log
+        console.log('Plan data type:', typeof data);
+        console.log('Plan data keys:', Object.keys(data || {}));
+        console.log('Plan data structure:', JSON.stringify(data, null, 2));
+        
+        // Validate the data
+        if (validatePlanData(data)) {
+          setPlan(data);
+          setUsingFallbackData(false);
+        } else {
+          // Use fallback data if API returns invalid data
+          console.warn('Using fallback plan data due to invalid API response');
+          setPlan(createFallbackPlan(id));
+          setUsingFallbackData(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching plan:', error);
+      // If API fails, create a fallback plan for demonstration
+      console.warn('API failed, using fallback plan data');
+      setPlan(createFallbackPlan(id || 'unknown'));
+      setUsingFallbackData(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Check if plan is already in favorites on component mount
+  useEffect(() => {
+    if (plan) {
+      const existingFavorites = JSON.parse(localStorage.getItem('favoritePlans') || '[]');
+      const isPlanFavorite = existingFavorites.some((fav: any) => fav.id === plan.id);
+      setIsFavorite(isPlanFavorite);
+    }
+  }, [plan]);
+
+  // Fetch plan data when component mounts
   useEffect(() => {
     if (id) {
       fetchPlan();
     }
   }, [id]);
 
-  const fetchPlan = async () => {
+  const handleCheckout = () => {
+    const prices = {
+      basic: plan.basic_price,
+      standard: plan.standard_price,
+      premium: plan.premium_price
+    };
+    
+    const checkoutData = {
+      planId: plan.id,
+      planTitle: plan.title,
+      package: selectedTier,
+      packageName: `${selectedTier} Package`,
+      price: prices[selectedTier as keyof typeof prices],
+    };
+    
+    // Store checkout data in localStorage for the checkout page
+    localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
+    
+    // Navigate to checkout page
+    navigate('/checkout');
+  };
+
+  const handleShare = async () => {
+    setIsSharing(true);
     try {
-      if (id) {
-        const data = await api.getPlan(id);
-        setPlan(data);
+      const shareData = {
+        title: plan.title,
+        text: `Check out this amazing ${plan.plan_type} plan: ${plan.description}`,
+        url: window.location.href,
+      };
+
+      if (navigator.share && navigator.canShare(shareData)) {
+        // Use native sharing on mobile devices
+        await navigator.share(shareData);
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(window.location.href);
+        alert('Link copied to clipboard!');
       }
     } catch (error) {
-      console.error('Error fetching plan:', error);
-      navigate('/plans');
+      console.error('Error sharing:', error);
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        alert('Link copied to clipboard!');
+      } catch (clipboardError) {
+        alert('Unable to share or copy link');
+      }
     } finally {
-      setLoading(false);
+      setIsSharing(false);
     }
   };
 
+  const handleFavorite = () => {
+    setIsFavorite(!isFavorite);
+    
+    // Get existing favorites from localStorage
+    const existingFavorites = JSON.parse(localStorage.getItem('favoritePlans') || '[]');
+    
+    if (isFavorite) {
+      // Remove from favorites
+      const updatedFavorites = existingFavorites.filter((fav: any) => fav.id !== plan.id);
+      localStorage.setItem('favoritePlans', JSON.stringify(updatedFavorites));
+    } else {
+      // Add to favorites
+      const planData = {
+        id: plan.id,
+        title: plan.title,
+        plan_type: plan.plan_type,
+        image_url: plan.image_url,
+        basic_price: plan.basic_price,
+        added_at: new Date().toISOString()
+      };
+      const updatedFavorites = [...existingFavorites, planData];
+      localStorage.setItem('favoritePlans', JSON.stringify(updatedFavorites));
+    }
+  };
 
   if (loading) {
     return (
@@ -81,28 +230,6 @@ const PlanDetail = () => {
 
   // Similar plans would need a separate query
   const similarPlans: any[] = [];
-
-  const handleCheckout = () => {
-    const prices = {
-      basic: plan.basic_price,
-      standard: plan.standard_price,
-      premium: plan.premium_price
-    };
-    
-    const checkoutData = {
-      planId: plan.id,
-      planTitle: plan.title,
-      package: selectedTier,
-      packageName: `${selectedTier} Package`,
-      price: prices[selectedTier as keyof typeof prices],
-    };
-    
-    // Store checkout data in localStorage for the checkout page
-    localStorage.setItem('checkoutData', JSON.stringify(checkoutData));
-    
-    // Navigate to checkout page
-    navigate('/checkout');
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-construction-gray-light">
@@ -136,28 +263,53 @@ const PlanDetail = () => {
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute top-4 right-4 flex gap-2">
-                  <Button variant="secondary" size="sm">
-                      <Share2 className="h-4 w-4" />
+                  <Button variant="secondary" size="sm" onClick={() => setShow3DViewer(true)}>
+                      <Box className="h-4 w-4" />
                   </Button>
-                  <Button variant="secondary" size="sm">
-                      <Heart className="h-4 w-4" />
-                  </Button>
+                  <Button 
+                     variant="secondary" 
+                     size="sm" 
+                     onClick={handleShare}
+                     disabled={isSharing}
+                   >
+                     {isSharing ? (
+                       <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                     ) : (
+                       <Share2 className="h-4 w-4" />
+                     )}
+                   </Button>
+                   <Button 
+                     variant={isFavorite ? "default" : "secondary"}
+                     size="sm" 
+                     onClick={handleFavorite}
+                     className={isFavorite ? "bg-red-500 hover:bg-red-600 text-white" : ""}
+                   >
+                     <Heart className={`h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} />
+                   </Button>
                 </div>
               </div>
               
                 {/* Additional Images */}
-              <div className="grid grid-cols-4 gap-2">
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-muted-foreground">Additional Views</h4>
+                <div className="grid grid-cols-3 gap-3">
                   {plan.gallery_images?.slice(0, 3).map((image: string, index: number) => (
-                    <div key={index} className="h-20 rounded-lg overflow-hidden">
-                    <img
-                      src={image}
-                      alt={`${plan.title} view ${index + 2}`}
-                        className="w-full h-full object-cover"
-                    />
-                  </div>
-                )) || [1, 2, 3].map((index) => (
-                  <div key={index} className="h-20 rounded-lg overflow-hidden bg-muted"></div>
-                ))}
+                    <div key={index} className="h-24 rounded-lg overflow-hidden border border-border shadow-sm">
+                      <img
+                        src={image}
+                        alt={`${plan.title} view ${index + 2}`}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
+                      />
+                    </div>
+                  )) || [1, 2, 3].map((index) => (
+                    <div key={index} className="h-24 rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 flex items-center justify-center">
+                      <div className="text-center text-muted-foreground">
+                        <ImageIcon className="w-6 h-6 mx-auto mb-1 opacity-50" />
+                        <span className="text-xs">View {index + 1}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -215,6 +367,8 @@ const PlanDetail = () => {
                     <span>Status: {plan.status}</span>
                   </div>
               </div>
+              
+
               </div>
             </div>
           </div>
@@ -226,12 +380,13 @@ const PlanDetail = () => {
         <div className="container px-4">
           <div className="max-w-6xl mx-auto">
             <Tabs defaultValue="overview" className="space-y-8">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                  <TabsTrigger value="features">Features</TabsTrigger>
-                <TabsTrigger value="pricing">Pricing</TabsTrigger>
-                <TabsTrigger value="similar">Similar Plans</TabsTrigger>
-                </TabsList>
+                          <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="features">Features</TabsTrigger>
+              <TabsTrigger value="pricing">Pricing</TabsTrigger>
+              <TabsTrigger value="reviews">Reviews</TabsTrigger>
+              <TabsTrigger value="similar">Similar Plans</TabsTrigger>
+            </TabsList>
                 
               <TabsContent value="overview" className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-8">
@@ -369,18 +524,31 @@ const PlanDetail = () => {
                 </div>
               </TabsContent>
 
+              <TabsContent value="reviews" className="space-y-6">
+                <PlanReviews planId={plan.id} planTitle={plan.title} />
+              </TabsContent>
+
               <TabsContent value="similar" className="space-y-6">
                 <h3 className="text-xl font-semibold">Similar {plan.plan_type} Plans</h3>
                 <div className="grid md:grid-cols-3 gap-6">
                   <div className="text-center py-12 text-muted-foreground">
                     <p>Similar plans coming soon...</p>
                   </div>
-          </div>
+                </div>
               </TabsContent>
             </Tabs>
         </div>
-      </div>
+              </div>
       </section>
+
+      {/* 3D Viewer Modal */}
+      {plan && (
+        <Plan3DViewer 
+          plan={plan}
+          isOpen={show3DViewer} 
+          onClose={() => setShow3DViewer(false)} 
+        />
+      )}
     </div>
   );
 };

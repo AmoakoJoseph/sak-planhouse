@@ -27,6 +27,7 @@ import {
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import UserHeader from '@/components/UserHeader';
 import villaImage from '@/assets/villa-plan.jpg';
 import bungalowImage from '@/assets/bungalow-plan.jpg';
 import townhouseImage from '@/assets/townhouse-plan.jpg';
@@ -51,63 +52,41 @@ const UserOrders = () => {
     if (!user) return;
 
     try {
-      // Mock orders data - in real implementation, fetch from API
-      const mockOrders = [
-        {
-          id: '1',
-          planTitle: 'Modern 4-Bedroom Villa',
-          planType: 'villa',
-          packageType: 'premium',
-          amount: 850,
+      // Fetch real orders from API
+      const response = await fetch(`/api/orders?userId=${user.id}`);
+      if (!response.ok) throw new Error('Failed to fetch orders');
+      
+      const orders = await response.json();
+      
+      // Transform orders to match the expected format
+      const transformedOrders = await Promise.all(orders.map(async (order: any) => {
+        // Fetch plan details for each order
+        const planResponse = await fetch(`/api/plans/${order.plan_id}`);
+        const plan = await planResponse.json();
+        
+        return {
+          id: order.id,
+          planTitle: plan.title,
+          planType: plan.plan_type,
+          packageType: order.tier,
+          amount: parseFloat(order.amount),
           paymentMethod: 'paystack',
-          status: 'completed',
-          createdAt: '2024-01-15',
+          status: order.status,
+          createdAt: new Date(order.created_at).toLocaleDateString(),
           architect: 'SAKConstruction',
-          image: villaImage,
-          bedrooms: 4,
-          bathrooms: 3,
-          area: 2800,
-          downloadCount: 3,
-          downloadExpiry: '2024-02-15'
-        },
-        {
-          id: '2', 
-          planTitle: 'Cozy 3-Bedroom Bungalow',
-          planType: 'bungalow',
-          packageType: 'standard',
-          amount: 450,
-          paymentMethod: 'paystack',
-          status: 'processing',
-          createdAt: '2024-01-20',
-          architect: 'SAKConstruction',
-          image: bungalowImage,
-          bedrooms: 3,
-          bathrooms: 2,
-          area: 1800,
-          downloadCount: 0,
-          downloadExpiry: null
-        },
-        {
-          id: '3',
-          planTitle: 'Elegant 2-Story Townhouse',
-          planType: 'townhouse', 
-          packageType: 'basic',
-          amount: 350,
-          paymentMethod: 'paystack',
-          status: 'completed',
-          createdAt: '2024-01-10',
-          architect: 'SAKConstruction',
-          image: townhouseImage,
-          bedrooms: 3,
-          bathrooms: 2,
-          area: 2200,
-          downloadCount: 1,
-          downloadExpiry: '2024-02-10'
-        }
-      ];
-      setOrders(mockOrders || []);
+          image: plan.image_url || villaImage, // Fallback to default image
+          bedrooms: plan.bedrooms,
+          bathrooms: plan.bathrooms,
+          area: plan.area_sqft,
+          downloadCount: 0, // TODO: Implement download tracking
+          downloadExpiry: null // TODO: Implement expiry logic
+        };
+      }));
+      
+      setOrders(transformedOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -115,7 +94,7 @@ const UserOrders = () => {
 
   useEffect(() => {
     if (!user) {
-      navigate('/login');
+      navigate('/');
     }
   }, [user, navigate]);
 
@@ -194,33 +173,23 @@ const UserOrders = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-construction-gray-light">
-      {/* Header */}
-      <section className="py-16 bg-gradient-to-r from-primary/10 to-primary/5">
+      <UserHeader 
+        title="My Orders"
+        subtitle="View and manage your plan purchases"
+        actions={
+          <Button asChild>
+            <Link to="/plans">
+              <ShoppingBag className="h-4 w-4 mr-2" />
+              Browse More Plans
+            </Link>
+          </Button>
+        }
+      />
+
+      {/* Stats Cards */}
+      <section className="py-16">
         <div className="container px-4">
           <div className="max-w-7xl mx-auto">
-            <div className="flex items-center gap-4 mb-8">
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/user/dashboard">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Dashboard
-                </Link>
-              </Button>
-            </div>
-
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h1 className="text-3xl font-bold text-foreground mb-2">My Orders</h1>
-                <p className="text-muted-foreground">View and manage your plan purchases</p>
-              </div>
-              <Button asChild>
-                <Link to="/plans">
-                  <ShoppingBag className="h-4 w-4 mr-2" />
-                  Browse More Plans
-                </Link>
-              </Button>
-            </div>
-
-            {/* Stats Cards */}
             <div className="grid md:grid-cols-4 gap-6 mb-8">
               <Card>
                 <CardContent className="p-6">

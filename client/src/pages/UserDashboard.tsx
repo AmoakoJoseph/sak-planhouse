@@ -28,6 +28,7 @@ import { useAuth } from '@/hooks/useAuth';
 import villaImage from '@/assets/villa-plan.jpg';
 import bungalowImage from '@/assets/bungalow-plan.jpg';
 import townhouseImage from '@/assets/townhouse-plan.jpg';
+import UserHeader from '@/components/UserHeader';
 
 const UserDashboard = () => {
   const { user, profile, signOut } = useAuth();
@@ -52,17 +53,20 @@ const UserDashboard = () => {
     if (!user) return;
     
     try {
-      // Mock user data for now
-      const orders: any[] = [];
+      // Fetch user analytics from API
+      const analyticsResponse = await fetch(`/api/analytics/user/${user.id}`);
+      if (!analyticsResponse.ok) throw new Error('Failed to fetch user analytics');
+      
+      const analytics = await analyticsResponse.json();
       
       setUserStats({
-        totalOrders: 0,
-        totalSpent: 0,
-        favoritePlans: 0,
-        downloads: 0
+        totalOrders: analytics.totalOrders || 0,
+        totalSpent: analytics.totalSpent || 0,
+        favoritePlans: 0, // TODO: Implement favorites
+        downloads: analytics.totalDownloads || 0
       });
 
-      setRecentOrders(orders || []);
+      setRecentOrders(analytics.recentOrders || []);
     } catch (error) {
       console.error('Error fetching user data:', error);
     } finally {
@@ -131,7 +135,7 @@ const UserDashboard = () => {
 
   useEffect(() => {
     if (!user) {
-      navigate('/login');
+      navigate('/');
     }
   }, [user, navigate]);
 
@@ -196,65 +200,25 @@ const UserDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-construction-gray-light">
-      {/* Header */}
-      <section className="py-16 bg-gradient-to-r from-primary/10 to-primary/5">
-        <div className="container px-4">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back, {userProfile.first_name || 'User'}!</h1>
-                <p className="text-muted-foreground">Manage your account, view orders, and explore plans</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <Button variant="outline" asChild>
-                  <Link to="/plans">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Browse Plans
-                  </Link>
-                </Button>
-                <Button variant="outline" onClick={signOut}>
-                  Sign Out
-                </Button>
-              </div>
-            </div>
-
-            {/* User Profile Card */}
-            <Card className="bg-card/95 backdrop-blur">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-6">
-                  <Avatar className="h-20 w-20">
-                    <AvatarImage src={userProfile.avatar_url} />
-                    <AvatarFallback className="text-lg">
-                      {userProfile.first_name?.[0]}{userProfile.last_name?.[0] || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <h2 className="text-xl font-semibold mb-2">
-                      {userProfile.first_name} {userProfile.last_name}
-                    </h2>
-                    <div className="flex items-center gap-6 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4" />
-                        {userProfile.email}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        {userProfile.role}
-                      </div>
-                    </div>
-                  </div>
-                  <Button variant="outline" asChild>
-                    <Link to="/user/profile">
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit Profile
-                    </Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+      <UserHeader 
+        title={`Welcome back, ${userProfile.first_name || 'User'}!`}
+        subtitle="Manage your account, view orders, and explore plans"
+        showBackButton={false}
+        showUserInfo={false}
+        actions={
+          <div className="flex items-center gap-4">
+            <Button variant="outline" asChild>
+              <Link to="/plans">
+                <Plus className="h-4 h-4 mr-2" />
+                Browse Plans
+              </Link>
+            </Button>
+            <Button variant="outline" onClick={signOut}>
+              Sign Out
+            </Button>
           </div>
-        </div>
-      </section>
+        }
+      />
 
       {/* Dashboard Content */}
       <section className="py-16">

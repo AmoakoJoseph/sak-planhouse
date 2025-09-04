@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 interface User {
   id: string;
   email: string;
+  created_at?: string;
 }
 
 interface Profile {
@@ -30,6 +31,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
+  isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -47,8 +49,16 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    // Initialize from localStorage
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  const [profile, setProfile] = useState<Profile | null>(() => {
+    // Initialize from localStorage
+    const savedProfile = localStorage.getItem('profile');
+    return savedProfile ? JSON.parse(savedProfile) : null;
+  });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -57,9 +67,38 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
-    // Mock signup - replace with real authentication later
-    console.log('Sign up attempted:', { email, firstName, lastName });
-    return { error: null };
+    try {
+      console.log('Sign up attempted:', { email, firstName, lastName });
+      
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          email, 
+          password, 
+          firstName, 
+          lastName 
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+        setProfile(data.profile);
+        // Save to localStorage
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('profile', JSON.stringify(data.profile));
+        return { error: null };
+      } else {
+        const errorData = await response.json();
+        return { error: errorData.error || 'Sign up failed' };
+      }
+    } catch (error) {
+      console.error('Sign up error:', error);
+      return { error: 'Network error occurred' };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
@@ -78,6 +117,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const data = await response.json();
         setUser(data.user);
         setProfile(data.profile);
+        // Save to localStorage
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('profile', JSON.stringify(data.profile));
         return { error: null };
       } else {
         const errorData = await response.json();
@@ -97,9 +139,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
     setUser(null);
     setProfile(null);
+    // Clear localStorage
+    localStorage.removeItem('user');
+    localStorage.removeItem('profile');
   };
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+  const isAuthenticated = !!user;
 
   const value = {
     user,
@@ -108,7 +154,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     signUp,
     signIn,
     signOut,
-    isAdmin
+    isAdmin,
+    isAuthenticated
   };
 
   return (

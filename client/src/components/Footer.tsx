@@ -11,11 +11,8 @@ import {
   Twitter, 
   Instagram, 
   Linkedin,
-  Heart,
-  Shield,
-  Award,
-  Users,
-  FileText
+  FileText,
+  Award
 } from 'lucide-react';
 
 const Footer = () => {
@@ -29,29 +26,31 @@ const Footer = () => {
       </div>
 
       <div className="relative z-10">
-        {/* Main Footer Content */}
-        <div className="container mx-auto px-4 py-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+              {/* Main Footer Content */}
+      <div className="container mx-auto px-4 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
             {/* Company Info */}
-            <div className="lg:col-span-1 space-y-6">
+            <div className="lg:col-span-1 space-y-4">
               <div className="flex items-center space-x-3">
                 <div className="relative">
-                  <div className="w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center shadow-lg">
-                    <Building2 className="w-7 h-7 text-white" />
-                  </div>
                   <div className="absolute -inset-1 bg-gradient-to-br from-primary to-secondary rounded-xl blur opacity-30"></div>
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">SAK Constructions</h3>
-                  <p className="text-sm text-muted-foreground">Premium Plans Platform</p>
+                  <div className="flex items-center space-x-2">
+                    <img 
+                      src="/logo.png" 
+                      alt="SAK Constructions" 
+                      className="h-6 w-auto"
+                    />
+                  </div>
                 </div>
               </div>
               
-              <p className="text-muted-foreground leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed text-sm">
                 Building dreams with professional architectural plans. Trusted by Ghana's leading contractors and architects.
               </p>
               
-              <div className="flex space-x-4">
+              <div className="flex space-x-3">
                 {[
                   { icon: Facebook, href: '#', label: 'Facebook' },
                   { icon: Twitter, href: '#', label: 'Twitter' },
@@ -61,24 +60,25 @@ const Footer = () => {
                   <a
                     key={social.label}
                     href={social.href}
-                    className="w-10 h-10 bg-muted/20 hover:bg-primary/20 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary transition-all duration-300 group"
+                    className="w-8 h-8 bg-muted/20 hover:bg-primary/20 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary transition-all duration-300 group"
                     aria-label={social.label}
                   >
-                    <social.icon className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    <social.icon className="w-4 h-4 group-hover:scale-110 transition-transform" />
                   </a>
                 ))}
               </div>
             </div>
 
             {/* Quick Links */}
-            <div className="space-y-6">
-              <h4 className="text-lg font-semibold text-white flex items-center gap-2">
-                <FileText className="w-5 h-5 text-primary" />
+            <div className="space-y-4">
+              <h4 className="text-base font-semibold text-white flex items-center gap-2">
+                <FileText className="w-4 h-4 text-primary" />
                 Quick Links
               </h4>
-              <ul className="space-y-3">
+              <ul className="space-y-2">
                 {[
                   { name: 'Browse Plans', href: '/plans' },
+                  { name: 'Services', href: '/services' },
                   { name: 'About Us', href: '/about' },
                   { name: 'Contact', href: '/contact' },
                   { name: 'How It Works', href: '/how-it-works' },
@@ -98,12 +98,12 @@ const Footer = () => {
             </div>
 
             {/* Services */}
-            <div className="space-y-6">
-              <h4 className="text-lg font-semibold text-white flex items-center gap-2">
-                <Award className="w-5 h-5 text-primary" />
+            <div className="space-y-4">
+              <h4 className="text-base font-semibold text-white flex items-center gap-2">
+                <Award className="w-4 h-4 text-primary" />
                 Our Services
               </h4>
-              <ul className="space-y-3">
+              <ul className="space-y-2">
                 {[
                   'Villa Plans',
                   'Bungalow Designs',
@@ -122,38 +122,38 @@ const Footer = () => {
             </div>
 
             {/* Contact & Newsletter */}
-            <div className="space-y-6">
-              <h4 className="text-lg font-semibold text-white flex items-center gap-2">
-                <Mail className="w-5 h-5 text-primary" />
+            <div className="space-y-4">
+              <h4 className="text-base font-semibold text-white flex items-center gap-2">
+                <Mail className="w-4 h-4 text-primary" />
                 Stay Connected
               </h4>
               
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div className="flex items-center space-x-3 text-muted-foreground">
                   <Phone className="w-4 h-4 text-primary" />
-                  <span className="text-sm">+233 20 123 4567</span>
+                  <span className="text-sm">0246798967 / 0233798967</span>
                 </div>
                 <div className="flex items-center space-x-3 text-muted-foreground">
                   <Mail className="w-4 h-4 text-primary" />
-                  <span className="text-sm">info@sakconstructions.com</span>
+                  <span className="text-sm">sakconstructiongh@gmail.com</span>
                 </div>
                 <div className="flex items-center space-x-3 text-muted-foreground">
                   <MapPin className="w-4 h-4 text-primary" />
-                  <span className="text-sm">Accra, Ghana</span>
+                  <span className="text-sm">Tema com 25, Greater Accra around Devtraco Estates</span>
                 </div>
               </div>
 
               {/* Newsletter Subscription */}
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">Subscribe to our newsletter</p>
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">Subscribe to our newsletter</p>
                 <div className="flex space-x-2">
                   <Input
                     type="email"
                     placeholder="Enter your email"
-                    className="flex-1 bg-muted/20 border-muted/30 text-white placeholder:text-muted-foreground focus:border-primary focus:bg-muted/30 transition-all duration-300"
+                    className="flex-1 bg-muted/20 border-muted/30 text-white placeholder:text-muted-foreground focus:border-primary focus:bg-muted/30 transition-all duration-300 text-sm py-2"
                   />
-                  <Button className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white px-4 transition-all duration-300">
-                    <ArrowRight className="w-4 h-4" />
+                  <Button className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white px-3 py-2 transition-all duration-300">
+                    <ArrowRight className="w-3 h-3" />
                   </Button>
                 </div>
               </div>
@@ -161,41 +161,22 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Trust Indicators */}
-        <div className="border-t border-muted/20 bg-muted/10">
-          <div className="container mx-auto px-4 py-8">
-            <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
-              <div className="flex items-center space-x-6">
-                {[
-                  { icon: Shield, label: 'Certified & Secure' },
-                  { icon: Award, label: 'Quality Guaranteed' },
-                  { icon: Users, label: 'Trusted by 2500+ Users' },
-                ].map((indicator) => (
-                  <div key={indicator.label} className="flex items-center space-x-2 text-muted-foreground">
-                    <indicator.icon className="w-4 h-4 text-primary" />
-                    <span className="text-sm">{indicator.label}</span>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="flex items-center space-x-2 text-muted-foreground">
-                <span className="text-sm">Made with</span>
-                <Heart className="w-4 h-4 text-primary fill-current" />
-                <span className="text-sm">in Ghana</span>
-              </div>
-            </div>
-          </div>
-        </div>
+
 
         {/* Bottom Bar */}
         <div className="border-t border-muted/20 bg-muted/5">
-          <div className="container mx-auto px-4 py-6">
-            <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
-              <div className="text-sm text-muted-foreground">
-                © {currentYear} SAK Constructions. All rights reserved.
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex flex-col md:flex-row items-center justify-between space-y-3 md:space-y-0">
+              <div className="text-xs text-muted-foreground flex items-center space-x-2">
+                <img 
+                  src="/logo.png" 
+                  alt="SAK Constructions" 
+                  className="h-4 w-auto opacity-70"
+                />
+                <span>© {currentYear} All rights reserved.</span>
               </div>
               
-              <div className="flex items-center space-x-6 text-sm text-muted-foreground">
+              <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                 <Link to="/terms" className="hover:text-primary transition-colors duration-300">
                   Terms of Service
                 </Link>

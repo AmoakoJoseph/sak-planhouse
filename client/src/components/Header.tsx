@@ -14,16 +14,26 @@ import {
   ShoppingCart,
   Heart,
   LogOut,
-  Settings
+  Settings,
+  ChevronDown
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import AuthModal from './AuthModal';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const { user, isAuthenticated, signOut } = useAuth();
+  const { user, profile, isAuthenticated, signOut } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
@@ -47,6 +57,7 @@ const Header = () => {
   const navigation = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Plans', href: '/plans', icon: FileText },
+    { name: 'Services', href: '/services', icon: Building2 },
     { name: 'About', href: '/about', icon: Info },
     { name: 'Contact', href: '/contact', icon: Phone },
   ];
@@ -64,15 +75,14 @@ const Header = () => {
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-3 group">
-              <div className="relative">
-                <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
-                  <Building2 className="w-6 h-6 text-white" />
-                </div>
-                <div className="absolute -inset-1 bg-gradient-to-br from-primary to-secondary rounded-xl blur opacity-20 group-hover:opacity-40 transition-opacity duration-300"></div>
-              </div>
               <div className="hidden sm:block">
-                <h1 className="text-xl lg:text-2xl font-bold gradient-text">SAK Constructions</h1>
-                <p className="text-xs text-muted-foreground">Premium Plans Platform</p>
+                <div className="flex items-center space-x-2">
+                  <img 
+                    src="/logo.png" 
+                    alt="SAK Constructions" 
+                    className="h-8 w-auto"
+                  />
+                </div>
               </div>
             </Link>
 
@@ -100,45 +110,68 @@ const Header = () => {
             {/* Desktop Actions */}
             <div className="hidden lg:flex items-center space-x-4">
               {isAuthenticated ? (
-                <>
-                  <Link to="/dashboard">
-                    <Button variant="outline" className="btn-outline-modern">
-                      <User className="w-4 h-4 mr-2" />
-                      Dashboard
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 hover:bg-muted/50">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={profile?.avatar_url} alt={profile?.first_name || user?.email} />
+                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                          {profile?.first_name?.[0]}{profile?.last_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
                     </Button>
-                  </Link>
-                  <Link to="/favorites">
-                    <Button variant="outline" className="btn-outline-modern">
-                      <Heart className="w-4 h-4 mr-2" />
-                      Favorites
-                    </Button>
-                  </Link>
-                  <Button 
-                    variant="outline" 
-                    onClick={handleSignOut}
-                    className="btn-outline-modern"
-                  >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Sign Out
-                  </Button>
-                </>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end" forceMount>
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex flex-col space-y-1">
+                        <p className="text-sm font-medium leading-none">
+                          {profile?.first_name} {profile?.last_name}
+                        </p>
+                        <p className="text-xs leading-none text-muted-foreground">
+                          {user?.email}
+                        </p>
+                      </div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/user/dashboard" className="cursor-pointer">
+                        <User className="mr-2 h-4 w-4" />
+                        <span>Dashboard</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/user/profile" className="cursor-pointer">
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Profile</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/user/orders" className="cursor-pointer">
+                        <ShoppingCart className="mr-2 h-4 w-4" />
+                        <span>Orders</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/user/favorites" className="cursor-pointer">
+                        <Heart className="mr-2 h-4 w-4" />
+                        <span>Favorites</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Sign Out</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
-                <>
-                  <Button 
-                    variant="outline" 
-                    onClick={handleAuthClick}
-                    className="btn-outline-modern"
-                  >
-                    <User className="w-4 h-4 mr-2" />
-                    Sign In
-                  </Button>
-                  <Button 
-                    onClick={handleAuthClick}
-                    className="btn-primary"
-                  >
-                    Get Started
-                  </Button>
-                </>
+                <Button 
+                  onClick={handleAuthClick}
+                  className="btn-primary"
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  Get Started
+                </Button>
               )}
             </div>
 
@@ -184,50 +217,71 @@ const Header = () => {
               <div className="mt-6 pt-6 border-t border-border/50 space-y-4">
                 {isAuthenticated ? (
                   <>
-                    <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>
-                      <Button variant="outline" className="w-full btn-outline-modern">
-                        <User className="w-4 h-4 mr-2" />
-                        Dashboard
+                    {/* User Profile Section */}
+                    <div className="flex items-center space-x-3 p-3 bg-muted/30 rounded-lg">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={profile?.avatar_url} alt={profile?.first_name || user?.email} />
+                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                          {profile?.first_name?.[0]}{profile?.last_name?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium leading-none">
+                          {profile?.first_name} {profile?.last_name}
+                        </p>
+                        <p className="text-xs leading-none text-muted-foreground truncate">
+                          {user?.email}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* User Menu Items */}
+                    <div className="space-y-2">
+                      <Link to="/user/dashboard" onClick={() => setIsMenuOpen(false)}>
+                        <Button variant="outline" className="w-full btn-outline-modern justify-start">
+                          <User className="w-4 h-4 mr-3" />
+                          Dashboard
+                        </Button>
+                      </Link>
+                      <Link to="/user/profile" onClick={() => setIsMenuOpen(false)}>
+                        <Button variant="outline" className="w-full btn-outline-modern justify-start">
+                          <Settings className="w-4 h-4 mr-3" />
+                          Profile
+                        </Button>
+                      </Link>
+                      <Link to="/user/orders" onClick={() => setIsMenuOpen(false)}>
+                        <Button variant="outline" className="w-full btn-outline-modern justify-start">
+                          <ShoppingCart className="w-4 h-4 mr-3" />
+                          Orders
+                        </Button>
+                      </Link>
+                      <Link to="/user/favorites" onClick={() => setIsMenuOpen(false)}>
+                        <Button variant="outline" className="w-full btn-outline-modern justify-start">
+                          <Heart className="w-4 h-4 mr-3" />
+                          Favorites
+                        </Button>
+                      </Link>
+                      <Button 
+                        variant="outline" 
+                        onClick={handleSignOut}
+                        className="w-full btn-outline-modern justify-start"
+                      >
+                        <LogOut className="w-4 h-4 mr-3" />
+                        Sign Out
                       </Button>
-                    </Link>
-                    <Link to="/favorites" onClick={() => setIsMenuOpen(false)}>
-                      <Button variant="outline" className="w-full btn-outline-modern">
-                        <Heart className="w-4 h-4 mr-2" />
-                        Favorites
-                      </Button>
-                    </Link>
-                    <Button 
-                      variant="outline" 
-                      onClick={handleSignOut}
-                      className="w-full btn-outline-modern"
-                    >
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Sign Out
-                    </Button>
+                    </div>
                   </>
                 ) : (
-                  <>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        handleAuthClick();
-                        setIsMenuOpen(false);
-                      }}
-                      className="w-full btn-outline-modern"
-                    >
-                      <User className="w-4 h-4 mr-2" />
-                      Sign In
-                    </Button>
-                    <Button 
-                      onClick={() => {
-                        handleAuthClick();
-                        setIsMenuOpen(false);
-                      }}
-                      className="w-full btn-primary"
-                    >
-                      Get Started
-                    </Button>
-                  </>
+                  <Button 
+                    onClick={() => {
+                      handleAuthClick();
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full btn-primary"
+                  >
+                    <User className="w-4 h-4 mr-2" />
+                    Get Started
+                  </Button>
                 )}
               </div>
             </div>

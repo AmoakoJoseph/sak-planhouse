@@ -20,6 +20,14 @@ import UserOrders from "./pages/UserOrders";
 import UserFavorites from "./pages/UserFavorites";
 import UserSettings from "./pages/UserSettings";
 import DownloadPage from '@/pages/DownloadPage';
+import HowItWorks from '@/pages/HowItWorks';
+import FAQ from '@/pages/FAQ';
+import Terms from '@/pages/Terms';
+import Privacy from '@/pages/Privacy';
+import Cookies from '@/pages/Cookies';
+import DemoPayment from '@/pages/DemoPayment';
+import PaymentVerification from '@/pages/PaymentVerification';
+import Services from './pages/Services';
 
 const queryClient = new QueryClient();
 
@@ -37,7 +45,16 @@ const AppContent = () => {
           <Route path="/plans/:id" element={<PlanDetail />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/services" element={<Services />} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
+          <Route path="/faq" element={<FAQ />} />
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/demo-payment" element={<DemoPayment />} />
+
+          {/* Footer Pages */}
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/cookies" element={<Cookies />} />
 
           {/* User Routes */}
           <Route path="/user/dashboard" element={<UserDashboard />} />
@@ -46,6 +63,12 @@ const AppContent = () => {
           <Route path="/user/downloads/:orderId" element={<DownloadPage />} />
           <Route path="/user/favorites" element={<UserFavorites />} />
           <Route path="/user/settings" element={<UserSettings />} />
+
+          {/* Payment Routes */}
+          <Route path="/payment/verify" element={<PaymentVerification />} />
+          
+          {/* Download Routes */}
+          <Route path="/download/:orderId" element={<DownloadPage />} />
 
           {/* Admin Routes */}
           <Route path="/admin/*" element={<Admin />} />

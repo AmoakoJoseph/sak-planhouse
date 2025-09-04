@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import Header from '@/components/Header';
-import Footer from '@/components/Footer';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -278,8 +278,8 @@ const FAQ = () => {
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-2">Call Us</h3>
                 <p className="text-muted-foreground mb-4">Speak directly with our experts</p>
-                <a href="tel:+233201234567" className="text-primary hover:text-primary/80 font-medium">
-                  +233 20 123 4567
+                <a href="tel:0246798967" className="text-primary hover:text-primary/80 font-medium">
+                  0246798967
                 </a>
               </div>
 
@@ -289,8 +289,8 @@ const FAQ = () => {
                 </div>
                 <h3 className="text-xl font-semibold text-foreground mb-2">Email Us</h3>
                 <p className="text-muted-foreground mb-4">Get detailed responses via email</p>
-                <a href="mailto:support@sakconstructions.com" className="text-primary hover:text-primary/80 font-medium">
-                  support@sakconstructions.com
+                <a href="mailto:sakconstructiongh@gmail.com" className="text-primary hover:text-primary/80 font-medium">
+                  sakconstructiongh@gmail.com
                 </a>
               </div>
 
@@ -309,7 +309,7 @@ const FAQ = () => {
         </div>
       </section>
 
-      <Footer />
+
     </>
   );
 };

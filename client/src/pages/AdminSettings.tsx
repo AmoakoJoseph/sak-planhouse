@@ -73,7 +73,7 @@ const AdminSettings = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="contactEmail">Contact Email</Label>
-                  <Input id="contactEmail" type="email" placeholder="info@sakconstructions.com" />
+                  <Input id="contactEmail" type="email" placeholder="sakconstructiongh@gmail.com" />
                 </div>
                 <Button>Save Changes</Button>
               </CardContent>

@@ -1,5 +1,5 @@
 // API client to replace Supabase calls
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export interface Plan {
   id: string;
@@ -151,11 +151,51 @@ class ApiClient {
     return response.json();
   }
 
+
+
   async downloadFile(orderId: string, filePath: string): Promise<Response> {
     const url = `${API_BASE}/downloads/${orderId}/file?filePath=${encodeURIComponent(filePath)}`;
     const response = await fetch(url);
     if (!response.ok) throw new Error('Failed to download file');
     return response;
+  }
+
+  // Payment API
+  async initializePayment(paymentData: {
+    email: string;
+    amount: number;
+    planId: string;
+    planTitle: string;
+    packageType: string;
+    userId?: string;
+  }): Promise<any> {
+    const response = await fetch(`${API_BASE}/payments/initialize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(paymentData),
+    });
+    if (!response.ok) throw new Error('Failed to initialize payment');
+    return response.json();
+  }
+
+  async post(endpoint: string, data: any): Promise<any> {
+    // Remove leading slash if present to avoid double /api/
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+    const response = await fetch(`${API_BASE}/${cleanEndpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error(`Failed to POST to ${endpoint}`);
+    return response.json();
+  }
+
+  async get(endpoint: string): Promise<any> {
+    // Remove leading slash if present to avoid double /api/
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+    const response = await fetch(`${API_BASE}/${cleanEndpoint}`);
+    if (!response.ok) throw new Error(`Failed to GET from ${endpoint}`);
+    return response.json();
   }
 }
 

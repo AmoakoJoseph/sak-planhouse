@@ -31,13 +31,11 @@ const DownloadPage = () => {
         try {
           const response = await fetch(`/api/downloads/${orderId}`);
           const data = await response.json();
-          if (data.packageType === 'premium') {
-            navigate('/auth/register');
-          } else {
-            navigate('/auth/login');
-          }
+          // Redirect to home page where user can access AuthModal
+          navigate('/');
         } catch {
-          navigate('/auth/login');
+          // Redirect to home page where user can access AuthModal
+          navigate('/');
         }
       };
       checkOrderType();

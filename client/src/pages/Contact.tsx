@@ -14,7 +14,7 @@ import {
   Send,
   CheckCircle 
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -26,29 +26,85 @@ const Contact = () => {
     message: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    console.log('Form submitted:', formData);
+    
+    try {
+      // Show loading state
+      const submitButton = submitButtonRef.current;
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>Sending...';
+      }
+      
+      // Prepare email data
+      const emailData = {
+        to: 'sakconstructiongh@gmail.com',
+        subject: formData.subject || 'Inquiry from SAK Constructions Website',
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        planType: formData.planType,
+        message: formData.message
+      };
+      
+      // Send email through backend API
+      const response = await fetch('/api/contact/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailData),
+      });
+      
+      if (response.ok) {
+        // Success - reset form and show success message
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          subject: '',
+          planType: '',
+          message: ''
+        });
+        
+        alert('Thank you! Your message has been sent successfully. We will get back to you within 24 hours.');
+      } else {
+        throw new Error('Failed to send email');
+      }
+      
+    } catch (error) {
+      console.error('Error sending email:', error);
+      alert('Sorry, there was an error sending your message. Please try again or contact us directly at sakconstructiongh@gmail.com');
+    } finally {
+      // Reset button state
+      const submitButton = submitButtonRef.current;
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.innerHTML = '<Send className="h-5 w-5 mr-2" />Send Message';
+      }
+    }
   };
 
   const contactInfo = [
     {
       icon: Phone,
       title: 'Phone',
-      details: ['+233 24 123 4567', '+233 30 234 5678'],
+      details: ['0246798967', '0233798967'],
       description: 'Mon-Fri 8AM-6PM GMT'
     },
     {
       icon: Mail,
       title: 'Email',
-      details: ['info@sakconstructionsgh.com', 'support@sakconstructionsgh.com'],
+      details: ['sakconstructiongh@gmail.com'],
       description: 'We reply within 24 hours'
     },
     {
       icon: MapPin,
       title: 'Address',
-      details: ['123 Liberation Road', 'East Legon, Accra'],
+      details: ['Tema com 25, Greater Accra', 'around Devtraco Estates'],
       description: 'Ghana'
     },
     {
@@ -107,7 +163,7 @@ const Contact = () => {
               <CardHeader>
                 <CardTitle className="text-2xl">Send us a Message</CardTitle>
                 <CardDescription>
-                  Fill out the form below and we'll get back to you within 24 hours
+                  Fill out the form below and click "Send Message" to send your inquiry directly to our team. Your message will be sent automatically to sakconstructiongh@gmail.com.
                 </CardDescription>
               </CardHeader>
               
@@ -144,7 +200,7 @@ const Contact = () => {
                         id="phone"
                         value={formData.phone}
                         onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                        placeholder="+233 XX XXX XXXX"
+                        placeholder="0246798967"
                       />
                     </div>
                     <div className="space-y-2">
@@ -188,7 +244,7 @@ const Contact = () => {
                     />
                   </div>
 
-                  <Button type="submit" variant="cta" size="lg" className="w-full">
+                  <Button type="submit" variant="cta" size="lg" className="w-full" ref={submitButtonRef}>
                     <Send className="h-5 w-5 mr-2" />
                     Send Message
                   </Button>
@@ -267,8 +323,8 @@ const Contact = () => {
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-foreground">SAK Constructions GH</p>
                   <p className="text-sm text-muted-foreground">
-                    123 Liberation Road<br />
-                    East Legon, Accra<br />
+                    Tema com 25, Greater Accra<br />
+                    around Devtraco Estates<br />
                     Ghana
                   </p>
                 </div>
@@ -310,7 +366,7 @@ const Contact = () => {
                 <div>
                   <h3 className="text-lg font-semibold text-foreground mb-2">Interactive Map</h3>
                   <p className="text-muted-foreground">
-                    123 Liberation Road, East Legon, Accra
+                    Tema com 25, Greater Accra, around Devtraco Estates
                   </p>
                   <Button variant="outline" className="mt-4">
                     Open in Google Maps

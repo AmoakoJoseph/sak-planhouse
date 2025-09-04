@@ -13,7 +13,7 @@ import {
   Building2
 } from 'lucide-react';
 import Header from '@/components/Header';
-import Footer from '@/components/Footer';
+
 
 const Privacy = () => {
   const sections = [
@@ -73,9 +73,9 @@ const Privacy = () => {
   ];
 
   const contactInfo = {
-    email: "privacy@sakconstructions.com",
-    phone: "+233 20 123 4567",
-    address: "Accra, Ghana"
+          email: "sakconstructiongh@gmail.com",
+            phone: "0246798967",
+          address: "Tema com 25, Greater Accra, around Devtraco Estates"
   };
 
   return (
@@ -298,7 +298,7 @@ const Privacy = () => {
         </div>
       </section>
 
-      <Footer />
+
     </>
   );
 };

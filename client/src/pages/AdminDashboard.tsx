@@ -280,7 +280,7 @@ const AdminDashboard = () => {
                     <Activity className="w-5 h-5 text-primary" />
                     Recent Orders
                   </CardTitle>
-                  <CardDescription>Latest plan purchases</CardDescription>
+              <CardDescription>Latest plan purchases</CardDescription>
                 </div>
                 <Badge variant="secondary" className="px-3 py-1">
                   {stats.recentOrders.length} orders
@@ -304,7 +304,7 @@ const AdminDashboard = () => {
                         <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                           <ShoppingCart className="w-5 h-5 text-primary" />
                         </div>
-                        <div>
+                      <div>
                           <p className="font-medium text-foreground">Order #{order.id?.slice(0, 8)}</p>
                           <p className="text-sm text-muted-foreground">{order.tier} package</p>
                         </div>
@@ -355,7 +355,7 @@ const AdminDashboard = () => {
                         <div className="w-10 h-10 bg-secondary/10 rounded-full flex items-center justify-center">
                           <FileText className="w-5 h-5 text-secondary" />
                         </div>
-                        <div>
+                      <div>
                           <p className="font-medium text-foreground">{plan.title}</p>
                           <p className="text-sm text-muted-foreground">{plan.plan_type}</p>
                         </div>

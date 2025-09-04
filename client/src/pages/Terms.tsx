@@ -11,7 +11,7 @@ import {
   Mail
 } from 'lucide-react';
 import Header from '@/components/Header';
-import Footer from '@/components/Footer';
+
 import { Button } from '@/components/ui/button';
 
 const Terms = () => {
@@ -57,9 +57,9 @@ const Terms = () => {
   ];
 
   const contactInfo = {
-    email: "legal@sakconstructions.com",
-    phone: "+233 20 123 4567",
-    address: "Accra, Ghana"
+          email: "sakconstructiongh@gmail.com",
+            phone: "0246798967",
+          address: "Tema com 25, Greater Accra, around Devtraco Estates"
   };
 
   return (
@@ -240,7 +240,7 @@ const Terms = () => {
         </div>
       </section>
 
-      <Footer />
+
     </>
   );
 };

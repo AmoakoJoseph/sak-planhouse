@@ -13,7 +13,7 @@ import {
   Heart
 } from 'lucide-react';
 import Header from '@/components/Header';
-import Footer from '@/components/Footer';
+
 
 const HowItWorks = () => {
   const steps = [
@@ -254,7 +254,7 @@ const HowItWorks = () => {
         </div>
       </section>
 
-      <Footer />
+
     </>
   );
 };
