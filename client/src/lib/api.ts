@@ -1,5 +1,5 @@
-// API client to replace Supabase calls
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+// API client for Netlify Functions
+const API_BASE = '/api';
 
 export interface Plan {
   id: string;

@@ -1,8 +1,10 @@
 [build]
-  # Build command for client only (Netlify is for frontend)
+  # Build command for client only
   command = "npm run build:client"
-  # Publish directory (client files only - Netlify is for frontend)
+  # Publish directory (client files)
   publish = "client/dist"
+  # Functions directory
+  functions = "netlify/functions"
 
 [build.environment]
   # Set Node.js version
@@ -12,6 +14,12 @@
 [[redirects]]
   from = "/*"
   to = "/index.html"
+  status = 200
+
+# API redirects to Netlify Functions
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api"
   status = 200
 
 # Headers for security and performance
