@@ -6,9 +6,9 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "src"),
-      "@shared": path.resolve(__dirname, "..", "shared"),
-      "@assets": path.resolve(__dirname, "..", "attached_assets"),
+      "@": path.resolve(import.meta.dirname, "src"),
+      "@shared": path.resolve(import.meta.dirname, "..", "shared"),
+      "@assets": path.resolve(import.meta.dirname, "..", "attached_assets"),
     },
   },
   build: {
@@ -19,5 +19,12 @@ export default defineConfig({
         manualChunks: undefined
       }
     }
+  },
+  server: {
+    host: "0.0.0.0",
+    port: 5000,
+    hmr: {
+      port: 5000,
+    },
   },
 });
