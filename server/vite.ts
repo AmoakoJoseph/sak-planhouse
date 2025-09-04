@@ -72,15 +72,10 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  // In production (Vercel), the client is built to client/dist
+  // In production (Vercel), the client is built and copied to root
   // In development, it might be in the root
-  let distPath = path.resolve(import.meta.dirname, "..", "client", "dist");
+  let distPath = path.resolve(import.meta.dirname, "..");
   
-  if (!fs.existsSync(distPath)) {
-    // Fallback to root directory for local development
-    distPath = path.resolve(import.meta.dirname, "..");
-  }
-
   if (!fs.existsSync(distPath)) {
     throw new Error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`,
