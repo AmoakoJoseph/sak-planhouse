@@ -57,20 +57,17 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // In production (Vercel), export the app for serverless functions  
-  if (process.env.NODE_ENV === "production" && !process.env.REPLIT_DB_URL) {
-    // Export for Vercel serverless function
-    export default app;
-  } else {
-    // ALWAYS serve the app on port 5000 for development
-    // this serves both the API and the client.
-    // It is the only port that is not firewalled.
-    const port = process.env.PORT || 5000;
-    server.listen({
-      port,
-      host: "0.0.0.0",
-    }, () => {
-      log(`serving on port ${port}`);
-    });
-  }
+  // ALWAYS serve the app on port 5000 for development
+  // this serves both the API and the client.
+  // It is the only port that is not firewalled.
+  const port = process.env.PORT || 5000;
+  server.listen({
+    port,
+    host: "0.0.0.0",
+  }, () => {
+    log(`serving on port ${port}`);
+  });
 })();
+
+// Export for Vercel serverless functions
+export default app;

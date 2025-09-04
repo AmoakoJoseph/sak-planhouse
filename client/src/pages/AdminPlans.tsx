@@ -122,8 +122,7 @@ const AdminPlans = () => {
     if (!editingPlan) return;
 
     try {
-      // Mock update for now
-      console.log('Update plan:', planForm);
+      await api.updatePlan(editingPlan.id, planForm);
 
       toast({
         title: "Success",
@@ -147,8 +146,7 @@ const AdminPlans = () => {
     if (!confirm('Are you sure you want to delete this plan?')) return;
 
     try {
-      // Mock delete for now
-      console.log('Delete plan:', planId);
+      await api.deletePlan(planId);
 
       toast({
         title: "Success",
@@ -168,8 +166,7 @@ const AdminPlans = () => {
 
   const toggleFeatured = async (plan: Plan) => {
     try {
-      // Mock toggle featured for now
-      console.log('Toggle featured for plan:', plan.id);
+      await api.updatePlan(plan.id, { featured: !plan.featured });
 
       toast({
         title: "Success",
