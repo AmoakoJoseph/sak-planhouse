@@ -69,6 +69,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ message: "Server is running!", timestamp: new Date().toISOString() });
   });
 
+  // Health check endpoint for Render
+  app.get("/api/health", (req, res) => {
+    res.status(200).json({ 
+      status: "healthy", 
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      environment: process.env.NODE_ENV || 'development'
+    });
+  });
+
   // Serve static files from uploads directory
   app.use('/uploads', express.static('uploads'));
 

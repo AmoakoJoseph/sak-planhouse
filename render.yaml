@@ -1,0 +1,41 @@
+services:
+  # Web Service for the Express.js backend
+  - type: web
+    name: sak-planhouse-api
+    env: node
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: PAYSTACK_SECRET_KEY
+        sync: false
+      - key: PAYSTACK_PUBLIC_KEY
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+    healthCheckPath: /api/health
+    autoDeploy: true
+
+  # Static Site for the React frontend
+  - type: static
+    name: sak-planhouse-frontend
+    buildCommand: cd client && npm install && npm run build
+    staticPublishPath: ./client/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://sak-planhouse-api.onrender.com
+    autoDeploy: true
+    pullRequestPreviewsEnabled: true
+
+databases:
+  # PostgreSQL database
+  - name: sak-planhouse-db
+    plan: starter
+    databaseName: sakplanhouse
+    user: sakplanhouse_user
