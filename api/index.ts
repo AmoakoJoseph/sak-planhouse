@@ -1,0 +1,827 @@
+import express from 'express';
+import { storage } from '../server/storage';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { PaystackService } from '../server/paystack';
+
+// Multer configuration for file uploads
+const imageStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/images/');
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const planFileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const tier = req.body.tier || 'basic';
+    const planId = req.body.planId || 'temp';
+    const uploadPath = `uploads/plans/${tier}/`;
+    
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const uploadImage = multer({ 
+  storage: imageStorage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'));
+    }
+  },
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
+
+const uploadPlanFile = multer({ 
+  storage: planFileStorage,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['.pdf', '.dwg', '.dxf', '.zip'];
+    const fileExt = path.extname(file.originalname).toLowerCase();
+    if (allowedTypes.includes(fileExt)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF, DWG, DXF, and ZIP files are allowed!'));
+    }
+  },
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+});
+
+const app = express();
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// CORS for Vercel
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
+// Test endpoint to verify server is working
+app.get("/api/test", (req, res) => {
+  res.json({ message: "Server is running!", timestamp: new Date().toISOString() });
+});
+
+// File Upload API
+app.post("/api/upload/image", uploadImage.single('image'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    res.json({ 
+      filename: req.file.filename,
+      path: `/uploads/images/${req.file.filename}`,
+      url: `/uploads/images/${req.file.filename}`
+    });
+  } catch (error) {
+    console.error("Error uploading image:", error);
+    res.status(500).json({ error: "Failed to upload image" });
+  }
+});
+
+app.post("/api/upload/plan-files", uploadPlanFile.fields([
+  { name: 'basic', maxCount: 5 },
+  { name: 'standard', maxCount: 5 },
+  { name: 'premium', maxCount: 5 }
+]), (req, res) => {
+  try {
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    const uploadedFiles: { [tier: string]: string[] } = {};
+    
+    for (const tier in files) {
+      uploadedFiles[tier] = files[tier].map(file => `/uploads/plans/${tier}/${file.filename}`);
+    }
+    
+    res.json({ files: uploadedFiles });
+  } catch (error) {
+    console.error("Error uploading plan files:", error);
+    res.status(500).json({ error: "Failed to upload plan files" });
+  }
+});
+
+// Plans API
+app.get("/api/plans", async (req, res) => {
+  try {
+    const { status, featured } = req.query;
+    const filters: { status?: string; featured?: boolean } = {};
+    
+    if (status) filters.status = status as string;
+    if (featured) filters.featured = featured === 'true';
+    
+    const plans = await storage.getPlans(filters);
+    res.json(plans);
+  } catch (error) {
+    console.error("Error fetching plans:", error);
+    res.status(500).json({ error: "Failed to fetch plans" });
+  }
+});
+
+app.get("/api/plans/:id", async (req, res) => {
+  try {
+    const plan = await storage.getPlan(req.params.id);
+    if (!plan) {
+      return res.status(404).json({ error: "Plan not found" });
+    }
+    res.json(plan);
+  } catch (error) {
+    console.error("Error fetching plan:", error);
+    res.status(500).json({ error: "Failed to fetch plan" });
+  }
+});
+
+app.post("/api/plans", async (req, res) => {
+  try {
+    const plan = await storage.createPlan(req.body);
+    res.status(201).json(plan);
+  } catch (error) {
+    console.error("Error creating plan:", error);
+    res.status(500).json({ error: "Failed to create plan" });
+  }
+});
+
+app.put("/api/plans/:id", async (req, res) => {
+  try {
+    const plan = await storage.updatePlan(req.params.id, req.body);
+    if (!plan) {
+      return res.status(404).json({ error: "Plan not found" });
+    }
+    res.json(plan);
+  } catch (error) {
+    console.error("Error updating plan:", error);
+    res.status(500).json({ error: "Failed to update plan" });
+  }
+});
+
+app.delete("/api/plans/:id", async (req, res) => {
+  try {
+    const success = await storage.deletePlan(req.params.id);
+    if (!success) {
+      return res.status(404).json({ error: "Plan not found" });
+    }
+    res.status(204).send();
+  } catch (error) {
+    console.error("Error deleting plan:", error);
+    res.status(500).json({ error: "Failed to delete plan" });
+  }
+});
+
+// Orders API
+app.get("/api/orders", async (req, res) => {
+  try {
+    const { userId } = req.query;
+    const orders = await storage.getOrders(userId as string);
+    res.json(orders);
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    res.status(500).json({ error: "Failed to fetch orders" });
+  }
+});
+
+app.post("/api/orders", async (req, res) => {
+  try {
+    const order = await storage.createOrder(req.body);
+    res.status(201).json(order);
+  } catch (error) {
+    console.error("Error creating order:", error);
+    res.status(500).json({ error: "Failed to create order" });
+  }
+});
+
+// Profiles API
+app.get("/api/profiles/:userId", async (req, res) => {
+  try {
+    const profile = await storage.getProfile(req.params.userId);
+    if (!profile) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
+    res.json(profile);
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+    res.status(500).json({ error: "Failed to fetch profile" });
+  }
+});
+
+app.post("/api/profiles", async (req, res) => {
+  try {
+    const profile = await storage.createProfile(req.body);
+    res.status(201).json(profile);
+  } catch (error) {
+    console.error("Error creating profile:", error);
+    res.status(500).json({ error: "Failed to create profile" });
+  }
+});
+
+app.put("/api/profiles/:userId", async (req, res) => {
+  try {
+    const profile = await storage.updateProfile(req.params.userId, req.body);
+    if (!profile) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
+    res.json(profile);
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    res.status(500).json({ error: "Failed to update profile" });
+  }
+});
+
+// Analytics API
+app.get("/api/analytics", async (req, res) => {
+  try {
+    console.log("Analytics endpoint called");
+    const analytics = await storage.getAnalytics();
+    console.log("Analytics fetched successfully:", analytics);
+    res.json(analytics);
+  } catch (error) {
+    console.error("Error fetching analytics:", error);
+    console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace');
+    res.status(500).json({ error: "Failed to fetch analytics", details: error instanceof Error ? error.message : String(error) });
+  }
+});
+
+// User Analytics API
+app.get("/api/analytics/user/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Get user-specific analytics
+    const userOrders = await storage.getOrders(userId);
+    const userDownloads = await storage.getDownloads(userId);
+    
+    const analytics = {
+      totalOrders: userOrders.length,
+      totalSpent: userOrders.reduce((sum, order) => sum + parseFloat(order.amount), 0),
+      totalDownloads: userDownloads.length,
+      recentOrders: userOrders.slice(0, 5),
+      recentDownloads: userDownloads.slice(0, 5)
+    };
+    
+    res.json(analytics);
+  } catch (error) {
+    console.error("Error fetching user analytics:", error);
+    res.status(500).json({ error: "Failed to fetch user analytics" });
+  }
+});
+
+// Users API
+app.get("/api/users", async (req, res) => {
+  try {
+    const users = await storage.getAllUsers();
+    res.json(users);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+// Authentication API
+app.post("/api/auth/signin", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    // For the admin user, check credentials
+    if (email === 'admin@sakconstructionsgh.com' && password === 'admin123') {
+      const profile = await storage.getProfileByEmail(email);
+      if (profile) {
+        res.json({
+          user: { id: profile.user_id, email: profile.email },
+          profile
+        });
+        return;
+      }
+    }
+    
+    // For regular users, check if they exist in the database
+    const profile = await storage.getProfileByEmail(email);
+    if (profile) {
+      // In production, you'd verify the password hash here
+      // For now, we'll allow any user with a valid email to sign in
+      res.json({
+        user: { id: profile.user_id, email: profile.email },
+        profile
+      });
+      return;
+    }
+    
+    res.status(401).json({ error: "Invalid credentials" });
+  } catch (error) {
+    console.error("Error signing in:", error);
+    res.status(500).json({ error: "Failed to sign in" });
+  }
+});
+
+app.post("/api/auth/signup", async (req, res) => {
+  try {
+    const { email, password, firstName, lastName } = req.body;
+    
+    // Validate required fields
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+    
+    // Check if user already exists
+    const existingProfile = await storage.getProfileByEmail(email);
+    if (existingProfile) {
+      return res.status(409).json({ error: "User with this email already exists" });
+    }
+    
+    // Create new user and profile
+    // Generate a proper UUID for the user
+    const { randomUUID } = await import('crypto');
+    const userId = randomUUID();
+    
+    const profileData = {
+      user_id: userId,
+      email,
+      first_name: firstName || null,
+      last_name: lastName || null,
+      phone: null,
+      role: 'user',
+      avatar_url: null,
+      address: null,
+      city: null,
+      country: 'Ghana',
+      bio: null,
+      company: null,
+      website: null
+    };
+    
+    const profile = await storage.createProfile(profileData);
+    
+    if (profile) {
+      res.status(201).json({
+        user: { id: userId, email },
+        profile
+      });
+    } else {
+      res.status(500).json({ error: "Failed to create user profile" });
+    }
+    
+  } catch (error) {
+    console.error("Error signing up:", error);
+    res.status(500).json({ error: "Failed to sign up" });
+  }
+});
+
+app.post("/api/auth/signout", async (req, res) => {
+  res.json({ success: true });
+});
+
+// Payment routes
+app.post("/api/payments/initialize", async (req, res) => {
+  try {
+    console.log('=== PAYMENT INITIALIZATION DEBUG ===');
+    console.log('Request body received:', req.body);
+    console.log('Request headers:', req.headers);
+    
+    const { email, amount, planId, planTitle, packageType, userId } = req.body;
+    console.log('Extracted fields:', { email, amount, planId, planTitle, packageType, userId });
+    console.log('User ID type:', typeof userId);
+    console.log('User ID value:', userId);
+
+    if (!email || !amount || !planId) {
+      console.log('Missing required fields:', { 
+        hasEmail: !!email, 
+        hasAmount: !!amount, 
+        hasPlanId: !!planId 
+      });
+      return res.status(400).json({ error: "Missing required payment data" });
+    }
+
+    console.log('All required fields present, generating reference...');
+    const reference = PaystackService.generateReference();
+    console.log('Generated reference:', reference);
+    
+    const amountInKobo = Math.round(amount * 100); // Convert cedis to kobo
+    console.log('Amount conversion:', { original: amount, inKobo: amountInKobo });
+
+    // Get user ID from request body or generate one
+    let requestUserId = userId;
+    
+    const paymentData = {
+      email,
+      amount: amountInKobo,
+      reference,
+      callback_url: `${req.protocol}://${req.get('host')}/api/payment/verify/${reference}`,
+      planId,
+      packageType,
+      metadata: {
+        planId,
+        planTitle,
+        packageType,
+        userId: requestUserId, // Store user ID in metadata for verification
+        custom_fields: [
+          {
+            display_name: "Plan",
+            variable_name: "plan",
+            value: planTitle,
+          },
+          {
+            display_name: "Package",
+            variable_name: "package",
+            value: packageType,
+          },
+        ],
+      },
+    };
+    
+    console.log('Payment data prepared:', paymentData);
+    console.log('Callback URL:', paymentData.callback_url);
+    console.log('Environment check - PAYSTACK_SECRET_KEY exists:', !!process.env.PAYSTACK_SECRET_KEY);
+    console.log('Environment check - PAYSTACK_SECRET_KEY length:', process.env.PAYSTACK_SECRET_KEY?.length || 0);
+
+    console.log('Calling PaystackService.initializePayment...');
+    const result = await PaystackService.initializePayment(paymentData);
+    console.log('PaystackService result:', result);
+
+    if (result.success && result.data) {
+      console.log('Payment initialization successful, sending response...');
+      res.json({
+        success: true,
+        authorization_url: result.data.authorization_url,
+        access_code: result.data.access_code,
+        reference: result.data.reference,
+      });
+    } else {
+      console.log('Payment initialization failed - no success or data');
+      res.status(400).json({ error: "Failed to initialize payment" });
+    }
+  } catch (error) {
+    console.error("=== PAYMENT INITIALIZATION ERROR ===");
+    console.error("Error type:", typeof error);
+    console.error("Error constructor:", error?.constructor?.name);
+    console.error("Error message:", (error as any)?.message);
+    console.error("Error stack:", (error as any)?.stack);
+    console.error("Full error object:", error);
+    
+    res.status(500).json({ 
+      error: "Failed to initialize payment",
+      details: (error as any)?.message || 'Unknown error',
+      type: (error as any)?.constructor?.name || 'Unknown'
+    });
+  }
+});
+
+app.get("/api/payments/verify/:reference", async (req, res) => {
+  try {
+    const { reference } = req.params;
+    console.log('=== PAYMENT VERIFICATION DEBUG ===');
+    console.log('Verifying payment with reference:', reference);
+
+    if (!reference) {
+      console.log('No reference provided');
+      return res.status(400).json({ error: "Payment reference is required" });
+    }
+
+    console.log('Calling PaystackService.verifyPayment...');
+    const verification = await PaystackService.verifyPayment(reference);
+    console.log('Paystack verification result:', verification);
+
+    if (!verification) {
+      console.log('Verification returned null/undefined');
+      return res.status(400).json({ error: "Payment verification failed" });
+    }
+
+    if (verification.data.status === 'success') {
+      console.log('Payment successful, creating order...');
+      console.log('Verification metadata:', verification.data.metadata);
+      
+      // Get user ID from metadata or find/create user
+      let orderUserId = verification.data.metadata?.userId;
+      
+      if (!orderUserId) {
+        console.log('No user ID in metadata, checking if user exists by email...');
+        // Try to find user by email from Paystack response
+        const userEmail = verification.data.customer?.email;
+        if (userEmail) {
+          const existingProfile = await storage.getProfileByEmail(userEmail);
+          if (existingProfile) {
+            orderUserId = existingProfile.user_id;
+            console.log('Found existing user by email:', orderUserId);
+          } else {
+            console.log('No existing user found, creating new user profile...');
+            // Create new user profile
+            const { randomUUID } = await import('crypto');
+            orderUserId = randomUUID();
+            const profileData = {
+              user_id: orderUserId,
+              email: userEmail,
+              first_name: null,
+              last_name: null,
+              phone: null,
+              role: 'user',
+              avatar_url: null,
+              address: null,
+              city: null,
+              country: 'Ghana',
+              bio: null,
+              company: null,
+              website: null
+            };
+            await storage.createProfile(profileData);
+            console.log('Created new user profile:', orderUserId);
+          }
+        } else {
+          console.log('No email found in Paystack response, creating guest user...');
+          const { randomUUID } = await import('crypto');
+          orderUserId = randomUUID();
+        }
+      }
+      
+      console.log('Final user ID for order:', orderUserId);
+      
+      // Create order record
+      const orderData = {
+        user_id: orderUserId,
+        plan_id: verification.data.metadata.planId,
+        tier: verification.data.metadata.packageType,
+        amount: String(verification.data.amount / 100), // Convert back to cedis
+        payment_intent_id: reference,
+        status: 'completed',
+      };
+
+      console.log('Order data:', orderData);
+      const order = await storage.createOrder(orderData);
+      console.log('Order created:', order);
+
+      res.json({
+        success: true,
+        payment: verification.data,
+        order,
+      });
+    } else {
+      console.log('Payment not successful, status:', verification.data.status);
+      res.status(400).json({
+        success: false,
+        error: "Payment was not successful",
+        status: verification.data.status,
+      });
+    }
+  } catch (error) {
+    console.error("=== PAYMENT VERIFICATION ERROR ===");
+    console.error("Error type:", typeof error);
+    console.error("Error message:", (error as any)?.message);
+    console.error("Error stack:", (error as any)?.stack);
+    console.error("Full error object:", error);
+    res.status(500).json({ error: "Failed to verify payment" });
+  }
+});
+
+app.post("/api/payments/callback", async (req, res) => {
+  try {
+    // Paystack webhook callback
+    const { reference } = req.body;
+    
+    if (reference) {
+      const verification = await PaystackService.verifyPayment(reference);
+      if (verification && verification.data.status === 'success') {
+        // Update order status or perform any post-payment actions
+        console.log('Payment verified via callback:', reference);
+      }
+    }
+    
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error("Error handling payment callback:", error);
+    res.status(500).send('Error');
+  }
+});
+
+// Download routes
+app.get("/api/downloads", async (req, res) => {
+  try {
+    const { userId } = req.query;
+    
+    if (!userId) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
+
+    // Get all downloads for a user
+    const downloads = await storage.getDownloads(userId as string);
+    
+    res.json(downloads);
+  } catch (error) {
+    console.error("Error fetching downloads:", error);
+    res.status(500).json({ error: "Failed to fetch downloads" });
+  }
+});
+
+app.get("/api/downloads/:orderId", async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await storage.getOrder(orderId);
+    
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.status !== 'completed') {
+      return res.status(403).json({ error: "Payment not completed" });
+    }
+
+    const plan = await storage.getPlan(order.plan_id);
+    if (!plan) {
+      return res.status(404).json({ error: "Plan not found" });
+    }
+
+    // Get files based on tier hierarchy: basic = basic only, standard = basic + standard, premium = basic + standard + premium
+    let availableFiles: string[] = [];
+    const planFiles = plan.plan_files as { basic?: string[]; standard?: string[]; premium?: string[] } || {};
+    
+    if (order.tier === 'basic') {
+      availableFiles = planFiles.basic || [];
+    } else if (order.tier === 'standard') {
+      availableFiles = [
+        ...(planFiles.basic || []),
+        ...(planFiles.standard || [])
+      ];
+    } else if (order.tier === 'premium') {
+      availableFiles = [
+        ...(planFiles.basic || []),
+        ...(planFiles.standard || []),
+        ...(planFiles.premium || [])
+      ];
+    }
+    
+    if (!availableFiles || availableFiles.length === 0) {
+      return res.status(404).json({ error: "No files available for download" });
+    }
+
+    res.json({
+      orderId,
+      planTitle: plan.title,
+      packageType: order.tier,
+      files: availableFiles,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+    });
+  } catch (error) {
+    console.error("Error fetching download info:", error);
+    res.status(500).json({ error: "Failed to fetch download information" });
+  }
+});
+
+app.get("/api/downloads/:orderId/file", async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { filePath } = req.query;
+    
+    if (!filePath) {
+      return res.status(400).json({ error: "File path is required" });
+    }
+
+    const order = await storage.getOrder(orderId);
+    
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.status !== 'completed') {
+      return res.status(403).json({ error: "Payment not completed" });
+    }
+
+    const plan = await storage.getPlan(order.plan_id);
+    if (!plan) {
+      return res.status(404).json({ error: "Plan not found" });
+    }
+
+    // Get files based on tier hierarchy and verify access
+    let availableFiles: string[] = [];
+    const planFiles = plan.plan_files || {};
+    
+    type PlanFiles = {
+      basic?: string[];
+      standard?: string[];
+      premium?: string[];
+      [key: string]: any;
+    };
+    const typedPlanFiles: PlanFiles = planFiles as PlanFiles;
+
+    if (order.tier === 'basic') {
+      availableFiles = typedPlanFiles.basic || [];
+    } else if (order.tier === 'standard') {
+      availableFiles = [
+        ...(typedPlanFiles.basic || []),
+        ...(typedPlanFiles.standard || [])
+      ];
+    } else if (order.tier === 'premium') {
+      availableFiles = [
+        ...(typedPlanFiles.basic || []),
+        ...(typedPlanFiles.standard || []),
+        ...(typedPlanFiles.premium || [])
+      ];
+    }
+
+    if (!availableFiles.includes(filePath as string)) {
+      return res.status(403).json({ error: "File not included in your package" });
+    }
+
+    const fullFilePath = path.join(process.cwd(), filePath as string);
+    
+    if (!fs.existsSync(fullFilePath)) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    // Record the download
+    await storage.recordDownload({
+      order_id: orderId,
+      plan_id: order.plan_id,
+      user_id: order.user_id,
+      created_at: new Date(),
+      download_count: 1,
+    });
+
+    // Set appropriate headers for download
+    const fileName = path.basename(fullFilePath);
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    
+    // Stream the file
+    const fileStream = fs.createReadStream(fullFilePath);
+    fileStream.pipe(res);
+  } catch (error) {
+    console.error("Error downloading file:", error);
+    res.status(500).json({ error: "Failed to download file" });
+  }
+});
+
+// Contact Form Email API
+app.post("/api/contact/send-email", async (req, res) => {
+  try {
+    const { to, subject, name, email, phone, planType, message } = req.body;
+    
+    // Validate required fields
+    if (!name || !email || !message) {
+      return res.status(400).json({ error: 'Name, email, and message are required' });
+    }
+    
+    // For now, we'll simulate sending the email
+    // In production, you would integrate with a real email service like:
+    // - Nodemailer with Gmail SMTP
+    // - SendGrid
+    // - Mailgun
+    // - AWS SES
+    
+    console.log('Contact form submission:', {
+      to,
+      subject,
+      name,
+      email,
+      phone,
+      planType,
+      message,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Simulate email sending delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // In production, replace this with actual email sending logic:
+    // const emailResult = await sendEmail({
+    //   to: 'sakconstructiongh@gmail.com',
+    //   subject: subject,
+    //   html: `
+    //     <h2>New Contact Form Submission</h2>
+    //     <p><strong>Name:</strong> ${name}</p>
+    //     <p><strong>Email:</strong> ${email}</p>
+    //     <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
+    //     <p><strong>Plan Type:</strong> ${planType || 'Not specified'}</p>
+    //     <p><strong>Message:</strong></p>
+    //     <p>${message}</p>
+    //   `
+    // });
+    
+    res.json({ 
+      success: true, 
+      message: 'Email sent successfully',
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error("Error sending contact email:", error);
+    res.status(500).json({ error: "Failed to send email" });
+  }
+});
+
+// Export the Express app for Vercel
+export default app;

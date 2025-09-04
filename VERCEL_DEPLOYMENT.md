@@ -74,7 +74,9 @@ NODE_ENV=production
 /
 ├── index.html          # React app entry point
 ├── assets/            # Built JavaScript/CSS files
-├── server/            # Server source code
+├── api/               # API routes (serverless functions)
+│   ├── index.ts       # Main API handler
+│   └── payment/       # Payment-specific routes
 ├── vercel.json        # Vercel configuration
 └── build-client.js    # Build script
 ```
