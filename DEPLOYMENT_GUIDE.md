@@ -15,6 +15,7 @@ This guide covers deploying both the frontend (Netlify) and backend (Railway/Ren
 - Click "New site from Git"
 - Select your repository
 - Build settings are auto-configured via `netlify.toml`
+- **Note**: Netlify will only build the client (frontend) part
 
 ### 2. Set Environment Variables in Netlify
 In your Netlify dashboard → Site settings → Environment variables:
@@ -116,9 +117,13 @@ Your Repository
 
 1. **Make changes** to your code
 2. **Push to GitHub** - triggers auto-deploy
-3. **Railway** builds and deploys backend
-4. **Netlify** builds and deploys frontend
+3. **Railway** builds and deploys backend (runs `npm run build:server`)
+4. **Netlify** builds and deploys frontend (runs `npm run build:client`)
 5. **Test** your deployed application
+
+**Note**: 
+- **Railway** runs the full build (`npm run build`) for backend deployment
+- **Netlify** runs only client build (`npm run build:client`) for frontend deployment
 
 ## 📊 Monitoring
 

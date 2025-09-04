@@ -1,6 +1,6 @@
 [build]
-  # Build command for both client and server
-  command = "npm run build"
+  # Build command for client only (Netlify is for frontend)
+  command = "npm run build:client"
   # Publish directory (client files only - Netlify is for frontend)
   publish = "client/dist"
 
