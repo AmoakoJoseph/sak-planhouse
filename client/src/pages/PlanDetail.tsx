@@ -5,7 +5,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import PlanReviews from '@/components/PlanReviews';
-import Plan3DViewer from '@/components/Plan3DViewer';
 import { 
   ArrowLeft, 
   Star, 
@@ -24,6 +23,8 @@ import {
 import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
+import { useFavorites } from '@/hooks/useFavorites';
+import { useAuth } from '@/hooks/useAuth';
 import villaImage from '@/assets/villa-plan.jpg';
 import bungalowImage from '@/assets/bungalow-plan.jpg';
 import townhouseImage from '@/assets/townhouse-plan.jpg';
@@ -32,13 +33,13 @@ const PlanDetail = () => {
   const [selectedTier, setSelectedTier] = useState('standard');
   const [plan, setPlan] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [show3DViewer, setShow3DViewer] = useState(false);
   const [usingFallbackData, setUsingFallbackData] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   // Create a comprehensive fallback plan
   const createFallbackPlan = (planId: string) => ({
@@ -109,14 +110,6 @@ const PlanDetail = () => {
     }
   };
 
-  // Check if plan is already in favorites on component mount
-  useEffect(() => {
-    if (plan) {
-      const existingFavorites = JSON.parse(localStorage.getItem('favoritePlans') || '[]');
-      const isPlanFavorite = existingFavorites.some((fav: any) => fav.id === plan.id);
-      setIsFavorite(isPlanFavorite);
-    }
-  }, [plan]);
 
   // Fetch plan data when component mounts
   useEffect(() => {
@@ -178,28 +171,19 @@ const PlanDetail = () => {
     }
   };
 
-  const handleFavorite = () => {
-    setIsFavorite(!isFavorite);
+  const handleFavorite = async () => {
+    if (!user) {
+      alert('Please log in to add favorites');
+      return;
+    }
     
-    // Get existing favorites from localStorage
-    const existingFavorites = JSON.parse(localStorage.getItem('favoritePlans') || '[]');
+    if (!plan?.id) return;
     
-    if (isFavorite) {
-      // Remove from favorites
-      const updatedFavorites = existingFavorites.filter((fav: any) => fav.id !== plan.id);
-      localStorage.setItem('favoritePlans', JSON.stringify(updatedFavorites));
+    const success = await toggleFavorite(plan.id);
+    if (success) {
+      // Success feedback could be added here
     } else {
-      // Add to favorites
-      const planData = {
-        id: plan.id,
-        title: plan.title,
-        plan_type: plan.plan_type,
-        image_url: plan.image_url,
-        basic_price: plan.basic_price,
-        added_at: new Date().toISOString()
-      };
-      const updatedFavorites = [...existingFavorites, planData];
-      localStorage.setItem('favoritePlans', JSON.stringify(updatedFavorites));
+      alert('Failed to update favorite. Please try again.');
     }
   };
 
@@ -263,9 +247,6 @@ const PlanDetail = () => {
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute top-4 right-4 flex gap-2">
-                  <Button variant="secondary" size="sm" onClick={() => setShow3DViewer(true)}>
-                      <Box className="h-4 w-4" />
-                  </Button>
                   <Button 
                      variant="secondary" 
                      size="sm" 
@@ -279,12 +260,12 @@ const PlanDetail = () => {
                      )}
                    </Button>
                    <Button 
-                     variant={isFavorite ? "default" : "secondary"}
+                     variant={isFavorite(plan?.id) ? "default" : "secondary"}
                      size="sm" 
                      onClick={handleFavorite}
-                     className={isFavorite ? "bg-red-500 hover:bg-red-600 text-white" : ""}
+                     className={isFavorite(plan?.id) ? "bg-red-500 hover:bg-red-600 text-white" : ""}
                    >
-                     <Heart className={`h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} />
+                     <Heart className={`h-4 w-4 ${isFavorite(plan?.id) ? 'fill-current' : ''}`} />
                    </Button>
                 </div>
               </div>
@@ -541,14 +522,6 @@ const PlanDetail = () => {
               </div>
       </section>
 
-      {/* 3D Viewer Modal */}
-      {plan && (
-        <Plan3DViewer 
-          plan={plan}
-          isOpen={show3DViewer} 
-          onClose={() => setShow3DViewer(false)} 
-        />
-      )}
     </div>
   );
 };

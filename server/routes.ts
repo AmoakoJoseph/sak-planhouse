@@ -69,6 +69,160 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ message: "Server is running!", timestamp: new Date().toISOString() });
   });
 
+  // Reviews endpoints
+  app.get("/api/reviews/:planId", async (req, res) => {
+    try {
+      const { planId } = req.params;
+      const reviews = await storage.getReviewsByPlanId(planId);
+      
+      // Enrich reviews with user information
+      const enrichedReviews = await Promise.all(
+        reviews.map(async (review) => {
+          const profile = await storage.getProfile(review.user_id);
+          return {
+            ...review,
+            user: {
+              name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email : 'Anonymous',
+              email: profile?.email || 'unknown@example.com',
+              avatar_url: profile?.avatar_url || '/placeholder.svg'
+            }
+          };
+        })
+      );
+      
+      res.json(enrichedReviews);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      res.status(500).json({ error: 'Failed to fetch reviews' });
+    }
+  });
+
+  app.post("/api/reviews", async (req, res) => {
+    try {
+      const { plan_id, user_id, rating, title, content } = req.body;
+      
+      if (!plan_id || !user_id || !rating || !title || !content) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+      
+      const review = await storage.createReview({
+        plan_id,
+        user_id,
+        rating,
+        title,
+        content,
+        helpful_votes: 0,
+        unhelpful_votes: 0
+      });
+      
+      // Enrich the created review with user information
+      const profile = await storage.getProfile(review.user_id);
+      const enrichedReview = {
+        ...review,
+        user: {
+          name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email : 'Anonymous',
+          email: profile?.email || 'unknown@example.com',
+          avatar_url: profile?.avatar_url || '/placeholder.svg'
+        }
+      };
+      
+      res.json(enrichedReview);
+    } catch (error) {
+      console.error('Error creating review:', error);
+      res.status(500).json({ error: 'Failed to create review' });
+    }
+  });
+
+  app.post("/api/reviews/:reviewId/vote", async (req, res) => {
+    try {
+      const { reviewId } = req.params;
+      const { isHelpful } = req.body;
+      
+      const review = await storage.updateReviewVotes(reviewId, isHelpful);
+      res.json(review);
+    } catch (error) {
+      console.error('Error updating review votes:', error);
+      res.status(500).json({ error: 'Failed to update review votes' });
+    }
+  });
+
+  // Favorites endpoints
+  app.get("/api/favorites/:userId", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const favorites = await storage.getFavoritesByUserId(userId);
+      
+      // Enrich favorites with plan information
+      const enrichedFavorites = await Promise.all(
+        favorites.map(async (favorite) => {
+          const plan = await storage.getPlan(favorite.plan_id);
+          return {
+            ...favorite,
+            plan: plan
+          };
+        })
+      );
+      
+      res.json(enrichedFavorites);
+    } catch (error) {
+      console.error('Error fetching favorites:', error);
+      res.status(500).json({ error: 'Failed to fetch favorites' });
+    }
+  });
+
+  app.post("/api/favorites", async (req, res) => {
+    try {
+      const { userId, planId } = req.body;
+      
+      if (!userId || !planId) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+      
+      // Check if already favorited
+      const isAlreadyFavorite = await storage.isFavorite(userId, planId);
+      if (isAlreadyFavorite) {
+        return res.status(400).json({ error: 'Plan is already in favorites' });
+      }
+      
+      const favorite = await storage.addFavorite(userId, planId);
+      res.json(favorite);
+    } catch (error) {
+      console.error('Error adding favorite:', error);
+      res.status(500).json({ error: 'Failed to add favorite' });
+    }
+  });
+
+  app.delete("/api/favorites", async (req, res) => {
+    try {
+      const { userId, planId } = req.body;
+      
+      if (!userId || !planId) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+      
+      const success = await storage.removeFavorite(userId, planId);
+      if (success) {
+        res.json({ success: true });
+      } else {
+        res.status(404).json({ error: 'Favorite not found' });
+      }
+    } catch (error) {
+      console.error('Error removing favorite:', error);
+      res.status(500).json({ error: 'Failed to remove favorite' });
+    }
+  });
+
+  app.get("/api/favorites/:userId/:planId", async (req, res) => {
+    try {
+      const { userId, planId } = req.params;
+      const isFavorite = await storage.isFavorite(userId, planId);
+      res.json({ isFavorite });
+    } catch (error) {
+      console.error('Error checking favorite status:', error);
+      res.status(500).json({ error: 'Failed to check favorite status' });
+    }
+  });
+
   // Health check endpoint for Render
   app.get("/api/health", (req, res) => {
     res.status(200).json({ 

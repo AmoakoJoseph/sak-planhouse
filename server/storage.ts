@@ -1,5 +1,5 @@
-import { users, profiles, plans, orders, downloads } from "@shared/schema";
-import type { User, Profile, Plan, Order, Download, InsertUser } from "@shared/schema";
+import { users, profiles, plans, orders, downloads, reviews, favorites } from "@shared/schema";
+import type { User, Profile, Plan, Order, Download, InsertUser, Review, InsertReview, Favorite, InsertFavorite } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
 
@@ -31,6 +31,17 @@ export interface IStorage {
   // Downloads management
   getDownloads(userId?: string): Promise<Download[]>;
   recordDownload(download: Omit<Download, 'id' | 'downloaded_at'>): Promise<Download>;
+
+  // Reviews management
+  getReviewsByPlanId(planId: string): Promise<Review[]>;
+  createReview(review: Omit<Review, 'id' | 'created_at' | 'updated_at'>): Promise<Review>;
+  updateReviewVotes(reviewId: string, isHelpful: boolean): Promise<Review | undefined>;
+
+  // Favorites management
+  getFavoritesByUserId(userId: string): Promise<Favorite[]>;
+  addFavorite(userId: string, planId: string): Promise<Favorite>;
+  removeFavorite(userId: string, planId: string): Promise<boolean>;
+  isFavorite(userId: string, planId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -170,6 +181,69 @@ export class DatabaseStorage implements IStorage {
       last_downloaded: new Date(),
     }).returning();
     return result[0];
+  }
+
+  // Reviews methods
+  async getReviewsByPlanId(planId: string): Promise<Review[]> {
+    const result = await db.select().from(reviews)
+      .where(eq(reviews.plan_id, planId))
+      .orderBy(desc(reviews.created_at));
+    return result;
+  }
+
+  async createReview(review: Omit<Review, 'id' | 'created_at' | 'updated_at'>): Promise<Review> {
+    const result = await db.insert(reviews).values({
+      ...review,
+      created_at: new Date(),
+      updated_at: new Date(),
+    }).returning();
+    return result[0];
+  }
+
+  async updateReviewVotes(reviewId: string, isHelpful: boolean): Promise<Review | undefined> {
+    const review = await db.select().from(reviews).where(eq(reviews.id, reviewId)).limit(1);
+    if (!review[0]) return undefined;
+
+    const updates = isHelpful 
+      ? { helpful_votes: review[0].helpful_votes + 1 }
+      : { unhelpful_votes: review[0].unhelpful_votes + 1 };
+
+    const result = await db.update(reviews)
+      .set({ ...updates, updated_at: new Date() })
+      .where(eq(reviews.id, reviewId))
+      .returning();
+    return result[0];
+  }
+
+  // Favorites methods
+  async getFavoritesByUserId(userId: string): Promise<Favorite[]> {
+    const result = await db.select().from(favorites)
+      .where(eq(favorites.user_id, userId))
+      .orderBy(desc(favorites.created_at));
+    return result;
+  }
+
+  async addFavorite(userId: string, planId: string): Promise<Favorite> {
+    const result = await db.insert(favorites).values({
+      user_id: userId,
+      plan_id: planId,
+      created_at: new Date(),
+    }).returning();
+    return result[0];
+  }
+
+  async removeFavorite(userId: string, planId: string): Promise<boolean> {
+    const result = await db.delete(favorites)
+      .where(and(eq(favorites.user_id, userId), eq(favorites.plan_id, planId)))
+      .returning();
+    return result.length > 0;
+  }
+
+  async isFavorite(userId: string, planId: string): Promise<boolean> {
+    const result = await db.select().from(favorites)
+      .where(and(eq(favorites.user_id, userId), eq(favorites.plan_id, planId)))
+      .limit(1);
+    return result.length > 0;
   }
 
   // Analytics methods

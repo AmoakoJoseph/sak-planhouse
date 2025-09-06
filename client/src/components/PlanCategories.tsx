@@ -61,89 +61,59 @@ const PlanCategories = () => {
   ];
 
   return (
-    <section id="browse" className="py-20 bg-gradient-to-b from-background to-construction-gray-light">
-      <div className="container px-4">
+    <section className="bg-slate-50 py-12">
+      <div className="max-w-6xl mx-auto px-4">
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <Badge variant="secondary" className="mb-4">
-            Popular Categories
-          </Badge>
-          <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6">
-            Choose Your Perfect
-                            <span className="bg-gradient-to-r from-primary to-primary bg-clip-text text-transparent"> Home Design</span>
-          </h2>
-          <p className="text-lg text-muted-foreground">
-            Explore our extensive collection of 30+ professionally designed house plans, 
-            each crafted to meet modern living standards and local building requirements.
-          </p>
+        <div className="flex items-center justify-between gap-4 flex-wrap mb-8">
+          <div>
+            <h2 className="text-2xl font-extrabold text-slate-900">Selected Projects</h2>
+            <p className="text-slate-600 mt-2">A snapshot of our recent work across sectors.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-slate-500">Filter</span>
+            <div className="flex gap-2">
+              <button className="px-3 py-1.5 rounded-xl text-sm font-semibold border bg-slate-900 text-white">All</button>
+              <button className="px-3 py-1.5 rounded-xl text-sm font-semibold border bg-white text-slate-700">Villas</button>
+              <button className="px-3 py-1.5 rounded-xl text-sm font-semibold border bg-white text-slate-700">Bungalows</button>
+              <button className="px-3 py-1.5 rounded-xl text-sm font-semibold border bg-white text-slate-700">Townhouses</button>
+            </div>
+          </div>
         </div>
 
-        {/* Plan Categories Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20">
+        {/* Projects Grid */}
+        <div className="grid md:grid-cols-3 gap-6">
           {categories.map((category) => (
-            <Card key={category.title} className="group hover:shadow-construction transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border-0 bg-gradient-card">
-              {category.popular && (
-                <div className="absolute top-4 right-4 z-10">
-                  <Badge className="bg-primary text-primary-foreground">
-                    <Star className="h-3 w-3 mr-1" />
-                    Popular
-                  </Badge>
-                </div>
-              )}
-              
-              <div className="relative h-48 overflow-hidden">
+            <div key={category.title} className="group">
+              <div className="aspect-[4/3] w-full rounded-2xl bg-gradient-to-br from-slate-300 to-slate-100 border border-slate-200 grid place-items-center overflow-hidden">
                 <img
                   src={category.image}
                   alt={category.title}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                <div className="absolute bottom-4 left-4 text-white">
-                  <div className="text-sm font-medium">{category.plans} Plans Available</div>
-                  <div className="text-xs opacity-90">Starting from {category.startingPrice}</div>
-                </div>
               </div>
-
-              <CardHeader>
-                <CardTitle className="text-xl">{category.title}</CardTitle>
-                <CardDescription className="text-muted-foreground">
-                  {category.description}
-                </CardDescription>
-              </CardHeader>
-
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 gap-2">
-                    {category.features.map((feature) => (
-                      <div key={feature} className="flex items-center text-sm text-muted-foreground">
-                        <div className="w-2 h-2 bg-primary rounded-full mr-3" />
-                        {feature}
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground">
-                    Browse {category.title}
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </Button>
+              <div className="mt-3 flex items-center justify-between">
+                <div>
+                  <h3 className="font-semibold text-slate-900">{category.title}</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">{category.plans} Plans Available</p>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Features Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {features.map((feature) => (
-            <div key={feature.title} className="text-center space-y-4">
-              <div className="mx-auto w-16 h-16 bg-construction-orange-light rounded-2xl flex items-center justify-center">
-                <feature.icon className="h-8 w-8 text-primary" />
+                <Button variant="outline" className="px-4 py-2 rounded-xl text-sm font-semibold border hover:bg-slate-50">
+                  View Plans
+                </Button>
               </div>
-              <h3 className="text-lg font-semibold text-foreground">{feature.title}</h3>
-              <p className="text-muted-foreground">{feature.description}</p>
             </div>
           ))}
         </div>
+
+        {/* CTA Section */}
+        <div className="py-10 bg-gradient-to-r from-orange-600 to-amber-500 text-white rounded-3xl mt-12">
+          <div className="max-w-6xl mx-auto px-4 flex items-center justify-between">
+            <h3 className="text-2xl font-extrabold">Let's build something great together.</h3>
+            <Button className="inline-flex items-center gap-2 bg-white text-slate-900 px-5 py-3 rounded-2xl font-semibold hover:bg-slate-50">
+              View All Plans
+            </Button>
+          </div>
+        </div>
+
       </div>
     </section>
   );

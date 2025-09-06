@@ -20,6 +20,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import AuthModal from './AuthModal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -66,49 +67,41 @@ const Header = () => {
 
   return (
     <>
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled 
-          ? 'bg-background/80 backdrop-blur-xl border-b border-border/50 shadow-lg' 
-          : 'bg-transparent'
-      }`}>
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16 lg:h-20">
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/70 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between gap-4">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-3 group">
-              <div className="hidden sm:block">
-                <div className="flex items-center space-x-2">
-                  <img 
-                    src="/logo.png" 
-                    alt="SAK Constructions" 
-                    className="h-8 w-auto"
-                  />
-                </div>
+              <div className="flex items-center space-x-3">
+                {/* Company Logo */}
+                <img 
+                  src="/logo.png" 
+                  alt="SAK Constructions" 
+                  className="h-12 w-auto hover:scale-105 transition-transform duration-300"
+                />
               </div>
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-8">
-              {navigation.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-300 group ${
-                      isActive(item.href)
-                        ? 'text-primary bg-primary/10 border border-primary/20'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="font-medium">{item.name}</span>
-                  </Link>
-                );
-              })}
+            <nav className="hidden md:flex items-center gap-6">
+              {navigation.map((item) => (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`text-sm font-medium transition-colors ${
+                    isActive(item.href)
+                      ? 'text-slate-900'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {item.name}
+                </Link>
+              ))}
             </nav>
 
             {/* Desktop Actions */}
-            <div className="hidden lg:flex items-center space-x-4">
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
               {isAuthenticated ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -167,9 +160,9 @@ const Header = () => {
               ) : (
                 <Button 
                   onClick={handleAuthClick}
-                  className="btn-primary"
+                  className="ml-2 inline-flex items-center gap-2 rounded-2xl bg-orange-600 text-white px-4 py-2 text-sm font-semibold hover:bg-orange-700 transition-colors"
                 >
-                  <User className="w-4 h-4 mr-2" />
+                  <User className="w-4 h-4" />
                   Get Started
                 </Button>
               )}
@@ -215,6 +208,12 @@ const Header = () => {
               </nav>
 
               <div className="mt-6 pt-6 border-t border-border/50 space-y-4">
+                {/* Theme Toggle for Mobile */}
+                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                  <span className="text-sm font-medium">Theme</span>
+                  <ThemeToggle />
+                </div>
+                
                 {isAuthenticated ? (
                   <>
                     {/* User Profile Section */}
@@ -277,7 +276,7 @@ const Header = () => {
                       handleAuthClick();
                       setIsMenuOpen(false);
                     }}
-                    className="w-full btn-primary"
+                    className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-700 hover:to-amber-600 text-white font-semibold px-6 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
                   >
                     <User className="w-4 h-4 mr-2" />
                     Get Started

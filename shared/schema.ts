@@ -88,6 +88,26 @@ export const downloads = pgTable("downloads", {
   created_at: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const reviews = pgTable("reviews", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  plan_id: uuid("plan_id").notNull(),
+  user_id: uuid("user_id").notNull(),
+  rating: integer("rating").notNull(), // 1-5 stars
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  helpful_votes: integer("helpful_votes").notNull().default(0),
+  unhelpful_votes: integer("unhelpful_votes").notNull().default(0),
+  created_at: timestamp("created_at").notNull().defaultNow(),
+  updated_at: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const favorites = pgTable("favorites", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  user_id: uuid("user_id").notNull(),
+  plan_id: uuid("plan_id").notNull(),
+  created_at: timestamp("created_at").notNull().defaultNow(),
+});
+
 // Schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -98,6 +118,8 @@ export const insertProfileSchema = createInsertSchema(profiles);
 export const insertPlanSchema = createInsertSchema(plans);
 export const insertOrderSchema = createInsertSchema(orders);
 export const insertDownloadSchema = createInsertSchema(downloads);
+export const insertReviewSchema = createInsertSchema(reviews);
+export const insertFavoriteSchema = createInsertSchema(favorites);
 
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -106,3 +128,7 @@ export type Profile = typeof profiles.$inferSelect;
 export type Plan = typeof plans.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type Download = typeof downloads.$inferSelect;
+export type Review = typeof reviews.$inferSelect;
+export type InsertReview = z.infer<typeof insertReviewSchema>;
+export type Favorite = typeof favorites.$inferSelect;
+export type InsertFavorite = z.infer<typeof insertFavoriteSchema>;
