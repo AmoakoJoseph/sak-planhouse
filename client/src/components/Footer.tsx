@@ -47,7 +47,7 @@ const Footer = () => {
               </div>
               
               <p className="text-muted-foreground leading-relaxed text-sm">
-                Building dreams with professional architectural plans. Trusted by Ghana's leading contractors and architects.
+                Building dreams with professional architectural plans. Trusted by Ghana's leading professionals.
               </p>
               
               <div className="flex space-x-3">

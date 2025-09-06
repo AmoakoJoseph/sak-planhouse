@@ -59,61 +59,17 @@ const PlanReviews = ({ planId, planTitle }: PlanReviewsProps) => {
 
   const fetchReviews = async () => {
     try {
-      // Mock data for now - replace with actual API call
-      const mockReviews: Review[] = [
-        {
-          id: 1,
-          user_id: 1,
-          plan_id: planId,
-          rating: 5,
-          title: 'Excellent Design and Quality',
-          content: 'This plan exceeded my expectations. The layout is perfect for our family, and the attention to detail is remarkable. The construction process was smooth thanks to the comprehensive documentation.',
-          helpful_votes: 12,
-          unhelpful_votes: 1,
-          created_at: '2024-01-15T10:30:00Z',
-          user: {
-            name: 'Kwame Asante',
-            email: 'kwame@example.com',
-            avatar_url: '/placeholder.svg'
-          }
-        },
-        {
-          id: 2,
-          user_id: 2,
-          plan_id: planId,
-          rating: 4,
-          title: 'Great Value for Money',
-          content: 'Very satisfied with this purchase. The plans are detailed and easy to follow. Our contractor had no issues understanding the specifications. Would recommend to others.',
-          helpful_votes: 8,
-          unhelpful_votes: 0,
-          created_at: '2024-01-10T14:20:00Z',
-          user: {
-            name: 'Ama Osei',
-            email: 'ama@example.com',
-            avatar_url: '/placeholder.svg'
-          }
-        },
-        {
-          id: 3,
-          user_id: 3,
-          plan_id: planId,
-          rating: 5,
-          title: 'Perfect for Our Needs',
-          content: 'We love everything about this plan. The bedrooms are well-proportioned, the kitchen layout is functional, and the overall flow is excellent. Highly recommended!',
-          helpful_votes: 15,
-          unhelpful_votes: 0,
-          created_at: '2024-01-05T09:15:00Z',
-          user: {
-            name: 'Kofi Mensah',
-            email: 'kofi@example.com',
-            avatar_url: '/placeholder.svg'
-          }
-        }
-      ];
-      
-      setReviews(mockReviews);
+      const response = await fetch(`/api/reviews/${planId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setReviews(data);
+      } else {
+        console.error('Failed to fetch reviews:', response.status);
+        setReviews([]);
+      }
     } catch (error) {
       console.error('Error fetching reviews:', error);
+      setReviews([]);
     } finally {
       setLoading(false);
     }
@@ -128,30 +84,29 @@ const PlanReviews = ({ planId, planTitle }: PlanReviewsProps) => {
 
     setSubmitting(true);
     try {
-      // Mock submission - replace with actual API call
-      const review: Review = {
-        id: Date.now(),
-        user_id: user.id,
-        plan_id: planId,
-        rating: newReview.rating,
-        title: newReview.title,
-        content: newReview.content,
-        helpful_votes: 0,
-        unhelpful_votes: 0,
-        created_at: new Date().toISOString(),
-        user: {
-          name: user.name || user.email,
-          email: user.email,
-          avatar_url: user.avatar_url
-        }
-      };
+      const response = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          plan_id: planId,
+          user_id: user.id,
+          rating: newReview.rating,
+          title: newReview.title,
+          content: newReview.content
+        })
+      });
 
-      setReviews([review, ...reviews]);
-      setNewReview({ rating: 5, title: '', content: '' });
-      setShowReviewForm(false);
-      
-      // Show success message
-      alert('Review submitted successfully!');
+      if (response.ok) {
+        const review = await response.json();
+        setReviews([review, ...reviews]);
+        setNewReview({ rating: 5, title: '', content: '' });
+        setShowReviewForm(false);
+        alert('Review submitted successfully!');
+      } else {
+        throw new Error('Failed to submit review');
+      }
     } catch (error) {
       console.error('Error submitting review:', error);
       alert('Failed to submit review. Please try again.');
@@ -211,28 +166,27 @@ const PlanReviews = ({ planId, planTitle }: PlanReviewsProps) => {
       {/* Reviews Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-2xl font-bold text-foreground">Customer Reviews</h3>
-          <p className="text-muted-foreground">
+          <h3 className="text-2xl font-extrabold text-slate-900">Customer Reviews</h3>
+          <p className="text-slate-600">
             {reviews.length} review{reviews.length !== 1 ? 's' : ''} for {planTitle}
           </p>
         </div>
         <Button 
           onClick={() => setShowReviewForm(true)}
           disabled={!user}
-          className="btn-primary"
+          className="inline-flex items-center gap-2 rounded-2xl bg-orange-600 text-white px-4 py-2 text-sm font-semibold hover:bg-orange-700 transition-colors"
         >
-          <MessageCircle className="w-4 h-4 mr-2" />
+          <MessageCircle className="w-4 h-4" />
           Write a Review
         </Button>
       </div>
 
       {/* Rating Summary */}
-      <Card>
-        <CardContent className="p-6">
+      <div className="p-6 rounded-3xl border border-slate-200 bg-white">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Overall Rating */}
             <div className="text-center">
-              <div className="text-4xl font-bold text-foreground mb-2">
+              <div className="text-4xl font-bold text-slate-900 mb-2">
                 {averageRating.toFixed(1)}
               </div>
               <div className="flex justify-center mb-2">
@@ -241,13 +195,13 @@ const PlanReviews = ({ planId, planTitle }: PlanReviewsProps) => {
                     key={star}
                     className={`w-6 h-6 ${
                       star <= averageRating 
-                        ? 'text-warning fill-current' 
-                        : 'text-muted-foreground'
+                        ? 'text-orange-500 fill-current' 
+                        : 'text-slate-300'
                     }`}
                   />
                 ))}
               </div>
-              <p className="text-muted-foreground">
+              <p className="text-slate-600">
                 Based on {reviews.length} review{reviews.length !== 1 ? 's' : ''}
               </p>
             </div>
@@ -257,35 +211,33 @@ const PlanReviews = ({ planId, planTitle }: PlanReviewsProps) => {
               {ratingDistribution.map(({ rating, count, percentage }) => (
                 <div key={rating} className="flex items-center space-x-3">
                   <div className="flex items-center space-x-1 w-16">
-                    <span className="text-sm text-muted-foreground">{rating}</span>
-                    <Star className="w-4 h-4 text-warning fill-current" />
+                    <span className="text-sm text-slate-600">{rating}</span>
+                    <Star className="w-4 h-4 text-orange-500 fill-current" />
                   </div>
-                  <div className="flex-1 bg-muted rounded-full h-2">
+                  <div className="flex-1 bg-slate-200 rounded-full h-2">
                     <div 
-                      className="bg-warning h-2 rounded-full transition-all duration-300"
+                      className="bg-orange-500 h-2 rounded-full transition-all duration-300"
                       style={{ width: `${percentage}%` }}
                     ></div>
                   </div>
-                  <span className="text-sm text-muted-foreground w-12 text-right">
+                  <span className="text-sm text-slate-600 w-12 text-right">
                     {count}
                   </span>
                 </div>
               ))}
             </div>
           </div>
-        </CardContent>
-      </Card>
+      </div>
 
       {/* Review Form */}
       {showReviewForm && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Write Your Review</CardTitle>
-            <CardDescription>
+        <div className="p-6 rounded-3xl border border-slate-200 bg-white">
+          <div className="mb-6">
+            <h4 className="text-xl font-bold text-slate-900 mb-2">Write Your Review</h4>
+            <p className="text-slate-600">
               Share your experience with this house plan
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            </p>
+          </div>
             <form onSubmit={handleSubmitReview} className="space-y-4">
               {/* Rating Selection */}
               <div className="space-y-2">
@@ -301,8 +253,8 @@ const PlanReviews = ({ planId, planTitle }: PlanReviewsProps) => {
                       <Star
                         className={`w-8 h-8 ${
                           star <= newReview.rating 
-                            ? 'text-warning fill-current' 
-                            : 'text-muted-foreground'
+                            ? 'text-orange-500 fill-current' 
+                            : 'text-slate-300'
                         }`}
                       />
                     </button>
@@ -340,16 +292,16 @@ const PlanReviews = ({ planId, planTitle }: PlanReviewsProps) => {
                 <Button 
                   type="submit" 
                   disabled={submitting}
-                  className="btn-primary"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-orange-600 text-white px-4 py-2 text-sm font-semibold hover:bg-orange-700 transition-colors"
                 >
                   {submitting ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                       Submitting...
                     </>
                   ) : (
                     <>
-                      <Send className="w-4 h-4 mr-2" />
+                      <Send className="w-4 h-4" />
                       Submit Review
                     </>
                   )}
@@ -358,38 +310,35 @@ const PlanReviews = ({ planId, planTitle }: PlanReviewsProps) => {
                   type="button" 
                   variant="outline"
                   onClick={() => setShowReviewForm(false)}
+                  className="px-4 py-2 rounded-2xl border border-slate-200 hover:bg-slate-50"
                 >
                   Cancel
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
+        </div>
       )}
 
       {/* Reviews List */}
       <div className="space-y-4">
         {reviews.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <MessageCircle className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <h4 className="text-lg font-semibold text-foreground mb-2">No Reviews Yet</h4>
-              <p className="text-muted-foreground mb-4">
-                Be the first to share your experience with this house plan
-              </p>
-              <Button 
-                onClick={() => setShowReviewForm(true)}
-                disabled={!user}
-                className="btn-primary"
-              >
-                Write the First Review
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="p-8 text-center rounded-3xl border border-slate-200 bg-white">
+            <MessageCircle className="w-16 h-16 mx-auto mb-4 text-slate-400 opacity-50" />
+            <h4 className="text-lg font-semibold text-slate-900 mb-2">No Reviews Yet</h4>
+            <p className="text-slate-600 mb-4">
+              Be the first to share your experience with this house plan
+            </p>
+            <Button 
+              onClick={() => setShowReviewForm(true)}
+              disabled={!user}
+              className="inline-flex items-center gap-2 rounded-2xl bg-orange-600 text-white px-4 py-2 text-sm font-semibold hover:bg-orange-700 transition-colors"
+            >
+              Write the First Review
+            </Button>
+          </div>
         ) : (
           reviews.map((review) => (
-            <Card key={review.id}>
-              <CardContent className="p-6">
+            <div key={review.id} className="p-6 rounded-3xl border border-slate-200 bg-white">
                 <div className="flex items-start space-x-4">
                   <Avatar className="w-12 h-12">
                     <AvatarImage src={review.user.avatar_url} />
@@ -402,15 +351,15 @@ const PlanReviews = ({ planId, planTitle }: PlanReviewsProps) => {
                     <div className="flex items-center justify-between mb-2">
                       <div>
                         <h4 className="font-semibold text-foreground">{review.user.name}</h4>
-                        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+                        <div className="flex items-center space-x-2 text-sm text-slate-600">
                           <div className="flex items-center">
                             {[1, 2, 3, 4, 5].map((star) => (
                               <Star
                                 key={star}
                                 className={`w-4 h-4 ${
                                   star <= review.rating 
-                                    ? 'text-warning fill-current' 
-                                    : 'text-muted-foreground'
+                                    ? 'text-orange-500 fill-current' 
+                                    : 'text-slate-300'
                                 }`}
                               />
                             ))}
@@ -445,12 +394,11 @@ const PlanReviews = ({ planId, planTitle }: PlanReviewsProps) => {
                       </div>
                     </div>
                     
-                    <h5 className="font-medium text-foreground mb-2">{review.title}</h5>
-                    <p className="text-muted-foreground leading-relaxed">{review.content}</p>
+                    <h5 className="font-medium text-slate-900 mb-2">{review.title}</h5>
+                    <p className="text-slate-600 leading-relaxed">{review.content}</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+            </div>
           ))
         )}
       </div>

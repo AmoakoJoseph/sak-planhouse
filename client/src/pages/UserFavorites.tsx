@@ -24,6 +24,7 @@ import {
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useFavorites } from '@/hooks/useFavorites';
 import UserHeader from '@/components/UserHeader';
 import villaImage from '@/assets/villa-plan.jpg';
 import bungalowImage from '@/assets/bungalow-plan.jpg';
@@ -32,143 +33,46 @@ import townhouseImage from '@/assets/townhouse-plan.jpg';
 const UserFavorites = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { favorites, loading, removeFavorite } = useFavorites();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [priceFilter, setPriceFilter] = useState('all');
-  const [favorites, setFavorites] = useState<any[]>([]);
-
-  // Mock favorites data - in a real app, this would come from your backend
-  const mockFavorites = [
-    {
-      id: 1,
-      title: 'Luxury Villa Paradise',
-      type: 'Villa',
-      bedrooms: 5,
-      bathrooms: 4,
-      area: 3200,
-      price: 4500,
-      image: villaImage,
-      architect: 'Samuel Kwame Architecture',
-      rating: 4.9,
-      reviews: 47,
-      addedDate: '2024-01-15',
-      featured: true,
-      description: 'This stunning luxury villa combines contemporary African design with modern amenities.'
-    },
-    {
-      id: 7,
-      title: 'Modern Family Bungalow',
-      type: 'Bungalow',
-      bedrooms: 3,
-      bathrooms: 2,
-      area: 1800,
-      price: 3100,
-      image: bungalowImage,
-      architect: 'Ama Osei Architecture',
-      rating: 4.7,
-      reviews: 34,
-      addedDate: '2024-01-12',
-      featured: false,
-      description: 'A modern family bungalow designed for comfort and functionality.'
-    },
-    {
-      id: 13,
-      title: 'Contemporary Townhouse',
-      type: 'Townhouse',
-      bedrooms: 4,
-      bathrooms: 3,
-      area: 2400,
-      price: 3800,
-      image: townhouseImage,
-      architect: 'Kwame Asante Architecture',
-      rating: 4.8,
-      reviews: 41,
-      addedDate: '2024-01-10',
-      featured: true,
-      description: 'A contemporary townhouse designed for urban living with modern aesthetics.'
-    },
-    {
-      id: 2,
-      title: 'Executive Villa Estate',
-      type: 'Villa',
-      bedrooms: 6,
-      bathrooms: 5,
-      area: 4100,
-      price: 5500,
-      image: villaImage,
-      architect: 'Samuel Kwame Architecture',
-      rating: 4.9,
-      reviews: 52,
-      addedDate: '2024-01-08',
-      featured: false,
-      description: 'An executive villa designed for luxury living with premium finishes.'
-    },
-    {
-      id: 8,
-      title: 'Coastal Bungalow Retreat',
-      type: 'Bungalow',
-      bedrooms: 4,
-      bathrooms: 3,
-      area: 2200,
-      price: 2800,
-      image: bungalowImage,
-      architect: 'Ama Osei Architecture',
-      rating: 4.6,
-      reviews: 28,
-      addedDate: '2024-01-05',
-      featured: false,
-      description: 'A beautiful coastal bungalow with ocean views and modern amenities.'
-    },
-    {
-      id: 14,
-      title: 'Urban Townhouse Complex',
-      type: 'Townhouse',
-      bedrooms: 3,
-      bathrooms: 2,
-      area: 2000,
-      price: 3200,
-      image: townhouseImage,
-      architect: 'Kwame Asante Architecture',
-      rating: 4.5,
-      reviews: 35,
-      addedDate: '2024-01-03',
-      featured: false,
-      description: 'Modern urban townhouse perfect for city living.'
-    }
-  ];
 
   useEffect(() => {
     if (!user) {
       navigate('/');
       return;
     }
-
-    // In a real app, you would fetch favorites from your backend
-    setFavorites(mockFavorites);
   }, [user, navigate]);
 
   const filteredFavorites = favorites.filter(favorite => {
-    const matchesSearch = favorite.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         favorite.architect.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === 'all' || favorite.type.toLowerCase() === typeFilter;
+    if (!favorite.plan) return false;
+    
+    const plan = favorite.plan;
+    const matchesSearch = plan.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = typeFilter === 'all' || plan.plan_type.toLowerCase() === typeFilter;
+    const planPrice = parseFloat(plan.standard_price || '0');
     const matchesPrice = priceFilter === 'all' || 
-                        (priceFilter === 'low' && favorite.price <= 3000) ||
-                        (priceFilter === 'medium' && favorite.price > 3000 && favorite.price <= 4500) ||
-                        (priceFilter === 'high' && favorite.price > 4500);
+                        (priceFilter === 'low' && planPrice <= 3000) ||
+                        (priceFilter === 'medium' && planPrice > 3000 && planPrice <= 4500) ||
+                        (priceFilter === 'high' && planPrice > 4500);
     
     return matchesSearch && matchesType && matchesPrice;
   });
 
-  const removeFavorite = (planId: number) => {
-    setFavorites(prev => prev.filter(fav => fav.id !== planId));
+  const handleRemoveFavorite = async (planId: string) => {
+    const success = await removeFavorite(planId);
+    if (!success) {
+      alert('Failed to remove favorite. Please try again.');
+    }
   };
 
   const getTypeStats = () => {
     const total = favorites.length;
-    const villas = favorites.filter(f => f.type === 'Villa').length;
-    const bungalows = favorites.filter(f => f.type === 'Bungalow').length;
-    const townhouses = favorites.filter(f => f.type === 'Townhouse').length;
-    const totalValue = favorites.reduce((sum, f) => sum + f.price, 0);
+    const villas = favorites.filter(f => f.plan?.plan_type === 'villa').length;
+    const bungalows = favorites.filter(f => f.plan?.plan_type === 'bungalow').length;
+    const townhouses = favorites.filter(f => f.plan?.plan_type === 'townhouse').length;
+    const totalValue = favorites.reduce((sum, f) => sum + parseFloat(f.plan?.standard_price || '0'), 0);
 
     return { total, villas, bungalows, townhouses, totalValue };
   };
@@ -181,6 +85,23 @@ const UserFavorites = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading favorites...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-construction-gray-light">
+        <UserHeader 
+          title="My Favorites"
+          subtitle="Your saved house plans and designs"
+        />
+        <div className="flex items-center justify-center py-16">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading your favorites...</p>
+          </div>
         </div>
       </div>
     );
@@ -326,92 +247,97 @@ const UserFavorites = () => {
               </Card>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredFavorites.map((plan) => (
-                  <Card key={plan.id} className="group hover:shadow-construction transition-all duration-300">
-                    <div className="relative h-48 overflow-hidden">
-                      <img
-                        src={plan.image}
-                        alt={plan.title}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                      />
-                      <div className="absolute top-2 right-2 flex gap-2">
-                        {plan.featured && (
-                          <Badge className="bg-primary text-primary-foreground">
-                            Featured
-                          </Badge>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="h-8 w-8 p-0 rounded-full bg-white/90 hover:bg-white"
-                          onClick={() => removeFavorite(plan.id)}
-                        >
-                          <Heart className="h-4 w-4 fill-current text-red-500" />
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <CardHeader>
-                      <CardTitle className="text-lg">{plan.title}</CardTitle>
-                      <CardDescription className="line-clamp-2">
-                        {plan.description}
-                      </CardDescription>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Bed className="h-4 w-4" />
-                          {plan.bedrooms}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Bath className="h-4 w-4" />
-                          {plan.bathrooms}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Square className="h-4 w-4" />
-                          {plan.area} sq ft
-                        </div>
-                      </div>
-                    </CardHeader>
-                    
-                    <CardContent>
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                          <Star className="h-4 w-4 fill-current text-yellow-400" />
-                          <span className="text-sm font-medium">{plan.rating}</span>
-                          <span className="text-sm text-muted-foreground">({plan.reviews})</span>
-                        </div>
-                        <Badge variant="outline">{plan.type}</Badge>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-lg font-semibold text-primary">₵{plan.price}</p>
-                          <p className="text-sm text-muted-foreground">{plan.architect}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm" asChild>
-                            <Link to={`/plans/${plan.id}`}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View
-                            </Link>
-                          </Button>
-                          <Button size="sm" asChild>
-                            <Link to={`/plans/${plan.id}`}>
-                              <ShoppingBag className="h-4 w-4 mr-2" />
-                              Buy
-                            </Link>
+                {filteredFavorites.map((favorite) => {
+                  const plan = favorite.plan;
+                  if (!plan) return null;
+                  
+                  return (
+                    <Card key={favorite.id} className="group hover:shadow-construction transition-all duration-300">
+                      <div className="relative h-48 overflow-hidden">
+                        <img
+                          src={plan.image_url || '/placeholder.svg'}
+                          alt={plan.title}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        />
+                        <div className="absolute top-2 right-2 flex gap-2">
+                          {plan.featured && (
+                            <Badge className="bg-primary text-primary-foreground">
+                              Featured
+                            </Badge>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="h-8 w-8 p-0 rounded-full bg-white/90 hover:bg-white"
+                            onClick={() => handleRemoveFavorite(plan.id)}
+                          >
+                            <Heart className="h-4 w-4 fill-current text-red-500" />
                           </Button>
                         </div>
                       </div>
                       
-                      <div className="mt-4 pt-4 border-t">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Calendar className="h-4 w-4" />
-                          <span>Added {new Date(plan.addedDate).toLocaleDateString()}</span>
+                      <CardHeader>
+                        <CardTitle className="text-lg">{plan.title}</CardTitle>
+                        <CardDescription className="line-clamp-2">
+                          {plan.description}
+                        </CardDescription>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Bed className="h-4 w-4" />
+                            {plan.bedrooms}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Bath className="h-4 w-4" />
+                            {plan.bathrooms}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Square className="h-4 w-4" />
+                            {plan.area_sqft} sq ft
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardHeader>
+                      
+                      <CardContent>
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <Star className="h-4 w-4 fill-current text-yellow-400" />
+                            <span className="text-sm font-medium">4.5</span>
+                            <span className="text-sm text-muted-foreground">(0)</span>
+                          </div>
+                          <Badge variant="outline" className="capitalize">{plan.plan_type}</Badge>
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-lg font-semibold text-primary">₵{plan.standard_price}</p>
+                            <p className="text-sm text-muted-foreground">SAK Constructions</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" asChild>
+                              <Link to={`/plans/${plan.id}`}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View
+                              </Link>
+                            </Button>
+                            <Button size="sm" asChild>
+                              <Link to={`/plans/${plan.id}`}>
+                                <ShoppingBag className="h-4 w-4 mr-2" />
+                                Buy
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-4 pt-4 border-t">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Calendar className="h-4 w-4" />
+                            <span>Added {new Date(favorite.created_at).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
 
