@@ -109,8 +109,17 @@ const UserFavorites = () => {
       <FloatingNav />
 
       {/* Stats Cards */}
-      <section className="py-16">
-        <div className="container px-4">
+      <section className="py-12">
+        <div className="container px-4 mx-auto">
+          {/* Page Header */}
+          <div className="max-w-7xl mx-auto mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold">My Favorites</h1>
+                <p className="text-muted-foreground">Your saved house plans and designs</p>
+              </div>
+            </div>
+          </div>
           <div className="max-w-7xl mx-auto">
             <div className="grid md:grid-cols-4 gap-6 mb-8">
               <Card>

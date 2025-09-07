@@ -231,8 +231,17 @@ const UserProfile = () => {
       <FloatingNav />
 
       {/* Profile Content */}
-      <section className="py-16">
-        <div className="container px-4">
+      <section className="py-12">
+        <div className="container px-4 mx-auto">
+          {/* Page Header */}
+          <div className="max-w-4xl mx-auto mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold">Profile</h1>
+                <p className="text-muted-foreground">Manage your account information and preferences</p>
+              </div>
+            </div>
+          </div>
           <div className="max-w-4xl mx-auto">
             <div className="grid lg:grid-cols-3 gap-8">
               {/* Profile Card */}

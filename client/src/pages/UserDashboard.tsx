@@ -187,8 +187,17 @@ const UserDashboard = () => {
       <FloatingNav />
 
       {/* Dashboard Content */}
-      <section className="py-16">
-        <div className="container px-4">
+      <section className="py-12">
+        <div className="container px-4 mx-auto">
+          {/* Page Header */}
+          <div className="max-w-7xl mx-auto mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
+                <p className="text-muted-foreground">Overview of your account and recent activity</p>
+              </div>
+            </div>
+          </div>
           <div className="max-w-7xl mx-auto">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
               <TabsList className="grid w-full grid-cols-4">

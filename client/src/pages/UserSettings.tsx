@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { 
   ArrowLeft, 
   Settings, 
-  Bell, 
   Shield, 
   Eye, 
   EyeOff,
@@ -19,13 +18,10 @@ import {
   Palette,
   Smartphone,
   CreditCard,
-  Trash2,
-  Download,
   Upload,
   Save,
   X,
   Check,
-  AlertTriangle,
   Info
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -42,20 +38,6 @@ const UserSettings = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   const [settings, setSettings] = useState({
-    // Notifications
-    emailNotifications: true,
-    smsNotifications: false,
-    marketingEmails: true,
-    orderUpdates: true,
-    newPlans: false,
-    priceAlerts: true,
-    
-    // Privacy
-    profileVisibility: 'public',
-    showEmail: false,
-    showPhone: false,
-    allowMessages: true,
-    
     // Preferences
     language: 'en',
     currency: 'GHS',
@@ -65,11 +47,7 @@ const UserSettings = () => {
     // Security
     twoFactorAuth: false,
     loginAlerts: true,
-    sessionTimeout: '24h',
-    
-    // Data
-    autoBackup: true,
-    dataRetention: '2years'
+    sessionTimeout: '24h'
   });
 
   const [passwordForm, setPasswordForm] = useState({
@@ -149,31 +127,6 @@ const UserSettings = () => {
     }
   };
 
-  const exportData = () => {
-    const data = {
-      profile: userProfile,
-      settings,
-      orders: [], // This would be fetched from your backend
-      favorites: [] // This would be fetched from your backend
-    };
-    
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `user-data-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const deleteAccount = () => {
-    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      // Handle account deletion
-      console.log('Account deletion requested');
-    }
-  };
 
   if (!user) {
     return (
@@ -191,8 +144,17 @@ const UserSettings = () => {
       <FloatingNav />
 
       {/* Settings Content */}
-      <section className="py-16">
-        <div className="container px-4">
+      <section className="py-12">
+        <div className="container px-4 mx-auto">
+          {/* Page Header */}
+          <div className="max-w-6xl mx-auto mb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold">Settings</h1>
+                <p className="text-muted-foreground">Customize your preferences and security</p>
+              </div>
+            </div>
+          </div>
           <div className="max-w-6xl mx-auto">
             <div className="grid lg:grid-cols-3 gap-8">
               {/* Settings Navigation */}
@@ -203,14 +165,6 @@ const UserSettings = () => {
                   </CardHeader>
                   <CardContent>
                     <nav className="space-y-2">
-                      <a href="#notifications" className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
-                        <Bell className="h-4 w-4" />
-                        <span>Notifications</span>
-                      </a>
-                      <a href="#privacy" className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
-                        <Eye className="h-4 w-4" />
-                        <span>Privacy</span>
-                      </a>
                       <a href="#preferences" className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
                         <Palette className="h-4 w-4" />
                         <span>Preferences</span>
@@ -219,10 +173,6 @@ const UserSettings = () => {
                         <Shield className="h-4 w-4" />
                         <span>Security</span>
                       </a>
-                      <a href="#data" className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
-                        <Download className="h-4 w-4" />
-                        <span>Data & Export</span>
-                      </a>
                     </nav>
                   </CardContent>
                 </Card>
@@ -230,159 +180,7 @@ const UserSettings = () => {
 
               {/* Settings Forms */}
               <div className="lg:col-span-2 space-y-8">
-                {/* Notifications */}
-                <Card id="notifications">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Bell className="h-5 w-5" />
-                      Notifications
-                    </CardTitle>
-                    <CardDescription>
-                      Manage how you receive notifications and updates
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label htmlFor="email-notifications">Email Notifications</Label>
-                          <p className="text-sm text-muted-foreground">Receive notifications via email</p>
-                        </div>
-                        <Switch
-                          id="email-notifications"
-                          checked={settings.emailNotifications}
-                          onCheckedChange={(checked) => handleSettingChange('emailNotifications', checked)}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label htmlFor="sms-notifications">SMS Notifications</Label>
-                          <p className="text-sm text-muted-foreground">Receive notifications via SMS</p>
-                        </div>
-                        <Switch
-                          id="sms-notifications"
-                          checked={settings.smsNotifications}
-                          onCheckedChange={(checked) => handleSettingChange('smsNotifications', checked)}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label htmlFor="marketing-emails">Marketing Emails</Label>
-                          <p className="text-sm text-muted-foreground">Receive promotional emails and offers</p>
-                        </div>
-                        <Switch
-                          id="marketing-emails"
-                          checked={settings.marketingEmails}
-                          onCheckedChange={(checked) => handleSettingChange('marketingEmails', checked)}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label htmlFor="order-updates">Order Updates</Label>
-                          <p className="text-sm text-muted-foreground">Get notified about order status changes</p>
-                        </div>
-                        <Switch
-                          id="order-updates"
-                          checked={settings.orderUpdates}
-                          onCheckedChange={(checked) => handleSettingChange('orderUpdates', checked)}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label htmlFor="new-plans">New Plans</Label>
-                          <p className="text-sm text-muted-foreground">Get notified when new house plans are added</p>
-                        </div>
-                        <Switch
-                          id="new-plans"
-                          checked={settings.newPlans}
-                          onCheckedChange={(checked) => handleSettingChange('newPlans', checked)}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label htmlFor="price-alerts">Price Alerts</Label>
-                          <p className="text-sm text-muted-foreground">Get notified about price changes on favorited plans</p>
-                        </div>
-                        <Switch
-                          id="price-alerts"
-                          checked={settings.priceAlerts}
-                          onCheckedChange={(checked) => handleSettingChange('priceAlerts', checked)}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
 
-                {/* Privacy */}
-                <Card id="privacy">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Eye className="h-5 w-5" />
-                      Privacy
-                    </CardTitle>
-                    <CardDescription>
-                      Control your privacy settings and profile visibility
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="profile-visibility">Profile Visibility</Label>
-                        <Select value={settings.profileVisibility} onValueChange={(value) => handleSettingChange('profileVisibility', value)}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="public">Public</SelectItem>
-                            <SelectItem value="private">Private</SelectItem>
-                            <SelectItem value="friends">Friends Only</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label htmlFor="show-email">Show Email</Label>
-                          <p className="text-sm text-muted-foreground">Allow others to see your email address</p>
-                        </div>
-                        <Switch
-                          id="show-email"
-                          checked={settings.showEmail}
-                          onCheckedChange={(checked) => handleSettingChange('showEmail', checked)}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label htmlFor="show-phone">Show Phone</Label>
-                          <p className="text-sm text-muted-foreground">Allow others to see your phone number</p>
-                        </div>
-                        <Switch
-                          id="show-phone"
-                          checked={settings.showPhone}
-                          onCheckedChange={(checked) => handleSettingChange('showPhone', checked)}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label htmlFor="allow-messages">Allow Messages</Label>
-                          <p className="text-sm text-muted-foreground">Allow other users to send you messages</p>
-                        </div>
-                        <Switch
-                          id="allow-messages"
-                          checked={settings.allowMessages}
-                          onCheckedChange={(checked) => handleSettingChange('allowMessages', checked)}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
 
                 {/* Preferences */}
                 <Card id="preferences">
@@ -584,87 +382,6 @@ const UserSettings = () => {
                   </CardContent>
                 </Card>
 
-                {/* Data & Export */}
-                <Card id="data">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Download className="h-5 w-5" />
-                      Data & Export
-                    </CardTitle>
-                    <CardDescription>
-                      Manage your data and export options
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <Label htmlFor="auto-backup">Auto Backup</Label>
-                          <p className="text-sm text-muted-foreground">Automatically backup your data</p>
-                        </div>
-                        <Switch
-                          id="auto-backup"
-                          checked={settings.autoBackup}
-                          onCheckedChange={(checked) => handleSettingChange('autoBackup', checked)}
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="data-retention">Data Retention</Label>
-                        <Select value={settings.dataRetention} onValueChange={(value) => handleSettingChange('dataRetention', value)}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="1year">1 Year</SelectItem>
-                            <SelectItem value="2years">2 Years</SelectItem>
-                            <SelectItem value="5years">5 Years</SelectItem>
-                            <SelectItem value="forever">Forever</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <Separator />
-
-                    <div className="space-y-4">
-                      <h4 className="font-medium">Data Export</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Download a copy of your data including profile, orders, and preferences
-                      </p>
-                      <Button variant="outline" onClick={exportData}>
-                        <Download className="h-4 w-4 mr-2" />
-                        Export Data
-                      </Button>
-                    </div>
-
-                    <Separator />
-
-                    <div className="space-y-4">
-                      <h4 className="font-medium text-red-600">Danger Zone</h4>
-                      <div className="p-4 border border-red-200 rounded-lg bg-red-50">
-                        <div className="flex items-start gap-3">
-                          <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
-                          <div className="flex-1">
-                            <h5 className="font-medium text-red-900">Delete Account</h5>
-                            <p className="text-sm text-red-700 mt-1">
-                              Once you delete your account, there is no going back. Please be certain.
-                            </p>
-                            <Button 
-                              variant="destructive" 
-                              size="sm" 
-                              className="mt-3"
-                              onClick={deleteAccount}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete Account
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
               </div>
             </div>
           </div>
