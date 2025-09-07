@@ -420,11 +420,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get user-specific analytics
       const userOrders = await storage.getOrders(userId);
       const userDownloads = await storage.getDownloads(userId);
+      const userFavorites = await storage.getFavoritesByUserId(userId);
       
       const analytics = {
         totalOrders: userOrders.length,
         totalSpent: userOrders.reduce((sum, order) => sum + parseFloat(order.amount), 0),
         totalDownloads: userDownloads.length,
+        totalFavorites: userFavorites.length,
         recentOrders: userOrders.slice(0, 5),
         recentDownloads: userDownloads.slice(0, 5)
       };

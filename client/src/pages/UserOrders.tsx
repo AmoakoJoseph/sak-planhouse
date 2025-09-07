@@ -27,7 +27,7 @@ import {
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import UserHeader from '@/components/UserHeader';
+import FloatingNav from '@/components/FloatingNav';
 import villaImage from '@/assets/villa-plan.jpg';
 import bungalowImage from '@/assets/bungalow-plan.jpg';
 import townhouseImage from '@/assets/townhouse-plan.jpg';
@@ -41,6 +41,8 @@ const UserOrders = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('all');
   const [selectedOrderForDownload, setSelectedOrderForDownload] = useState<string | null>(null);
+
+  console.log('UserOrders component rendering, user:', user ? { id: user.id, email: user.email } : 'No user');
 
   useEffect(() => {
     if (user) {
@@ -161,6 +163,7 @@ const UserOrders = () => {
   const stats = getOrderStats();
 
   if (!user) {
+    console.log('UserOrders: No user, showing loading screen');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -171,20 +174,11 @@ const UserOrders = () => {
     );
   }
 
+  console.log('UserOrders: User exists, rendering main content with FloatingNav');
+  
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-construction-gray-light">
-      <UserHeader 
-        title="My Orders"
-        subtitle="View and manage your plan purchases"
-        actions={
-          <Button asChild>
-            <Link to="/plans">
-              <ShoppingBag className="h-4 w-4 mr-2" />
-              Browse More Plans
-            </Link>
-          </Button>
-        }
-      />
+      <FloatingNav />
 
       {/* Stats Cards */}
       <section className="py-16">

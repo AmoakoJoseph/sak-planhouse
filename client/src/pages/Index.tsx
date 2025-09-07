@@ -223,7 +223,7 @@ const Index = () => {
       </section>
 
       {/* Statistics Section */}
-      <section className="py-20 bg-gradient-to-br from-primary/5 to-secondary/5">
+      <section className="py-20 bg-gradient-to-br from-primary/5 to-orange-500/5">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
@@ -239,7 +239,7 @@ const Index = () => {
               const Icon = stat.icon;
               return (
                 <div key={index} className="text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-primary/10 to-orange-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <Icon className="w-8 h-8 text-primary" />
                   </div>
                   <div className="text-3xl md:text-4xl font-bold text-foreground mb-2">
@@ -280,7 +280,7 @@ const Index = () => {
                     "{testimonial.content}"
                   </p>
                   <div className="flex items-center justify-center space-x-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full flex items-center justify-center">
+                    <div className="w-12 h-12 bg-gradient-to-br from-primary/10 to-orange-500/10 rounded-full flex items-center justify-center">
                       <Users className="w-6 h-6 text-primary" />
                     </div>
                     <div className="text-left">
@@ -337,10 +337,10 @@ const Index = () => {
       </section>
 
       {/* Newsletter Section */}
-      <section className="py-20 bg-gradient-to-br from-primary/5 to-secondary/5">
+      <section className="py-20 bg-gradient-to-br from-primary/5 to-orange-500/5">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-primary/10 to-orange-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
               <Mail className="w-8 h-8 text-primary" />
             </div>
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">

@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { useAuthReturn } from "@/hooks/useAuthReturn";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Index from "./pages/Index";
@@ -35,6 +37,9 @@ const queryClient = new QueryClient();
 const AppContent = () => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
+  
+  // Handle return flow after authentication
+  useAuthReturn();
 
   return (
     <div className="min-h-screen">

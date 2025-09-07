@@ -92,7 +92,7 @@ const About = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
       {/* Hero Section */}
-      <section className="py-20 bg-gradient-to-r from-primary/10 to-secondary/10">
+      <section className="py-20 bg-gradient-to-r from-primary/10 to-orange-500/10">
         <div className="container px-4">
           <div className="max-w-4xl mx-auto text-center">
             <Badge variant="secondary" className="mb-4">
@@ -151,10 +151,10 @@ const About = () => {
                 </div>
               </div>
               <div className="relative">
-                <div className="aspect-square bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl flex items-center justify-center">
+                <div className="aspect-square bg-gradient-to-br from-primary/20 to-orange-500/20 rounded-2xl flex items-center justify-center">
                   <Building className="w-32 h-32 text-primary/40" />
                 </div>
-                <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-gradient-to-br from-secondary/20 to-primary/20 rounded-2xl"></div>
+                <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-gradient-to-br from-orange-500/20 to-primary/20 rounded-2xl"></div>
               </div>
             </div>
           </div>
@@ -167,10 +167,10 @@ const About = () => {
           <div className="max-w-6xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div className="relative">
-                <div className="aspect-square bg-gradient-to-br from-secondary/20 to-primary/20 rounded-2xl flex items-center justify-center">
-                  <Truck className="w-32 h-32 text-secondary/40" />
+                <div className="aspect-square bg-gradient-to-br from-orange-500/20 to-primary/20 rounded-2xl flex items-center justify-center">
+                  <Truck className="w-32 h-32 text-orange-500/40" />
                 </div>
-                <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl"></div>
+                <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-gradient-to-br from-primary/20 to-orange-500/20 rounded-2xl"></div>
               </div>
               <div>
                 <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
@@ -260,7 +260,7 @@ const About = () => {
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
-              <Card key={index} className="text-center border-0 shadow-lg bg-gradient-to-br from-primary/5 to-secondary/5">
+              <Card key={index} className="text-center border-0 shadow-lg bg-gradient-to-br from-primary/5 to-orange-500/5">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-center w-12 h-12 bg-primary/10 rounded-xl mb-4 mx-auto">
                     <stat.icon className="w-6 h-6 text-primary" />
@@ -366,7 +366,7 @@ const About = () => {
       <section className="py-20">
         <div className="container px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <Card className="border-0 shadow-2xl bg-gradient-to-r from-primary/10 to-secondary/10">
+            <Card className="border-0 shadow-2xl bg-gradient-to-r from-primary/10 to-orange-500/10">
               <CardContent className="p-12">
                 <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
                   Ready to Start Your Project?

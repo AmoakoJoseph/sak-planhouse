@@ -119,13 +119,13 @@ const HowItWorks = () => {
                 return (
                   <div key={index} className="relative">
                     {/* Step Number */}
-                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-12 h-12 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-12 h-12 bg-gradient-to-br from-primary to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg">
                       {index + 1}
                     </div>
 
                     {/* Step Card */}
                     <div className="admin-card pt-12 text-center">
-                      <div className="w-16 h-16 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                      <div className="w-16 h-16 bg-gradient-to-br from-primary/10 to-orange-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
                         <Icon className="w-8 h-8 text-primary" />
                       </div>
                       
@@ -174,7 +174,7 @@ const HowItWorks = () => {
                 const Icon = benefit.icon;
                 return (
                   <div key={index} className="metric-card text-center group">
-                    <div className="w-16 h-16 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-gradient-to-br group-hover:from-primary/20 group-hover:to-secondary/20 transition-all duration-300">
+                    <div className="w-16 h-16 bg-gradient-to-br from-primary/10 to-orange-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-gradient-to-br group-hover:from-primary/20 group-hover:to-orange-500/20 transition-all duration-300">
                       <Icon className="w-8 h-8 text-primary" />
                     </div>
                     <h3 className="text-xl font-semibold text-foreground mb-3">{benefit.title}</h3>
@@ -210,7 +210,7 @@ const HowItWorks = () => {
                   </div>
                   <p className="text-muted-foreground mb-6 leading-relaxed">"{testimonial.content}"</p>
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full flex items-center justify-center">
+                    <div className="w-12 h-12 bg-gradient-to-br from-primary/10 to-orange-500/10 rounded-full flex items-center justify-center">
                       <Users className="w-6 h-6 text-primary" />
                     </div>
                     <div>
@@ -226,7 +226,7 @@ const HowItWorks = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-primary/5 to-secondary/5">
+      <section className="py-20 bg-gradient-to-br from-primary/5 to-orange-500/5">
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-4xl mx-auto space-y-8">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground">

@@ -124,7 +124,7 @@ const Plans = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
       {/* Hero Section */}
-      <section className="relative py-20 bg-gradient-to-br from-primary/5 via-primary/10 to-secondary/5 overflow-hidden">
+      <section className="relative py-20 bg-gradient-to-br from-primary/5 via-primary/10 to-orange-500/5 overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-30">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_1px_1px,rgba(59,130,246,0.1)_1px,transparent_0)] bg-[size:40px_40px]"></div>
@@ -285,9 +285,9 @@ const Plans = () => {
               Professional architectural designs crafted by Ghana's top architects
             </p>
           </div>
-          
+           
           <div className="flex items-center gap-3">
-            <Badge variant="secondary" className="px-4 py-2 text-sm">
+            <Badge className="px-4 py-2 text-sm bg-orange-500 hover:bg-orange-600 text-white border-0">
               <Zap className="w-4 h-4 mr-2" />
               {sortedPlans.filter(p => p.featured).length} Featured
             </Badge>
@@ -297,7 +297,7 @@ const Plans = () => {
         {/* Plans Grid/List */}
         {viewMode === 'grid' ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {sortedPlans.map((plan) => (
+            {sortedPlans.map((plan) => (
               <Card key={plan.id} className="group relative overflow-hidden border-0 bg-white/80 backdrop-blur-sm hover:bg-white/90 transition-all duration-500 transform hover:-translate-y-3 hover:shadow-2xl rounded-3xl border border-orange-100 hover:border-orange-200">
                 {/* Featured Badge */}
               {plan.featured && (
@@ -353,7 +353,7 @@ const Plans = () => {
                 <CardContent className="pt-0">
                 <div className="space-y-4">
                     {/* Pricing */}
-                    <div className="text-center p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-2xl border border-primary/10">
+                    <div className="text-center p-4 bg-gradient-to-r from-primary/5 to-orange-500/5 rounded-2xl border border-primary/10">
                       <div className="text-2xl font-bold text-primary">
                       From ₵{plan.basic_price.toLocaleString()}
                     </div>
@@ -365,7 +365,7 @@ const Plans = () => {
                     {/* Action Button */}
                   <Button 
                     variant="default" 
-                      className="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
+                      className="w-full bg-gradient-to-r from-primary to-orange-500 hover:from-primary/90 hover:to-orange-500/90 text-white py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
                     onClick={() => handleViewDetails(plan.id)}
                   >
                     View Details
@@ -392,7 +392,7 @@ const Plans = () => {
                     
                     {plan.featured && (
                       <div className="absolute top-4 left-4">
-                        <Badge className="bg-gradient-to-r from-primary to-secondary text-white border-0">
+                        <Badge className="bg-gradient-to-r from-primary to-orange-500 text-white border-0">
                           <Star className="h-3 w-3 mr-1 fill-current" />
                           Featured
                         </Badge>
@@ -438,7 +438,7 @@ const Plans = () => {
                       <div className="flex flex-col gap-3">
                         <Button 
                           variant="default" 
-                          className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white px-8 py-3 rounded-xl font-semibold"
+                          className="bg-gradient-to-r from-primary to-orange-500 hover:from-primary/90 hover:to-orange-500/90 text-white px-8 py-3 rounded-xl font-semibold"
                           onClick={() => handleViewDetails(plan.id)}
                         >
                           View Details

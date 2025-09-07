@@ -31,7 +31,7 @@ import {
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import UserHeader from '@/components/UserHeader';
+import FloatingNav from '@/components/FloatingNav';
 
 const UserSettings = () => {
   const { user, profile, signOut } = useAuth();
@@ -188,20 +188,7 @@ const UserSettings = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-construction-gray-light">
-      <UserHeader 
-        title="Account Settings"
-        subtitle="Manage your account preferences and security"
-        actions={
-          <Button onClick={saveSettings} disabled={isLoading}>
-            {isLoading ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-            ) : (
-              <Save className="h-4 w-4 mr-2" />
-            )}
-            Save Changes
-          </Button>
-        }
-      />
+      <FloatingNav />
 
       {/* Settings Content */}
       <section className="py-16">

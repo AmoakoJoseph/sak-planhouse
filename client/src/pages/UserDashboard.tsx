@@ -25,13 +25,15 @@ import {
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useFavorites } from '@/hooks/useFavorites';
 import villaImage from '@/assets/villa-plan.jpg';
 import bungalowImage from '@/assets/bungalow-plan.jpg';
 import townhouseImage from '@/assets/townhouse-plan.jpg';
-import UserHeader from '@/components/UserHeader';
+import FloatingNav from '@/components/FloatingNav';
 
 const UserDashboard = () => {
   const { user, profile, signOut } = useAuth();
+  const { favorites } = useFavorites();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [userStats, setUserStats] = useState({
@@ -62,7 +64,7 @@ const UserDashboard = () => {
       setUserStats({
         totalOrders: analytics.totalOrders || 0,
         totalSpent: analytics.totalSpent || 0,
-        favoritePlans: 0, // TODO: Implement favorites
+        favoritePlans: analytics.totalFavorites || 0,
         downloads: analytics.totalDownloads || 0
       });
 
@@ -75,38 +77,20 @@ const UserDashboard = () => {
   };
 
 
-  const favoritePlans = [
-    {
-      id: 1,
-      title: 'Luxury Villa Paradise',
-      type: 'Villa',
-      bedrooms: 5,
-      bathrooms: 4,
-      area: 3200,
-      price: 4500,
-      image: villaImage
-    },
-    {
-      id: 7,
-      title: 'Modern Family Bungalow',
-      type: 'Bungalow',
-      bedrooms: 3,
-      bathrooms: 2,
-      area: 1800,
-      price: 3100,
-      image: bungalowImage
-    },
-    {
-      id: 13,
-      title: 'Contemporary Townhouse',
-      type: 'Townhouse',
-      bedrooms: 4,
-      bathrooms: 3,
-      area: 2400,
-      price: 3800,
-      image: townhouseImage
-    }
-  ];
+  // Get favorite plans with plan details
+  const favoritePlans = favorites
+    .filter(fav => fav.plan) // Only include favorites that have plan data
+    .slice(0, 3) // Show only first 3 for dashboard
+    .map(fav => ({
+      id: fav.plan.id,
+      title: fav.plan.title,
+      type: fav.plan.plan_type,
+      bedrooms: fav.plan.bedrooms,
+      bathrooms: fav.plan.bathrooms,
+      area: fav.plan.area_sqft,
+      price: fav.plan.basic_price,
+      image: fav.plan.image_url || villaImage
+    }));
 
   const recentActivity = [
     {
@@ -200,25 +184,7 @@ const UserDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-construction-gray-light">
-      <UserHeader 
-        title={`Welcome back, ${userProfile.first_name || 'User'}!`}
-        subtitle="Manage your account, view orders, and explore plans"
-        showBackButton={false}
-        showUserInfo={false}
-        actions={
-          <div className="flex items-center gap-4">
-            <Button variant="outline" asChild>
-              <Link to="/plans">
-                <Plus className="h-4 h-4 mr-2" />
-                Browse Plans
-              </Link>
-            </Button>
-            <Button variant="outline" onClick={signOut}>
-              Sign Out
-            </Button>
-          </div>
-        }
-      />
+      <FloatingNav />
 
       {/* Dashboard Content */}
       <section className="py-16">

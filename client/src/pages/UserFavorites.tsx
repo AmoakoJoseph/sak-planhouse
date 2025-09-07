@@ -25,7 +25,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/hooks/useFavorites';
-import UserHeader from '@/components/UserHeader';
+import FloatingNav from '@/components/FloatingNav';
 import villaImage from '@/assets/villa-plan.jpg';
 import bungalowImage from '@/assets/bungalow-plan.jpg';
 import townhouseImage from '@/assets/townhouse-plan.jpg';
@@ -93,10 +93,7 @@ const UserFavorites = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background to-construction-gray-light">
-        <UserHeader 
-          title="My Favorites"
-          subtitle="Your saved house plans and designs"
-        />
+        <FloatingNav />
         <div className="flex items-center justify-center py-16">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
@@ -109,18 +106,7 @@ const UserFavorites = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-construction-gray-light">
-      <UserHeader 
-        title="My Favorites"
-        subtitle="Your saved house plans and designs"
-        actions={
-          <Button asChild>
-            <Link to="/plans">
-              <Plus className="h-4 w-4 mr-2" />
-              Browse More Plans
-            </Link>
-          </Button>
-        }
-      />
+      <FloatingNav />
 
       {/* Stats Cards */}
       <section className="py-16">

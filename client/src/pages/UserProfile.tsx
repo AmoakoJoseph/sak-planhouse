@@ -17,17 +17,18 @@ import {
   Edit,
   X,
   Check,
-  Shield,
-  Building
+  Shield
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useFavorites } from '@/hooks/useFavorites';
 import { useToast } from '@/hooks/use-toast';
-import UserHeader from '@/components/UserHeader';
+import FloatingNav from '@/components/FloatingNav';
 
 const UserProfile = () => {
   const { user, profile, signOut } = useAuth();
+  const { favorites } = useFavorites();
   const navigate = useNavigate();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -39,12 +40,7 @@ const UserProfile = () => {
     last_name: '',
     email: '',
     phone: '',
-    address: '',
-    city: '',
-    country: 'Ghana',
-    bio: '',
-    company: '',
-    website: ''
+    bio: ''
   });
   const [userStats, setUserStats] = useState({
     totalOrders: 0,
@@ -64,12 +60,7 @@ const UserProfile = () => {
       last_name: profile?.last_name || '',
       email: profile?.email || user.email || '',
       phone: profile?.phone || '',
-      address: profile?.address || '',
-      city: profile?.city || '',
-      country: profile?.country || 'Ghana',
-      bio: profile?.bio || '',
-      company: profile?.company || '',
-      website: profile?.website || ''
+      bio: profile?.bio || ''
     });
 
     // Fetch real user statistics
@@ -86,7 +77,7 @@ const UserProfile = () => {
         setUserStats({
           totalOrders: analytics.totalOrders || 0,
           totalSpent: analytics.totalSpent || 0,
-          favoritePlans: 0, // TODO: Implement favorites API
+          favoritePlans: analytics.totalFavorites || 0,
           downloads: analytics.totalDownloads || 0
         });
       }
@@ -142,12 +133,7 @@ const UserProfile = () => {
       last_name: profile?.last_name || '',
       email: profile?.email || user?.email || '',
       phone: profile?.phone || '',
-      address: profile?.address || '',
-      city: profile?.city || '',
-      country: profile?.country || 'Ghana',
-      bio: profile?.bio || '',
-      company: profile?.company || '',
-      website: profile?.website || ''
+      bio: profile?.bio || ''
     });
     setIsEditing(false);
   };
@@ -242,33 +228,7 @@ const UserProfile = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-construction-gray-light">
-      <UserHeader 
-        title="Profile Settings"
-        subtitle="Manage your account information and preferences"
-        actions={
-          !isEditing ? (
-            <Button onClick={() => setIsEditing(true)}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Profile
-            </Button>
-          ) : (
-            <>
-              <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
-                <X className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
-              <Button onClick={handleSave} disabled={isLoading}>
-                {isLoading ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                ) : (
-                  <Check className="h-4 w-4 mr-2" />
-                )}
-                Save Changes
-              </Button>
-            </>
-          )
-        }
-      />
+      <FloatingNav />
 
       {/* Profile Content */}
       <section className="py-16">
@@ -455,89 +415,6 @@ const UserProfile = () => {
                   </CardContent>
                 </Card>
 
-                {/* Address Information */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <MapPin className="h-5 w-5" />
-                      Address Information
-                    </CardTitle>
-                    <CardDescription>
-                      Your location and address details
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Street Address</Label>
-                      <Input
-                        id="address"
-                        value={formData.address}
-                        onChange={(e) => handleInputChange('address', e.target.value)}
-                        disabled={!isEditing}
-                        placeholder="Enter your street address"
-                      />
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="city">City</Label>
-                        <Input
-                          id="city"
-                          value={formData.city}
-                          onChange={(e) => handleInputChange('city', e.target.value)}
-                          disabled={!isEditing}
-                          placeholder="Accra"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="country">Country</Label>
-                        <Input
-                          id="country"
-                          value={formData.country}
-                          onChange={(e) => handleInputChange('country', e.target.value)}
-                          disabled={!isEditing}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Professional Information */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Building className="h-5 w-5" />
-                      Professional Information
-                    </CardTitle>
-                    <CardDescription>
-                      Your professional details and company information
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="company">Company/Organization</Label>
-                      <Input
-                        id="company"
-                        value={formData.company}
-                        onChange={(e) => handleInputChange('company', e.target.value)}
-                        disabled={!isEditing}
-                        placeholder="Your company name"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="website">Website</Label>
-                      <Input
-                        id="website"
-                        type="url"
-                        value={formData.website}
-                        onChange={(e) => handleInputChange('website', e.target.value)}
-                        disabled={!isEditing}
-                        placeholder="https://yourwebsite.com"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
 
                 {/* Account Security */}
                 <Card>
