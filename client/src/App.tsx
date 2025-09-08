@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { AdminThemeProvider } from "@/hooks/useAdminTheme";
 import { useAuthReturn } from "@/hooks/useAuthReturn";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import Header from "@/components/Header";
@@ -31,6 +32,8 @@ import Cookies from '@/pages/Cookies';
 import DemoPayment from '@/pages/DemoPayment';
 import PaymentVerification from '@/pages/PaymentVerification';
 import Services from './pages/Services';
+import Portfolio from './pages/Portfolio';
+import PortfolioDetail from './pages/PortfolioDetail';
 
 const queryClient = new QueryClient();
 
@@ -41,7 +44,7 @@ const AppContent = () => {
   // Handle return flow after authentication
   useAuthReturn();
 
-  return (
+  const content = (
     <div className="min-h-screen">
       {!isAdminRoute && <Header />}
       <main>
@@ -52,6 +55,8 @@ const AppContent = () => {
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/services" element={<Services />} />
+          <Route path="/portfolio" element={<Portfolio />} />
+          <Route path="/portfolio/:id" element={<PortfolioDetail />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/checkout" element={<Checkout />} />
@@ -86,6 +91,13 @@ const AppContent = () => {
       {!isAdminRoute && <Footer />}
     </div>
   );
+
+  // Wrap admin routes with AdminThemeProvider
+  if (isAdminRoute) {
+    return <AdminThemeProvider>{content}</AdminThemeProvider>;
+  }
+
+  return content;
 };
 
 const App = () => (

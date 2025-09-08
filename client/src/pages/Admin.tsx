@@ -8,6 +8,8 @@ import AdminAnalytics from './AdminAnalytics';
 import AdminOrders from './AdminOrders';
 import AdminUsers from './AdminUsers';
 import AdminSettings from './AdminSettings';
+import AdminPortfolio from './AdminPortfolio';
+import AdminAds from './AdminAds';
 
 const Admin = () => {
   const { user, profile } = useAuth();
@@ -44,6 +46,8 @@ const Admin = () => {
         <Route path="plans" element={<AdminPlans />} />
         <Route path="orders" element={<AdminOrders />} />
         <Route path="users" element={<AdminUsers />} />
+        <Route path="portfolio" element={<AdminPortfolio />} />
+        <Route path="ads" element={<AdminAds />} />
         <Route path="settings" element={<AdminSettings />} />
       </Routes>
     </div>

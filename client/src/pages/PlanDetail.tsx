@@ -35,6 +35,8 @@ const PlanDetail = () => {
   const [loading, setLoading] = useState(true);
   const [usingFallbackData, setUsingFallbackData] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
   
   const { id } = useParams();
   const navigate = useNavigate();
@@ -110,11 +112,33 @@ const PlanDetail = () => {
     }
   };
 
+  const fetchReviews = async () => {
+    if (!id) return;
+    
+    setReviewsLoading(true);
+    try {
+      const reviewsData = await api.get(`/reviews/${id}`);
+      setReviews(reviewsData || []);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      setReviews([]);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const getAverageRating = () => {
+    if (!reviews || reviews.length === 0) return 0;
+    const sum = reviews.reduce((acc, review) => acc + review.rating, 0);
+    return Math.round((sum / reviews.length) * 10) / 10; // Round to 1 decimal place
+  };
+
 
   // Fetch plan data when component mounts
   useEffect(() => {
     if (id) {
       fetchPlan();
+      fetchReviews();
     }
   }, [id]);
 
@@ -216,9 +240,9 @@ const PlanDetail = () => {
   const similarPlans: any[] = [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-construction-gray-light">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <section className="py-16 bg-gradient-to-r from-primary/10 to-primary/5">
+      <section className="pt-0 pb-16 bg-primary/10">
         <div className="container px-4">
           <div className="max-w-6xl mx-auto">
             <div className="flex items-center gap-4 mb-6">
@@ -270,258 +294,154 @@ const PlanDetail = () => {
                 </div>
               </div>
               
-                {/* Additional Images */}
+                {/* Additional Views or Plan Highlights */}
               <div className="space-y-3">
-                <h4 className="text-sm font-medium text-muted-foreground">Additional Views</h4>
-                <div className="grid grid-cols-3 gap-3">
-                  {plan.gallery_images?.slice(0, 3).map((image: string, index: number) => (
-                    <div key={index} className="h-24 rounded-lg overflow-hidden border border-border shadow-sm">
-                      <img
-                        src={image}
-                        alt={`${plan.title} view ${index + 2}`}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
-                      />
+                {plan.gallery_images && plan.gallery_images.length > 0 ? (
+                  <>
+                    <h4 className="text-sm font-medium text-muted-foreground">Additional Views</h4>
+                    <div className="grid grid-cols-3 gap-3">
+                      {plan.gallery_images.slice(0, 3).map((image: string, index: number) => (
+                        <div key={index} className="h-24 rounded-lg overflow-hidden border border-border shadow-sm">
+                          <img
+                            src={image}
+                            alt={`${plan.title} view ${index + 2}`}
+                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
+                          />
+                        </div>
+                      ))}
                     </div>
-                  )) || [1, 2, 3].map((index) => (
-                    <div key={index} className="h-24 rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/20 flex items-center justify-center">
-                      <div className="text-center text-muted-foreground">
-                        <ImageIcon className="w-6 h-6 mx-auto mb-1 opacity-50" />
-                        <span className="text-xs">View {index + 1}</span>
+                  </>
+                ) : (
+                  <>
+                    <h4 className="text-sm font-medium text-muted-foreground">Plan Highlights</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span>Professional architectural design</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span>Construction-ready drawings</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span>Multiple package options</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <span>Instant download after purchase</span>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </>
+                )}
               </div>
             </div>
 
-              {/* Plan Info */}
-            <div className="space-y-6">
-              <div>
-                  <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                  {plan.title}
-                </h1>
-                  <p className="text-lg text-muted-foreground leading-relaxed">
-                    {plan.description}
-                </p>
-              </div>
+               {/* Plan Info & Purchase */}
+             <div className="space-y-6">
+               <div>
+                   <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
+                   {plan.title}
+                 </h1>
+                   <div className="flex items-center gap-2 mb-3">
+                     <div className="flex items-center">
+                       {[1, 2, 3, 4, 5].map((star) => (
+                         <Star key={star} className={`h-4 w-4 ${star <= Math.round(getAverageRating()) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} />
+                       ))}
+                     </div>
+                     <span className="text-sm text-muted-foreground">
+                       {getAverageRating() > 0 ? `${getAverageRating()} (${reviews.length} reviews)` : 'No reviews yet'}
+                     </span>
+                   </div>
+                   {plan.featured && (
+                     <Badge className="bg-purple-600 text-white mb-3">
+                       <Star className="h-3 w-3 mr-1 fill-current" />
+                       Best Seller
+                     </Badge>
+                   )}
+                 </div>
 
-                {/* Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-card rounded-lg">
-                    <div className="flex items-center justify-center gap-1 mb-2">
-                      <Bed className="h-5 w-5 text-primary" />
-                      <span className="text-2xl font-bold">{plan.bedrooms}</span>
-                    </div>
-                    <div className="text-sm text-muted-foreground">Bedrooms</div>
-                  </div>
-                  <div className="text-center p-4 bg-card rounded-lg">
-                    <div className="flex items-center justify-center gap-1 mb-2">
-                      <Bath className="h-5 w-5 text-primary" />
-                      <span className="text-2xl font-bold">{plan.bathrooms}</span>
-                    </div>
-                    <div className="text-sm text-muted-foreground">Bathrooms</div>
-                  </div>
-                  <div className="text-center p-4 bg-card rounded-lg">
-                    <div className="flex items-center justify-center gap-1 mb-2">
-                      <Square className="h-5 w-5 text-primary" />
-                      <span className="text-2xl font-bold">{plan.area_sqft}</span>
-                    </div>
-                    <div className="text-sm text-muted-foreground">Sq Ft</div>
-                  </div>
-                  <div className="text-center p-4 bg-card rounded-lg">
-                    <div className="flex items-center justify-center gap-1 mb-2">
-                      <Star className="h-5 w-5 text-primary fill-current" />
-                      <span className="text-2xl font-bold">4.5</span>
-                    </div>
-                    <div className="text-sm text-muted-foreground">Rating</div>
-                  </div>
-                </div>
+                 {/* Package Selection */}
+                 <div className="space-y-4">
+                   <div>
+                     <h3 className="text-sm font-medium text-muted-foreground mb-3">Choose Package</h3>
+                     <div className="space-y-3">
+                       {[
+                         {
+                           key: 'basic',
+                           name: 'Basic Package',
+                           price: plan.basic_price,
+                           description: 'Essential plans to get started'
+                         },
+                         {
+                           key: 'standard',
+                           name: 'Standard Package',
+                           price: plan.standard_price,
+                           description: 'Complete construction package'
+                         },
+                         {
+                           key: 'premium',
+                           name: 'Premium Package',
+                           price: plan.premium_price,
+                           description: 'Professional complete package'
+                         }
+                       ].map((tier) => (
+                         <div key={tier.key} className={`border rounded-lg p-3 cursor-pointer transition-colors ${selectedTier === tier.key ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}
+                              onClick={() => setSelectedTier(tier.key)}>
+                           <div className="flex items-center justify-between">
+                             <div>
+                               <div className="font-medium text-sm">{tier.name}</div>
+                               <div className="text-xs text-muted-foreground">{tier.description}</div>
+                             </div>
+                             <div className="text-right">
+                               <div className="font-bold text-primary">₵{tier.price}</div>
+                               {selectedTier === tier.key && (
+                                 <div className="text-xs text-primary">Selected</div>
+                               )}
+                             </div>
+                           </div>
+                         </div>
+                       ))}
+                     </div>
+                   </div>
 
-                {/* Quick Info */}
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span>Type: {plan.plan_type}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-muted-foreground" />
-                    <span>Status: {plan.status}</span>
-                  </div>
-              </div>
-              
+                   {/* Purchase Button */}
+                   <Button className="w-full" size="lg" onClick={handleCheckout}>
+                     Proceed to Checkout - ₵{selectedTier === 'basic' ? plan.basic_price : selectedTier === 'standard' ? plan.standard_price : plan.premium_price}
+                   </Button>
 
-              </div>
+                   {/* Purchase Guarantees */}
+                   <div className="space-y-3 pt-4 border-t">
+                     <div className="flex items-center gap-2 text-sm">
+                       <Download className="h-4 w-4 text-green-600" />
+                       <span>Instant digital delivery</span>
+                     </div>
+                     <div className="flex items-center gap-2 text-sm">
+                       <CheckCircle className="h-4 w-4 text-green-600" />
+                       <span>100% Money Guarantee</span>
+                     </div>
+                     <div className="flex items-center gap-2 text-sm">
+                       <CheckCircle className="h-4 w-4 text-green-600" />
+                       <span>Multiple payment options</span>
+                     </div>
+                   </div>
+                 </div>
+               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Plan Details */}
-      <section className="py-16">
+      {/* Reviews Section */}
+      <section className="pb-16">
         <div className="container px-4">
           <div className="max-w-6xl mx-auto">
-            <Tabs defaultValue="overview" className="space-y-8">
-                          <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="features">Features</TabsTrigger>
-              <TabsTrigger value="pricing">Pricing</TabsTrigger>
-              <TabsTrigger value="reviews">Reviews</TabsTrigger>
-              <TabsTrigger value="similar">Similar Plans</TabsTrigger>
-            </TabsList>
-                
-              <TabsContent value="overview" className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-8">
-                  <div>
-                    <h3 className="text-xl font-semibold mb-4">Plan Description</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      {plan.description}
-                    </p>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold mb-4">Key Specifications</h3>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Total Area:</span>
-                        <span className="font-medium">{plan.area_sqft} sq ft</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Bedrooms:</span>
-                        <span className="font-medium">{plan.bedrooms}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Bathrooms:</span>
-                        <span className="font-medium">{plan.bathrooms}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Type:</span>
-                        <span className="font-medium">{plan.plan_type}</span>
-                      </div>
-                    </div>
-                      </div>
-                    </div>
-              </TabsContent>
-
-              <TabsContent value="features" className="space-y-6">
-                <h3 className="text-xl font-semibold">Plan Features</h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                    <span>Professional architectural plans</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                    <span>Detailed floor plans</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                    <span>Construction-ready drawings</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                    <span>Material specifications</span>
-                  </div>
-                  </div>
-                </TabsContent>
-
-              <TabsContent value="pricing" className="space-y-6">
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-xl font-semibold mb-4">Choose Your Package</h3>
-                    <p className="text-muted-foreground">
-                      Select the package that best suits your needs. All packages include professional architectural plans.
-                    </p>
+            <div className="space-y-6">
+              <PlanReviews planId={plan.id} planTitle={plan.title} />
+            </div>
           </div>
-
-                  <div className="grid md:grid-cols-3 gap-6">
-                    {[
-                      {
-                        key: 'basic',
-                        name: 'Basic Package',
-                        description: 'Essential plans to get started',
-                        price: plan.basic_price,
-                        includes: ['Floor plans (PDF)', 'Basic elevations', 'Plot plan', 'Material list']
-                      },
-                      {
-                        key: 'standard',
-                        name: 'Standard Package', 
-                        description: 'Complete construction package',
-                        price: plan.standard_price,
-                        includes: ['Everything in Basic', 'Detailed elevations', 'Cross sections', 'Construction details', 'Electrical layout', 'Plumbing layout']
-                      },
-                      {
-                        key: 'premium',
-                        name: 'Premium Package',
-                        description: 'Professional complete package', 
-                        price: plan.premium_price,
-                        includes: ['Everything in Standard', '3D renderings', 'Interior layouts', 'Landscape design', 'Structural details', 'HVAC layout', 'Permit-ready drawings']
-                      }
-                    ].map((tier) => (
-                      <Card key={tier.key} className={`relative ${selectedTier === tier.key ? 'ring-2 ring-primary' : ''}`}>
-                        {selectedTier === tier.key && (
-                          <div className="absolute -top-2 -right-2">
-                            <Badge className="bg-primary text-primary-foreground">
-                              Selected
-                            </Badge>
-                          </div>
-                        )}
-              <CardHeader>
-                          <CardTitle className="text-lg">{tier.name}</CardTitle>
-                          <CardDescription>{tier.description}</CardDescription>
-                          <div className="text-2xl font-bold text-primary">₵{tier.price}</div>
-              </CardHeader>
-                        <CardContent>
-                          <ul className="space-y-2 mb-6">
-                            {tier.includes.map((item: string, index: number) => (
-                              <li key={index} className="flex items-center gap-2 text-sm">
-                                <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
-                                {item}
-                              </li>
-                            ))}
-                          </ul>
-                          <Button 
-                            className="w-full" 
-                            variant={selectedTier === tier.key ? 'default' : 'outline'}
-                      onClick={() => setSelectedTier(tier.key)}
-                    >
-                            {selectedTier === tier.key ? 'Selected' : 'Select Package'}
-                          </Button>
-                        </CardContent>
-                      </Card>
-                  ))}
-                </div>
-
-                <Separator />
-
-                <div className="space-y-4">
-                     <div className="flex items-center justify-between text-lg font-semibold">
-                       <span>Total:</span>
-                       <span className="text-primary">₵{selectedTier === 'basic' ? plan.basic_price : selectedTier === 'standard' ? plan.standard_price : plan.premium_price}</span>
-                  </div>
-                  
-                     <Button className="w-full" size="lg" onClick={handleCheckout}>
-                       Proceed to Checkout - ₵{selectedTier === 'basic' ? plan.basic_price : selectedTier === 'standard' ? plan.standard_price : plan.premium_price}
-                    </Button>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="reviews" className="space-y-6">
-                <PlanReviews planId={plan.id} planTitle={plan.title} />
-              </TabsContent>
-
-              <TabsContent value="similar" className="space-y-6">
-                <h3 className="text-xl font-semibold">Similar {plan.plan_type} Plans</h3>
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="text-center py-12 text-muted-foreground">
-                    <p>Similar plans coming soon...</p>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
         </div>
-              </div>
       </section>
-
     </div>
   );
 };

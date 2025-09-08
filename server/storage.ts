@@ -1,5 +1,5 @@
-import { users, profiles, plans, orders, downloads, reviews, favorites } from "@shared/schema";
-import type { User, Profile, Plan, Order, Download, InsertUser, Review, InsertReview, Favorite, InsertFavorite } from "@shared/schema";
+import { users, profiles, plans, orders, downloads, reviews, favorites, ads } from "@shared/schema";
+import type { User, Profile, Plan, Order, Download, InsertUser, Review, InsertReview, Favorite, InsertFavorite, Ad, InsertAd } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
 
@@ -42,6 +42,15 @@ export interface IStorage {
   addFavorite(userId: string, planId: string): Promise<Favorite>;
   removeFavorite(userId: string, planId: string): Promise<boolean>;
   isFavorite(userId: string, planId: string): Promise<boolean>;
+
+  // Ads management
+  getAds(filters?: { status?: string; ad_type?: string; position?: string }): Promise<Ad[]>;
+  getAd(id: string): Promise<Ad | undefined>;
+  createAd(ad: Omit<Ad, 'id' | 'created_at' | 'updated_at' | 'click_count' | 'view_count'>): Promise<Ad>;
+  updateAd(id: string, updates: Partial<Ad>): Promise<Ad | undefined>;
+  deleteAd(id: string): Promise<boolean>;
+  incrementAdViews(id: string): Promise<void>;
+  incrementAdClicks(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -119,21 +128,44 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deletePlan(id: string): Promise<boolean> {
-    const result = await db.delete(plans).where(eq(plans.id, id));
+    // Use returning() so we can reliably know how many rows were deleted
+    const result = await db.delete(plans)
+      .where(eq(plans.id, id))
+      .returning();
     return result.length > 0;
   }
 
   // Orders methods
-  async getOrders(userId?: string): Promise<Order[]> {
+  async getOrders(userId?: string): Promise<any[]> {
     const conditions = [];
 
     if (userId) {
       conditions.push(eq(orders.user_id, userId));
     }
 
-    const result = await db.select().from(orders)
-      .where(conditions.length ? and(...conditions) : undefined)
-      .orderBy(desc(orders.created_at));
+    const result = await db.select({
+      id: orders.id,
+      user_id: orders.user_id,
+      plan_id: orders.plan_id,
+      tier: orders.tier,
+      amount: orders.amount,
+      status: orders.status,
+      payment_intent_id: orders.payment_intent_id,
+      created_at: orders.created_at,
+      updated_at: orders.updated_at,
+      // Plan information
+      plan_title: plans.title,
+      plan_type: plans.plan_type,
+      // User information
+      user_email: profiles.email,
+      user_first_name: profiles.first_name,
+      user_last_name: profiles.last_name,
+    })
+    .from(orders)
+    .leftJoin(plans, eq(orders.plan_id, plans.id))
+    .leftJoin(profiles, eq(orders.user_id, profiles.user_id))
+    .where(conditions.length ? and(...conditions) : undefined)
+    .orderBy(desc(orders.created_at));
 
     return result;
   }
@@ -363,6 +395,145 @@ export class DatabaseStorage implements IStorage {
       return result;
     } catch (error) {
       console.error('Error getting all users:', error);
+      throw error;
+    }
+  }
+
+  async updateUserRole(userId: string, newRole: string): Promise<Profile | undefined> {
+    try {
+      const result = await db.update(profiles)
+        .set({ 
+          role: newRole,
+          updated_at: new Date()
+        })
+        .where(eq(profiles.user_id, userId))
+        .returning();
+      
+      return result[0];
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      throw error;
+    }
+  }
+
+  // Ads methods
+  async getAds(filters?: { status?: string; ad_type?: string; position?: string }): Promise<Ad[]> {
+    try {
+      const conditions = [];
+      
+      if (filters?.status) {
+        conditions.push(eq(ads.status, filters.status));
+      }
+      if (filters?.ad_type) {
+        conditions.push(eq(ads.ad_type, filters.ad_type));
+      }
+      if (filters?.position) {
+        conditions.push(eq(ads.position, filters.position));
+      }
+      
+      const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+      const result = await db.select().from(ads).where(whereClause).orderBy(desc(ads.created_at));
+      return result;
+    } catch (error) {
+      console.error('Error getting ads:', error);
+      throw error;
+    }
+  }
+
+  async getAd(id: string): Promise<Ad | undefined> {
+    try {
+      const result = await db.select().from(ads).where(eq(ads.id, id)).limit(1);
+      return result[0];
+    } catch (error) {
+      console.error('Error getting ad:', error);
+      throw error;
+    }
+  }
+
+  async createAd(ad: Omit<Ad, 'id' | 'created_at' | 'updated_at' | 'click_count' | 'view_count'>): Promise<Ad> {
+    try {
+      // Clean the ad data to ensure proper types
+      const cleanAd = {
+        title: ad.title,
+        description: ad.description || null,
+        image_url: ad.image_url || null,
+        link_url: ad.link_url || null,
+        ad_type: ad.ad_type,
+        position: ad.position,
+        status: ad.status,
+        start_date: ad.start_date ? new Date(ad.start_date) : null,
+        end_date: ad.end_date ? new Date(ad.end_date) : null,
+      };
+
+      const result = await db.insert(ads).values({
+        ...cleanAd,
+        click_count: 0,
+        view_count: 0,
+      }).returning();
+      return result[0];
+    } catch (error) {
+      console.error('Error creating ad:', error);
+      throw error;
+    }
+  }
+
+  async updateAd(id: string, updates: Partial<Ad>): Promise<Ad | undefined> {
+    try {
+      const updateData: any = { ...updates, updated_at: new Date() };
+      
+      // Convert date strings to Date objects if they exist
+      if (updates.start_date) {
+        updateData.start_date = new Date(updates.start_date);
+      }
+      if (updates.end_date) {
+        updateData.end_date = new Date(updates.end_date);
+      }
+      
+      const result = await db.update(ads)
+        .set(updateData)
+        .where(eq(ads.id, id))
+        .returning();
+      return result[0];
+    } catch (error) {
+      console.error('Error updating ad:', error);
+      throw error;
+    }
+  }
+
+  async deleteAd(id: string): Promise<boolean> {
+    try {
+      const result = await db.delete(ads).where(eq(ads.id, id));
+      return result.length > 0;
+    } catch (error) {
+      console.error('Error deleting ad:', error);
+      throw error;
+    }
+  }
+
+  async incrementAdViews(id: string): Promise<void> {
+    try {
+      await db.update(ads)
+        .set({ 
+          view_count: sql`${ads.view_count} + 1`,
+          updated_at: new Date()
+        })
+        .where(eq(ads.id, id));
+    } catch (error) {
+      console.error('Error incrementing ad views:', error);
+      throw error;
+    }
+  }
+
+  async incrementAdClicks(id: string): Promise<void> {
+    try {
+      await db.update(ads)
+        .set({ 
+          click_count: sql`${ads.click_count} + 1`,
+          updated_at: new Date()
+        })
+        .where(eq(ads.id, id));
+    } catch (error) {
+      console.error('Error incrementing ad clicks:', error);
       throw error;
     }
   }

@@ -80,7 +80,7 @@ const Checkout = () => {
       }
     } else {
       console.error('Order ID not found in payment data');
-      setError('Payment completed but order information is missing. Please contact support.');
+      setPaymentError('Payment completed but order information is missing. Please contact support.');
     }
   };
 
@@ -207,7 +207,7 @@ const Checkout = () => {
                     <div className="flex items-center justify-between">
                       <span className="font-medium">Total Amount:</span>
                       <span className="text-lg font-bold">
-                        GH₵ {packagePrices[selectedPackage].toFixed(2)}
+                        GH₵ {packagePrices[selectedPackage as keyof typeof packagePrices].toFixed(2)}
                       </span>
                     </div>
                   </div>

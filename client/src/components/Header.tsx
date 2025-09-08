@@ -21,6 +21,7 @@ import { useAuth } from '@/hooks/useAuth';
 import AuthModal from './AuthModal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import AdBanner from './AdBanner';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,6 +68,13 @@ const Header = () => {
 
   return (
     <>
+      {/* Top Header Ad Banner */}
+      <div className="w-full bg-background border-b border-border/50">
+        <div className="max-w-6xl mx-auto px-4 py-2">
+          <AdBanner position="top" adType="banner" className="h-16" />
+        </div>
+      </div>
+
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/70 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-4">
@@ -100,9 +108,15 @@ const Header = () => {
             </nav>
 
             {/* Desktop Actions */}
-            <div className="flex items-center gap-2">
-              <ThemeToggle />
-              {isAuthenticated ? (
+            <div className="flex items-center gap-4">
+              {/* Sidebar Ad for Desktop */}
+              <div className="hidden lg:block">
+                <AdBanner position="sidebar" adType="sidebar" className="w-32 h-20" />
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                {isAuthenticated ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0 hover:bg-muted/50">
@@ -165,7 +179,8 @@ const Header = () => {
                   <User className="w-4 h-4" />
                   Get Started
                 </Button>
-              )}
+                )}
+              </div>
             </div>
 
             {/* Mobile Menu Button */}
@@ -276,7 +291,7 @@ const Header = () => {
                       handleAuthClick();
                       setIsMenuOpen(false);
                     }}
-                    className="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-700 hover:to-amber-600 text-white font-semibold px-6 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold px-6 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
                   >
                     <User className="w-4 h-4 mr-2" />
                     Get Started
@@ -288,8 +303,6 @@ const Header = () => {
         )}
       </header>
 
-      {/* Spacer for fixed header */}
-      <div className="h-16 lg:h-20"></div>
 
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </>

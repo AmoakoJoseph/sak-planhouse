@@ -18,11 +18,34 @@ const imageStorage = multer.diskStorage({
   }
 });
 
+const galleryStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = 'uploads/gallery/';
+    console.log('[upload-gallery] ->', uploadPath);
+    
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
 const planFileStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const tier = req.body.tier || 'basic';
-    const planId = req.body.planId || 'temp';
-    const uploadPath = `uploads/plans/${tier}/`;
+    // Resolve tier from multipart field name, falling back to explicit tier param
+    const field = (file?.fieldname || '').toLowerCase();
+    const fallbackTier = (req.body?.tier || req.query?.tier || 'basic').toString().toLowerCase();
+    const resolvedTier = ['basic', 'standard', 'premium'].includes(field) ? field
+      : (['basic', 'standard', 'premium'].includes(fallbackTier) ? fallbackTier : 'basic');
+
+    const uploadPath = `uploads/plans/${resolvedTier}/`;
+    console.log('[upload-plan] fieldname:', field, 'resolvedTier:', resolvedTier, '->', uploadPath);
     
     // Create directory if it doesn't exist
     if (!fs.existsSync(uploadPath)) {
@@ -39,6 +62,18 @@ const planFileStorage = multer.diskStorage({
 
 const uploadImage = multer({ 
   storage: imageStorage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'));
+    }
+  },
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
+
+const uploadGallery = multer({ 
+  storage: galleryStorage,
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
@@ -236,6 +271,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve static files from uploads directory
   app.use('/uploads', express.static('uploads'));
 
+  // Simple JSON storage for portfolio items
+  const portfolioStore = path.join(process.cwd(), 'uploads', 'portfolio.json');
+  const ensurePortfolioStore = () => {
+    if (!fs.existsSync(path.dirname(portfolioStore))) {
+      fs.mkdirSync(path.dirname(portfolioStore), { recursive: true });
+    }
+    if (!fs.existsSync(portfolioStore)) {
+      fs.writeFileSync(portfolioStore, '[]', 'utf-8');
+    }
+  };
+  const readPortfolio = (): any[] => {
+    ensurePortfolioStore();
+    try {
+      const raw = fs.readFileSync(portfolioStore, 'utf-8');
+      return JSON.parse(raw || '[]');
+    } catch {
+      return [];
+    }
+  };
+  const writePortfolio = (items: any[]) => {
+    ensurePortfolioStore();
+    fs.writeFileSync(portfolioStore, JSON.stringify(items, null, 2), 'utf-8');
+  };
+
+  // Portfolio API
+  app.get('/api/portfolio', (req, res) => {
+    try {
+      const items = readPortfolio();
+      res.json(items);
+    } catch (e) {
+      console.error('Error reading portfolio:', e);
+      res.status(500).json({ error: 'Failed to read portfolio' });
+    }
+  });
+
+  app.get('/api/portfolio/:id', (req, res) => {
+    try {
+      const items = readPortfolio();
+      const found = items.find((i: any) => i.id === req.params.id);
+      if (!found) return res.status(404).json({ error: 'Not found' });
+      res.json(found);
+    } catch (e) {
+      res.status(500).json({ error: 'Failed to fetch item' });
+    }
+  });
+
+  app.post('/api/portfolio', express.json(), (req, res) => {
+    try {
+      const items = readPortfolio();
+      const id = (global as any).crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
+      const now = new Date().toISOString();
+      const item = { id, created_at: now, updated_at: now, ...req.body };
+      items.unshift(item);
+      writePortfolio(items);
+      res.status(201).json(item);
+    } catch (e) {
+      console.error('Error creating portfolio item:', e);
+      res.status(500).json({ error: 'Failed to create item' });
+    }
+  });
+
+  app.put('/api/portfolio/:id', express.json(), (req, res) => {
+    try {
+      const items = readPortfolio();
+      const idx = items.findIndex((i: any) => i.id === req.params.id);
+      if (idx === -1) return res.status(404).json({ error: 'Not found' });
+      items[idx] = { ...items[idx], ...req.body, updated_at: new Date().toISOString() };
+      writePortfolio(items);
+      res.json(items[idx]);
+    } catch (e) {
+      res.status(500).json({ error: 'Failed to update item' });
+    }
+  });
+
+  app.delete('/api/portfolio/:id', (req, res) => {
+    try {
+      const items = readPortfolio();
+      const next = items.filter((i: any) => i.id !== req.params.id);
+      writePortfolio(next);
+      res.status(204).send();
+    } catch (e) {
+      res.status(500).json({ error: 'Failed to delete item' });
+    }
+  });
+
   // File Upload API
   app.post("/api/upload/image", uploadImage.single('image'), (req, res) => {
     try {
@@ -250,6 +370,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error uploading image:", error);
       res.status(500).json({ error: "Failed to upload image" });
+    }
+  });
+
+  app.post("/api/upload/gallery", uploadGallery.array('gallery', 6), (req, res) => {
+    try {
+      const files = req.files as Express.Multer.File[];
+      if (!files || files.length === 0) {
+        return res.status(400).json({ error: 'No files uploaded' });
+      }
+      
+      const urls = files.map(file => `/uploads/gallery/${file.filename}`);
+      res.json({ urls });
+    } catch (error) {
+      console.error("Error uploading gallery images:", error);
+      res.status(500).json({ error: "Failed to upload gallery images" });
     }
   });
 
@@ -327,10 +462,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.delete("/api/plans/:id", async (req, res) => {
+    const id = (req.params.id || "").trim();
     try {
-      const success = await storage.deletePlan(req.params.id);
-      if (!success) {
+      const exists = await storage.getPlan(id);
+      if (!exists) {
+        console.warn("Delete plan: plan not found", { id });
         return res.status(404).json({ error: "Plan not found" });
+      }
+
+      const success = await storage.deletePlan(id);
+      if (!success) {
+        console.error("Delete plan: delete returned false", { id });
+        return res.status(500).json({ error: "Failed to delete plan" });
       }
       res.status(204).send();
     } catch (error) {
@@ -446,6 +589,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching users:", error);
       res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  app.put("/api/users/:userId/role", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { role } = req.body;
+      
+      if (!role || !['user', 'admin', 'super_admin'].includes(role)) {
+        return res.status(400).json({ error: "Invalid role. Must be 'user', 'admin', or 'super_admin'" });
+      }
+      
+      const updatedProfile = await storage.updateUserRole(userId, role);
+      if (!updatedProfile) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      res.json({ message: "User role updated successfully", user: updatedProfile });
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({ error: "Failed to update user role" });
     }
   });
 
@@ -1009,6 +1173,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error sending contact email:", error);
       res.status(500).json({ error: "Failed to send email" });
+    }
+  });
+
+  // Ads API
+  app.get("/api/ads", async (req, res) => {
+    try {
+      const { status, ad_type, position } = req.query;
+      const filters: { status?: string; ad_type?: string; position?: string } = {};
+      
+      if (status) filters.status = status as string;
+      if (ad_type) filters.ad_type = ad_type as string;
+      if (position) filters.position = position as string;
+      
+      const ads = await storage.getAds(filters);
+      res.json(ads);
+    } catch (error) {
+      console.error("Error fetching ads:", error);
+      res.status(500).json({ error: "Failed to fetch ads" });
+    }
+  });
+
+  app.get("/api/ads/:id", async (req, res) => {
+    try {
+      const ad = await storage.getAd(req.params.id);
+      if (!ad) {
+        return res.status(404).json({ error: "Ad not found" });
+      }
+      res.json(ad);
+    } catch (error) {
+      console.error("Error fetching ad:", error);
+      res.status(500).json({ error: "Failed to fetch ad" });
+    }
+  });
+
+  app.post("/api/ads", async (req, res) => {
+    try {
+      const ad = await storage.createAd(req.body);
+      res.status(201).json(ad);
+    } catch (error) {
+      console.error("Error creating ad:", error);
+      res.status(500).json({ error: "Failed to create ad" });
+    }
+  });
+
+  app.put("/api/ads/:id", async (req, res) => {
+    try {
+      const ad = await storage.updateAd(req.params.id, req.body);
+      if (!ad) {
+        return res.status(404).json({ error: "Ad not found" });
+      }
+      res.json(ad);
+    } catch (error) {
+      console.error("Error updating ad:", error);
+      res.status(500).json({ error: "Failed to update ad" });
+    }
+  });
+
+  app.delete("/api/ads/:id", async (req, res) => {
+    try {
+      const success = await storage.deleteAd(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Ad not found" });
+      }
+      res.json({ message: "Ad deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting ad:", error);
+      res.status(500).json({ error: "Failed to delete ad" });
+    }
+  });
+
+  app.post("/api/ads/:id/view", async (req, res) => {
+    try {
+      await storage.incrementAdViews(req.params.id);
+      res.json({ message: "View recorded" });
+    } catch (error) {
+      console.error("Error recording ad view:", error);
+      res.status(500).json({ error: "Failed to record view" });
+    }
+  });
+
+  app.post("/api/ads/:id/click", async (req, res) => {
+    try {
+      await storage.incrementAdClicks(req.params.id);
+      res.json({ message: "Click recorded" });
+    } catch (error) {
+      console.error("Error recording ad click:", error);
+      res.status(500).json({ error: "Failed to record click" });
     }
   });
 

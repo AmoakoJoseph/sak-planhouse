@@ -70,6 +70,7 @@ const UserProfile = () => {
   }, [user, profile, navigate]);
 
   const fetchUserStats = async () => {
+    if (!user) return;
     try {
       const response = await fetch(`/api/analytics/user/${user.id}`);
       if (response.ok) {
@@ -227,7 +228,7 @@ const UserProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-construction-gray-light">
+    <div className="min-h-screen bg-background">
       <FloatingNav />
 
       {/* Profile Content */}

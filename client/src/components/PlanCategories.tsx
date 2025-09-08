@@ -84,7 +84,7 @@ const PlanCategories = () => {
         <div className="grid md:grid-cols-3 gap-6">
           {categories.map((category) => (
             <div key={category.title} className="group">
-              <div className="aspect-[4/3] w-full rounded-2xl bg-gradient-to-br from-slate-300 to-slate-100 border border-slate-200 grid place-items-center overflow-hidden">
+              <div className="aspect-[4/3] w-full rounded-2xl bg-slate-200 border border-slate-200 grid place-items-center overflow-hidden">
                 <img
                   src={category.image}
                   alt={category.title}
@@ -105,7 +105,7 @@ const PlanCategories = () => {
         </div>
 
         {/* CTA Section */}
-        <div className="py-10 bg-gradient-to-r from-orange-600 to-amber-500 text-white rounded-3xl mt-12">
+        <div className="py-10 bg-orange-600 text-white rounded-3xl mt-12">
           <div className="max-w-6xl mx-auto px-4 flex items-center justify-between">
             <h3 className="text-2xl font-extrabold">Let's build something great together.</h3>
             <Button className="inline-flex items-center gap-2 bg-white text-slate-900 px-5 py-3 rounded-2xl font-semibold hover:bg-slate-50">

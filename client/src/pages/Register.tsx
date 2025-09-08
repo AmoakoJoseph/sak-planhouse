@@ -7,8 +7,8 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, Mail, Lock, User, Eye, EyeOff, Phone } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // Import useNavigate
-import { useAuth } from '@/context/AuthContext'; // Assuming AuthContext provides login function
-import api from '@/lib/api'; // Assuming api is imported correctly
+import { useAuth } from '@/hooks/useAuth';
+import { api } from '@/lib/api';
 
 const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -26,7 +26,7 @@ const Register = () => {
   const [loading, setLoading] = useState(false); // Add loading state
   const [error, setError] = useState(''); // Add error state
   const navigate = useNavigate(); // Initialize navigate
-  const { login } = useAuth(); // Get login function from AuthContext
+  const { signIn } = useAuth(); // Get signIn function from useAuth hook
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,14 +56,7 @@ const Register = () => {
       await api.post('/api/profiles', profileData);
 
       // For demo purposes, auto-login after registration
-      login({
-        id: profileData.user_id,
-        email: profileData.email,
-        firstName: profileData.first_name,
-        lastName: profileData.last_name,
-        phone: profileData.phone,
-        role: profileData.role,
-      });
+      await signIn(formData.email, formData.password);
 
       // Check for pending premium order
       const pendingOrder = localStorage.getItem('pendingPremiumOrder');

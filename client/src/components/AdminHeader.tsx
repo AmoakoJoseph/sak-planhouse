@@ -6,8 +6,9 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Menu, Home, BarChart3, FileText, ShoppingCart, Users, Settings, LogOut, Shield } from 'lucide-react';
+import { Menu, Home, BarChart3, FileText, ShoppingCart, Users, LogOut, Shield, Briefcase, Target } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { AdminThemeToggle } from '@/components/AdminThemeToggle';
 
 const AdminHeader = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,7 +22,8 @@ const AdminHeader = () => {
     { icon: FileText, label: 'Plans', href: '/admin/plans' },
     { icon: ShoppingCart, label: 'Orders', href: '/admin/orders' },
     { icon: Users, label: 'Users', href: '/admin/users' },
-    { icon: Settings, label: 'Settings', href: '/admin/settings' },
+    { icon: Briefcase, label: 'Portfolio', href: '/admin/portfolio' },
+    { icon: Target, label: 'Ads', href: '/admin/ads' },
   ];
 
   const handleSignOut = async () => {
@@ -69,6 +71,7 @@ const AdminHeader = () => {
 
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center space-x-4">
+          <AdminThemeToggle />
           <Badge variant="secondary" className="text-xs">
             {profile?.role === 'super_admin' ? 'Super Admin' : 'Admin'}
           </Badge>
@@ -95,9 +98,9 @@ const AdminHeader = () => {
               </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link to="/admin/settings">
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
+                <Link to="/admin/portfolio">
+                  <Briefcase className="mr-2 h-4 w-4" />
+                  <span>Portfolio</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>

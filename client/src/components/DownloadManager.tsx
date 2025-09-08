@@ -41,7 +41,7 @@ export const DownloadManager = ({ orderId }: DownloadManagerProps) => {
   };
 
   const handleDownloadFile = async (filePath: string) => {
-    setDownloadingFiles(prev => new Set([...prev, filePath]));
+    setDownloadingFiles(prev => new Set(Array.from(prev).concat(filePath)));
 
     try {
       const response = await fetch(`/api/downloads/${orderId}/file?filePath=${encodeURIComponent(filePath)}`);

@@ -108,6 +108,23 @@ export const favorites = pgTable("favorites", {
   created_at: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const ads = pgTable("ads", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description"),
+  image_url: text("image_url"),
+  link_url: text("link_url"),
+  ad_type: text("ad_type").notNull().default("banner"), // 'banner', 'sidebar', 'popup', 'inline'
+  position: text("position").notNull().default("top"), // 'top', 'bottom', 'sidebar', 'inline'
+  status: text("status").notNull().default("active"), // 'active', 'inactive', 'draft'
+  start_date: timestamp("start_date"),
+  end_date: timestamp("end_date"),
+  click_count: integer("click_count").default(0),
+  view_count: integer("view_count").default(0),
+  created_at: timestamp("created_at").notNull().defaultNow(),
+  updated_at: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -120,6 +137,7 @@ export const insertOrderSchema = createInsertSchema(orders);
 export const insertDownloadSchema = createInsertSchema(downloads);
 export const insertReviewSchema = createInsertSchema(reviews);
 export const insertFavoriteSchema = createInsertSchema(favorites);
+export const insertAdSchema = createInsertSchema(ads);
 
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -132,3 +150,5 @@ export type Review = typeof reviews.$inferSelect;
 export type InsertReview = z.infer<typeof insertReviewSchema>;
 export type Favorite = typeof favorites.$inferSelect;
 export type InsertFavorite = z.infer<typeof insertFavoriteSchema>;
+export type Ad = typeof ads.$inferSelect;
+export type InsertAd = z.infer<typeof insertAdSchema>;

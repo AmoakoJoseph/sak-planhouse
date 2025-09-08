@@ -92,7 +92,7 @@ const UserFavorites = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-construction-gray-light">
+      <div className="min-h-screen bg-background">
         <FloatingNav />
         <div className="flex items-center justify-center py-16">
           <div className="text-center">
@@ -105,7 +105,7 @@ const UserFavorites = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-construction-gray-light">
+    <div className="min-h-screen bg-background">
       <FloatingNav />
 
       {/* Stats Cards */}

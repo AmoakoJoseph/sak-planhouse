@@ -11,9 +11,20 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Edit, Trash2, ArrowLeft, Star, Eye, CheckCircle } from 'lucide-react';
+import AdminHeader from '@/components/AdminHeader';
 
 type PlanType = 'villa' | 'bungalow' | 'townhouse' | 'duplex' | 'apartment' | 'commercial';
 
@@ -63,7 +74,10 @@ const AdminPlans = () => {
   });
 
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [viewingPlan, setViewingPlan] = useState<Plan | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
@@ -239,6 +253,49 @@ const AdminPlans = () => {
     }
   };
 
+  const handleGalleryImagesUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingGallery(true);
+    const formData = new FormData();
+    
+    for (let i = 0; i < files.length; i++) {
+      formData.append('gallery', files[i]);
+    }
+
+    try {
+      const response = await fetch('/api/upload/gallery', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const currentImages = planForm.gallery_images || [];
+        setPlanForm(prev => ({ 
+          ...prev, 
+          gallery_images: [...currentImages, ...result.urls]
+        }));
+        toast({
+          title: "Success",
+          description: "Gallery images uploaded successfully"
+        });
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error('Error uploading gallery images:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload gallery images",
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingGallery(false);
+    }
+  };
+
   const handlePlanFilesUpload = async (event: React.ChangeEvent<HTMLInputElement>, tier: string) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
@@ -304,6 +361,20 @@ const AdminPlans = () => {
     });
   };
 
+  const removeFileFromTier = (tier: string, index: number) => {
+    setPlanForm(prev => {
+      const currentTierFiles: string[] = (prev.plan_files?.[tier] || []).slice();
+      currentTierFiles.splice(index, 1);
+      return {
+        ...prev,
+        plan_files: {
+          ...(prev.plan_files || {}),
+          [tier]: currentTierFiles
+        }
+      } as any;
+    });
+  };
+
   if (loading || !user || !isAdmin) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -317,34 +388,33 @@ const AdminPlans = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/admin/dashboard')}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Dashboard
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold">Plan Management</h1>
-              <p className="text-sm text-muted-foreground">Manage construction plans and pricing</p>
+      <AdminHeader />
+
+      {/* Sub Header */}
+      <section className="border-b bg-muted/10">
+        <div className="container mx-auto px-4 py-4 md:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div>
+                <h1 className="text-xl md:text-2xl font-bold">Plan Management</h1>
+                <p className="text-sm text-muted-foreground">Manage construction plans and pricing</p>
             </div>
           </div>
-          
+
           <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="w-full sm:w-auto">
                 <Plus className="w-4 h-4 mr-2" />
                 Add New Plan
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-            <DialogTitle>Create New Plan</DialogTitle>
-            <DialogDescription>
-              Add a new construction plan with all the necessary details and pricing tiers.
-            </DialogDescription>
-          </DialogHeader>
+              <DialogHeader>
+                <DialogTitle>Create New Plan</DialogTitle>
+                <DialogDescription>
+                  Add a new construction plan with all the necessary details and pricing tiers.
+                </DialogDescription>
+              </DialogHeader>
               <form onSubmit={handleCreatePlan} className="space-y-4">
                 
                 <div className="space-y-2">
@@ -501,6 +571,62 @@ const AdminPlans = () => {
                   </div>
                 </div>
 
+                {/* Gallery Images Upload Section */}
+                <div className="space-y-2">
+                  <Label>Additional Views (Gallery Images)</Label>
+                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4">
+                    <div className="flex flex-col items-center space-y-2">
+                      {planForm.gallery_images && planForm.gallery_images.length > 0 ? (
+                        <div className="space-y-2 w-full">
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                            {planForm.gallery_images.map((image: any, index: number) => (
+                              <div key={index} className="relative">
+                                <img src={image} alt={`Gallery ${index + 1}`} className="w-full h-20 object-cover rounded" />
+                                <Button 
+                                  type="button" 
+                                  variant="destructive" 
+                                  size="sm" 
+                                  className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                                  onClick={() => {
+                                    const newImages = planForm.gallery_images?.filter((_: any, i: number) => i !== index) || [];
+                                    setPlanForm(prev => ({ ...prev, gallery_images: newImages.length > 0 ? newImages : null }));
+                                  }}
+                                >
+                                  ×
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setPlanForm(prev => ({ ...prev, gallery_images: null }))}
+                          >
+                            Clear All Images
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="text-center">
+                            <p className="text-sm text-muted-foreground">Upload additional plan views (JPG, PNG)</p>
+                            <p className="text-xs text-muted-foreground">Max 6 images, 10MB each</p>
+                          </div>
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleGalleryImagesUpload}
+                            disabled={uploadingGallery}
+                            className="max-w-xs"
+                          />
+                          {uploadingGallery && <p className="text-xs text-blue-600">Uploading...</p>}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 {/* Plan Files Upload Section */}
                 <div className="space-y-4">
                   <Label>Plan Files by Tier</Label>
@@ -556,8 +682,9 @@ const AdminPlans = () => {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
-      </header>
+      </section>
 
       <div className="container mx-auto px-4 py-8">
         <Card>
@@ -573,17 +700,18 @@ const AdminPlans = () => {
                 ))}
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Plan</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Specs</TableHead>
-                    <TableHead>Pricing</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Plan</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead className="hidden sm:table-cell">Specs</TableHead>
+                      <TableHead className="hidden md:table-cell">Pricing</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
                 <TableBody>
                   {plans.map((plan) => (
                     <TableRow key={plan.id}>
@@ -608,13 +736,13 @@ const AdminPlans = () => {
                           {plan.plan_type}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden sm:table-cell">
                         <div className="text-sm">
                           {plan.bedrooms}BR / {plan.bathrooms}BA<br />
                           {plan.area_sqft?.toLocaleString()} sq ft
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="hidden md:table-cell">
                         <div className="text-sm">
                           Basic: ₵{plan.basic_price}<br />
                           Standard: ₵{plan.standard_price}<br />
@@ -644,19 +772,20 @@ const AdminPlans = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-1">
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => toggleFeatured(plan)}
                             title={plan.featured ? 'Remove from featured' : 'Mark as featured'}
+                            className="p-1 h-8 w-8"
                           >
                             <Star className={`w-4 h-4 ${plan.featured ? 'text-yellow-500 fill-current' : ''}`} />
                           </Button>
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => navigate(`/plans/${plan.id}`)}
+                            onClick={() => setViewingPlan(plan)}
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
@@ -670,7 +799,7 @@ const AdminPlans = () => {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => handleDeletePlan(plan.id)}
+                            onClick={() => setDeleteTargetId(plan.id)}
                           >
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>
@@ -679,7 +808,8 @@ const AdminPlans = () => {
                     </TableRow>
                   ))}
                 </TableBody>
-              </Table>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -690,6 +820,7 @@ const AdminPlans = () => {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Plan</DialogTitle>
+            <DialogDescription>Update plan details, pricing and files</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleUpdatePlan} className="space-y-4">
             
@@ -815,6 +946,100 @@ const AdminPlans = () => {
               </div>
             </div>
 
+            {/* Gallery Images Upload Section (Edit) */}
+            <div className="space-y-2">
+              <Label>Additional Views (Gallery Images)</Label>
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4">
+                <div className="flex flex-col items-center space-y-2">
+                  {planForm.gallery_images && planForm.gallery_images.length > 0 ? (
+                    <div className="space-y-2 w-full">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {planForm.gallery_images.map((image: any, index: number) => (
+                          <div key={index} className="relative">
+                            <img src={image} alt={`Gallery ${index + 1}`} className="w-full h-20 object-cover rounded" />
+                            <Button 
+                              type="button" 
+                              variant="destructive" 
+                              size="sm" 
+                              className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                              onClick={() => {
+                                const newImages = planForm.gallery_images?.filter((_: any, i: number) => i !== index) || [];
+                                setPlanForm(prev => ({ ...prev, gallery_images: newImages.length > 0 ? newImages : null }));
+                              }}
+                            >
+                              ×
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setPlanForm(prev => ({ ...prev, gallery_images: null }))}
+                      >
+                        Clear All Images
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-center">
+                        <p className="text-sm text-muted-foreground">Upload additional plan views (JPG, PNG)</p>
+                        <p className="text-xs text-muted-foreground">Max 6 images, 10MB each</p>
+                      </div>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleGalleryImagesUpload}
+                        disabled={uploadingGallery}
+                        className="max-w-xs"
+                      />
+                      {uploadingGallery && <p className="text-xs text-blue-600">Uploading...</p>}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Plan Files Upload Section (Edit) */}
+            <div className="space-y-4">
+              <Label>Plan Files by Tier</Label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {(['basic', 'standard', 'premium'] as const).map((tier) => (
+                  <div key={tier} className="border rounded-lg p-3">
+                    <Label className="text-sm font-medium capitalize">{tier} Files</Label>
+                    <div className="mt-2 space-y-2">
+                      <Input
+                        type="file"
+                        multiple
+                        accept=".pdf,.dwg,.dxf,.zip"
+                        onChange={(e) => handlePlanFilesUpload(e, tier)}
+                        disabled={uploadingFiles}
+                        className="text-xs"
+                      />
+                      <p className="text-xs text-muted-foreground">PDF, DWG, DXF, ZIP (Max 50MB each)</p>
+                      {planForm.plan_files?.[tier] && Array.isArray(planForm.plan_files[tier]) && planForm.plan_files[tier].length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium">{planForm.plan_files[tier].length} file(s)</p>
+                          {planForm.plan_files[tier].map((file: string, index: number) => (
+                            <div key={`${tier}-${index}`} className="flex items-center justify-between text-xs">
+                              <span className="truncate max-w-[160px]">{file.split('/').pop()}</span>
+                              <Button type="button" variant="ghost" size="sm" className="h-6 px-2"
+                                onClick={() => removeFileFromTier(tier, index)}>
+                                Remove
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {uploadingFiles && <p className="text-sm text-blue-600">Uploading files...</p>}
+            </div>
+
             <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
@@ -836,6 +1061,97 @@ const AdminPlans = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* View Modal - Admin Preview */}
+      <Dialog open={!!viewingPlan} onOpenChange={(open) => !open && setViewingPlan(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Plan Preview</DialogTitle>
+            <DialogDescription>Admin-only preview of plan details and files</DialogDescription>
+          </DialogHeader>
+          {viewingPlan && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Title</Label>
+                  <Input value={viewingPlan.title} readOnly />
+                </div>
+                <div>
+                  <Label>Type</Label>
+                  <Input value={viewingPlan.plan_type} readOnly />
+                </div>
+                <div>
+                  <Label>Bedrooms</Label>
+                  <Input value={String(viewingPlan.bedrooms ?? '')} readOnly />
+                </div>
+                <div>
+                  <Label>Bathrooms</Label>
+                  <Input value={String(viewingPlan.bathrooms ?? '')} readOnly />
+                </div>
+                <div>
+                  <Label>Area (sq ft)</Label>
+                  <Input value={String(viewingPlan.area_sqft ?? '')} readOnly />
+                </div>
+              </div>
+
+              <div>
+                <Label>Description</Label>
+                <Textarea value={viewingPlan.description || ''} readOnly rows={3} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Image</Label>
+                {viewingPlan.image_url ? (
+                  <img src={viewingPlan.image_url} alt="Plan" className="h-24 rounded object-cover" />
+                ) : (
+                  <p className="text-sm text-muted-foreground">No image</p>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <Label>Files by Tier</Label>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {(['basic', 'standard', 'premium'] as const).map((tier) => (
+                    <div key={`view-${tier}`} className="border rounded-lg p-3">
+                      <p className="text-sm font-medium capitalize mb-2">{tier}</p>
+                      {Array.isArray((viewingPlan as any).plan_files?.[tier]) && (viewingPlan as any).plan_files[tier].length > 0 ? (
+                        <ul className="space-y-1 text-sm">
+                          {(viewingPlan as any).plan_files[tier].map((file: string, idx: number) => (
+                            <li key={`vf-${tier}-${idx}`} className="truncate">{file.split('/').pop()}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">No files</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirm Dialog */}
+      <AlertDialog open={!!deleteTargetId} onOpenChange={(open) => !open && setDeleteTargetId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete plan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The plan and its metadata will be permanently deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteTargetId(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={async () => {
+              if (deleteTargetId) {
+                await handleDeletePlan(deleteTargetId);
+                setDeleteTargetId(null);
+              }
+            }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

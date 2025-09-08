@@ -10,11 +10,31 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ShoppingCart, Search, Filter, Download, MoreHorizontal } from 'lucide-react';
 import AdminHeader from '@/components/AdminHeader';
 
+interface Order {
+  id: string;
+  user_id: string;
+  plan_id: string;
+  tier: string;
+  amount: number;
+  status: string;
+  payment_intent_id?: string;
+  created_at: string;
+  updated_at: string;
+  payment_status?: string;
+  package_type?: string;
+  // Additional fields from joins
+  plan_title?: string;
+  plan_type?: string;
+  user_email?: string;
+  user_first_name?: string;
+  user_last_name?: string;
+}
+
 const AdminOrders = () => {
   const { user, isAdmin, loading } = useAuth();
   const navigate = useNavigate();
-  const [orders, setOrders] = useState([]);
-  const [filteredOrders, setFilteredOrders] = useState([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [packageFilter, setPackageFilter] = useState('all');
@@ -57,10 +77,12 @@ const AdminOrders = () => {
     }
 
     let filtered = orders.filter(order => {
-      const matchesSearch = (order.plan_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (order.user_id || '').toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || (order.payment_status || 'pending') === statusFilter;
-      const matchesPackage = packageFilter === 'all' || (order.package_type || 'basic') === packageFilter;
+      const matchesSearch = (order.plan_title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           (order.user_email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           (order.user_first_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           (order.user_last_name || '').toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || (order.status || 'pending') === statusFilter;
+      const matchesPackage = packageFilter === 'all' || (order.tier || 'basic') === packageFilter;
       return matchesSearch && matchesStatus && matchesPackage;
     });
 
@@ -100,7 +122,7 @@ const AdminOrders = () => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/10">
+    <div className="min-h-screen bg-background">
       <AdminHeader />
 
       <div className="container mx-auto px-4 py-8">
@@ -128,7 +150,7 @@ const AdminOrders = () => {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search orders by Plan ID or User ID..."
+                  placeholder="Search by plan name, customer name, or email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -219,21 +241,31 @@ const AdminOrders = () => {
                       <TableCell className="font-medium">#{(order.id || '').substring(0, 8)}</TableCell>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{order.plan_id || 'Unknown Plan'}</div>
-                          <div className="text-sm text-gray-500">{order.user_id || 'Unknown User'}</div>
+                          <div className="font-medium">
+                            {order.user_first_name && order.user_last_name 
+                              ? `${order.user_first_name} ${order.user_last_name}`
+                              : order.user_email || 'Unknown User'}
+                          </div>
+                          <div className="text-sm text-gray-500">{order.user_email || 'No email'}</div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={(order.package_type || 'basic') === 'premium' ? 'default' :
-                                      (order.package_type || 'basic') === 'standard' ? 'secondary' : 'outline'}>
-                          {order.package_type || 'basic'}
+                        <div>
+                          <div className="font-medium">{order.plan_title || 'Unknown Plan'}</div>
+                          <div className="text-sm text-gray-500">{order.plan_type || 'Unknown Type'}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={(order.tier || 'basic') === 'premium' ? 'default' :
+                                      (order.tier || 'basic') === 'standard' ? 'secondary' : 'outline'}>
+                          {order.tier || 'basic'}
                         </Badge>
                       </TableCell>
                       <TableCell className="font-medium">GH₵{order.amount || 0}</TableCell>
                       <TableCell>
-                        <Badge variant={(order.payment_status || 'pending') === 'completed' ? 'default' :
-                                      (order.payment_status || 'pending') === 'processing' ? 'secondary' : 'destructive'}>
-                          {order.payment_status || 'pending'}
+                        <Badge variant={(order.status || 'pending') === 'completed' ? 'default' :
+                                      (order.status || 'pending') === 'processing' ? 'secondary' : 'destructive'}>
+                          {order.status || 'pending'}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-gray-500">

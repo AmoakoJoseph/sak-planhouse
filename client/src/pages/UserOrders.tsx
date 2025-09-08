@@ -177,7 +177,7 @@ const UserOrders = () => {
   console.log('UserOrders: User exists, rendering main content with FloatingNav');
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-construction-gray-light">
+    <div className="min-h-screen bg-background">
       <FloatingNav />
 
       {/* Stats Cards */}

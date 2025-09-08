@@ -212,6 +212,53 @@ class ApiClient {
     if (!response.ok) throw new Error(`Failed to GET from ${endpoint}`);
     return response.json();
   }
+
+  // Ads methods
+  async getAds(filters?: { status?: string; ad_type?: string; position?: string }): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.ad_type) params.append('ad_type', filters.ad_type);
+    if (filters?.position) params.append('position', filters.position);
+    
+    const queryString = params.toString();
+    const endpoint = queryString ? `ads?${queryString}` : 'ads';
+    return this.get(endpoint);
+  }
+
+  async getAd(id: string): Promise<any> {
+    return this.get(`ads/${id}`);
+  }
+
+  async createAd(ad: any): Promise<any> {
+    return this.post('ads', ad);
+  }
+
+  async updateAd(id: string, ad: any): Promise<any> {
+    return this.post(`ads/${id}`, ad);
+  }
+
+  async deleteAd(id: string): Promise<any> {
+    const response = await fetch(`${API_BASE}/ads/${id}`, { method: 'DELETE' });
+    if (!response.ok) throw new Error(`Failed to delete ad ${id}`);
+    return response.json();
+  }
+
+  // User management methods
+  async getUsers(): Promise<Profile[]> {
+    const response = await fetch(`${API_BASE}/users`);
+    if (!response.ok) throw new Error('Failed to fetch users');
+    return response.json();
+  }
+
+  async updateUserRole(userId: string, role: string): Promise<any> {
+    const response = await fetch(`${API_BASE}/users/${userId}/role`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role })
+    });
+    if (!response.ok) throw new Error('Failed to update user role');
+    return response.json();
+  }
 }
 
 export const api = new ApiClient();

@@ -8,8 +8,10 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Search, UserPlus, MoreHorizontal } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Users, Search, UserPlus, MoreHorizontal, Shield, User, Crown } from 'lucide-react';
 import AdminHeader from '@/components/AdminHeader';
+import { api } from '@/lib/api';
 
 const AdminUsers = () => {
   const { user, isAdmin, loading } = useAuth();
@@ -35,17 +37,46 @@ const AdminUsers = () => {
   const fetchUsers = async () => {
     try {
       setLoadingUsers(true);
-      const response = await fetch('/api/users');
-      if (!response.ok) {
-        throw new Error('Failed to fetch users');
-      }
-      const data = await response.json();
+      const data = await api.getUsers();
       setUsers(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching users:', error);
       setUsers([]);
     } finally {
       setLoadingUsers(false);
+    }
+  };
+
+  const handleRoleChange = async (userId: string, newRole: string) => {
+    try {
+      await api.updateUserRole(userId, newRole);
+      // Refresh the users list
+      await fetchUsers();
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      alert('Failed to update user role. Please try again.');
+    }
+  };
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return <Shield className="h-4 w-4" />;
+      case 'super_admin':
+        return <Crown className="h-4 w-4" />;
+      default:
+        return <User className="h-4 w-4" />;
+    }
+  };
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'bg-blue-500 hover:bg-blue-600 text-white';
+      case 'super_admin':
+        return 'bg-purple-500 hover:bg-purple-600 text-white';
+      default:
+        return 'bg-gray-500 hover:bg-gray-600 text-white';
     }
   };
 
@@ -105,7 +136,7 @@ const AdminUsers = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/10">
+    <div className="min-h-screen bg-background">
       <AdminHeader />
 
       <div className="container mx-auto px-4 py-8">
@@ -145,6 +176,7 @@ const AdminUsers = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Roles</SelectItem>
+                <SelectItem value="super_admin">Super Admin</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="user">User</SelectItem>
               </SelectContent>
@@ -224,9 +256,12 @@ const AdminUsers = () => {
                       </TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
-                        <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                          {user.role || 'user'}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge className={`${getRoleColor(user.role || 'user')} flex items-center gap-1`}>
+                            {getRoleIcon(user.role || 'user')}
+                            {user.role || 'user'}
+                          </Badge>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="default">
@@ -237,9 +272,63 @@ const AdminUsers = () => {
                         {new Date(user.createdAt || Date.now()).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
-                        <Button size="sm" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="outline" className="flex items-center gap-1">
+                                <Shield className="h-3 w-3" />
+                                Change Role
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Change User Role</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Select a new role for {user.firstName && user.lastName 
+                                    ? `${user.firstName} ${user.lastName}` 
+                                    : user.email}
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <div className="py-4">
+                                <Select 
+                                  defaultValue={user.role || 'user'} 
+                                  onValueChange={(newRole) => {
+                                    if (newRole !== user.role) {
+                                      handleRoleChange(user.userId, newRole);
+                                    }
+                                  }}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select role" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="user">
+                                      <div className="flex items-center gap-2">
+                                        <User className="h-4 w-4" />
+                                        User
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="admin">
+                                      <div className="flex items-center gap-2">
+                                        <Shield className="h-4 w-4" />
+                                        Admin
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="super_admin">
+                                      <div className="flex items-center gap-2">
+                                        <Crown className="h-4 w-4" />
+                                        Super Admin
+                                      </div>
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

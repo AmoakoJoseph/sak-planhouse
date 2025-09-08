@@ -96,7 +96,7 @@ const AdminDashboard = () => {
 
   if (loading || !user || !isAdmin) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/10 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent mx-auto mb-6"></div>
           <p className="text-xl text-muted-foreground">Loading admin dashboard...</p>
@@ -111,20 +111,20 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/10">
+    <div className="min-h-screen bg-background">
       <AdminHeader />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6 md:py-8">
         {/* Welcome Section */}
-        <div className="mb-8">
+        <div className="mb-6 md:mb-8">
           <div className="admin-card">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-foreground mb-2">Welcome back, Admin! 👋</h1>
+                <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">Welcome back, Admin! 👋</h1>
                 <p className="text-muted-foreground">Here's what's happening with your platform today.</p>
               </div>
-              <div className="flex items-center gap-4">
-                <Badge variant="outline" className="px-4 py-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <Badge variant="outline" className="px-4 py-2 w-fit">
                   <Calendar className="w-4 h-4 mr-2" />
                   {new Date().toLocaleDateString('en-US', { 
                     weekday: 'long', 
@@ -389,15 +389,15 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center p-6 rounded-xl bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20">
+                <div className="text-center p-6 rounded-xl bg-primary/10 border border-primary/20">
                   <div className="text-3xl font-bold text-primary mb-2">{stats.totalUsers}</div>
                   <div className="text-sm text-muted-foreground">Registered Users</div>
                 </div>
-                <div className="text-center p-6 rounded-xl bg-gradient-to-br from-secondary/5 to-secondary/10 border border-secondary/20">
+                <div className="text-center p-6 rounded-xl bg-secondary/10 border border-secondary/20">
                   <div className="text-3xl font-bold text-secondary mb-2">{stats.totalPlans}</div>
                   <div className="text-sm text-muted-foreground">Available Plans</div>
                 </div>
-                <div className="text-center p-6 rounded-xl bg-gradient-to-br from-accent/5 to-accent/10 border border-accent/20">
+                <div className="text-center p-6 rounded-xl bg-accent/10 border border-accent/20">
                   <div className="text-3xl font-bold text-accent mb-2">{stats.totalOrders}</div>
                   <div className="text-sm text-muted-foreground">Total Orders</div>
                 </div>

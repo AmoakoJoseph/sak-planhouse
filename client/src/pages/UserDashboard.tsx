@@ -183,7 +183,7 @@ const UserDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-construction-gray-light">
+    <div className="min-h-screen bg-background">
       <FloatingNav />
 
       {/* Dashboard Content */}

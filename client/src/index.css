@@ -87,13 +87,6 @@
     --construction-steel: 220 14% 96%;
     --construction-steel-dark: 220 14% 20%;
     
-    /* Enhanced Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(25 95% 53%), hsl(20 95% 48%));
-    --gradient-secondary: linear-gradient(135deg, hsl(217 91% 60%), hsl(217 91% 50%));
-    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 30%));
-    --gradient-hero: linear-gradient(135deg, hsl(25 95% 53%), hsl(20 90% 45%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(220 14% 98%));
-    --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
     
     /* Enhanced Shadows */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -190,18 +183,18 @@
   /* Modern Cards */
   .card-modern {
     @apply bg-card border border-border/50 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300;
-    background: linear-gradient(145deg, hsl(var(--card)), hsl(var(--card) / 0.8));
+    background: hsl(var(--card));
   }
   
-  /* Gradient Text */
+  /* Text */
   .gradient-text {
-    @apply bg-gradient-to-r from-primary via-primary to-secondary bg-clip-text text-transparent;
+    @apply text-primary;
   }
   
   /* Animated Border */
   .animated-border {
     position: relative;
-    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--secondary)), hsl(var(--accent)));
+    background: hsl(var(--primary));
     padding: 2px;
     border-radius: var(--radius);
   }
@@ -232,11 +225,11 @@
   
   /* Modern Button Styles */
   .btn-primary {
-    @apply bg-gradient-to-r from-primary to-primary text-primary-foreground font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105;
+    @apply bg-primary text-primary-foreground font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105;
   }
   
   .btn-secondary {
-    @apply bg-gradient-to-r from-secondary to-secondary-foreground text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105;
+    @apply bg-secondary text-white font-semibold px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105;
   }
   
   .btn-outline-modern {
@@ -250,21 +243,21 @@
   
   /* Stats Cards */
   .stat-card {
-    @apply bg-gradient-to-br from-card to-card/80 border border-border/30 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm;
+    @apply bg-card border border-border/30 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm;
   }
   
   /* Hero Section */
   .hero-gradient {
-    background: linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--secondary) / 0.1), hsl(var(--accent) / 0.1));
+    background: hsl(var(--primary) / 0.1);
   }
   
   /* Admin Dashboard */
   .admin-card {
-    @apply bg-gradient-to-br from-card via-card to-muted/30 border border-border/50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300;
+    @apply bg-card border border-border/50 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300;
   }
   
   .metric-card {
-    @apply bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300;
+    @apply bg-primary/10 border border-primary/20 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300;
   }
 }
 

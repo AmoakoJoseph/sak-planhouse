@@ -90,35 +90,21 @@ const About = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-      {/* Hero Section */}
-      <section className="py-20 bg-gradient-to-r from-primary/10 to-orange-500/10">
-        <div className="container px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <Badge variant="secondary" className="mb-4">
-              About SAK Constructions
-            </Badge>
-            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
-              About SAK CONSTRUCTIONS GH
-            </h1>
-            <p className="text-xl text-muted-foreground leading-relaxed mb-8">
-              A multi-disciplinary design and project management firm with capacity to mobilize and execute construction projects on turnkey.
-            </p>
-          </div>
-        </div>
-      </section>
+    <div className="min-h-screen bg-background">
+      {/* Hero Section with Logo Banner */}
+      <section className="relative py-48 md:py-56 overflow-hidden">
+        <img src="/logo.jpg" alt="SAK Constructions" className="absolute inset-0 w-full h-full object-cover" />
+        </section>
 
       {/* Company Introduction */}
       <section className="py-20">
         <div className="container px-4">
           <div className="max-w-4xl mx-auto text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-              Introducing SAK CONSTRUCTIONS
+              
             </h2>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              SAK was registered in Ghana in 2012 under the registration of business name act 1962 (No. 151). 
-              The company was created under the principle of accountability, professionalism, and successful delivery of projects.
-            </p>
+              </p>
           </div>
         </div>
       </section>
@@ -129,9 +115,9 @@ const About = () => {
           <div className="max-w-6xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div>
-                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
                   Background
-                </h2>
+              </h2>
                 <div className="space-y-4 text-muted-foreground leading-relaxed">
                   <p>
                     SAK is a multi-disciplinary design and project management firm with the capacity to mobilize and execute 
@@ -151,10 +137,9 @@ const About = () => {
                 </div>
               </div>
               <div className="relative">
-                <div className="aspect-square bg-gradient-to-br from-primary/20 to-orange-500/20 rounded-2xl flex items-center justify-center">
-                  <Building className="w-32 h-32 text-primary/40" />
+                <div className="aspect-square rounded-2xl overflow-hidden shadow-lg">
+                  <img src="/src/assets/hero-construction.jpg" alt="Plans banner" className="w-full h-full object-cover" />
                 </div>
-                <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-gradient-to-br from-orange-500/20 to-primary/20 rounded-2xl"></div>
               </div>
             </div>
           </div>
@@ -167,10 +152,9 @@ const About = () => {
           <div className="max-w-6xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div className="relative">
-                <div className="aspect-square bg-gradient-to-br from-orange-500/20 to-primary/20 rounded-2xl flex items-center justify-center">
-                  <Truck className="w-32 h-32 text-orange-500/40" />
+                <div className="aspect-square rounded-2xl overflow-hidden shadow-lg">
+                  <img src="/truck.jpg" alt="SAK project" className="w-full h-full object-cover" />
                 </div>
-                <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-gradient-to-br from-primary/20 to-orange-500/20 rounded-2xl"></div>
               </div>
               <div>
                 <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
@@ -195,7 +179,7 @@ const About = () => {
               </div>
             </div>
           </div>
-        </div>
+                    </div>
       </section>
 
       {/* Mission & Vision Section */}
@@ -221,7 +205,7 @@ const About = () => {
                     </span>
                   </li>
                 </ul>
-              </div>
+                </div>
               <div>
                 <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
                   Our Vision
@@ -256,11 +240,11 @@ const About = () => {
             <p className="text-lg text-muted-foreground">
               Professional qualifications and achievements
             </p>
-          </div>
-          
+              </div>
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
-              <Card key={index} className="text-center border-0 shadow-lg bg-gradient-to-br from-primary/5 to-orange-500/5">
+              <Card key={index} className="text-center border-0 shadow-lg bg-orange-500/5">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-center w-12 h-12 bg-primary/10 rounded-xl mb-4 mx-auto">
                     <stat.icon className="w-6 h-6 text-primary" />
@@ -285,7 +269,7 @@ const About = () => {
               The principles that guide everything we do
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {values.map((value, index) => (
               <Card key={index} className="text-center border-0 shadow-lg hover:shadow-xl transition-all duration-300">
@@ -313,7 +297,7 @@ const About = () => {
               Comprehensive construction and project management services
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {services.map((service, index) => (
               <Card key={index} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300">
@@ -366,7 +350,7 @@ const About = () => {
       <section className="py-20">
         <div className="container px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <Card className="border-0 shadow-2xl bg-gradient-to-r from-primary/10 to-orange-500/10">
+            <Card className="border-0 shadow-2xl bg-orange-500/10">
               <CardContent className="p-12">
                 <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
                   Ready to Start Your Project?
@@ -374,15 +358,15 @@ const About = () => {
                 <p className="text-lg text-muted-foreground mb-8">
                   At SAK, we safeguard your commercial interests at every stage of the project right from conception, 
                   feasibility, design, and procurement and construction process to deliver a return on your investment.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Button size="lg" asChild>
                     <Link to="/services">View Our Services</Link>
-                  </Button>
+              </Button>
                   <Button variant="outline" size="lg" asChild>
-                    <Link to="/contact">Contact Us</Link>
-                  </Button>
-                </div>
+                <Link to="/contact">Contact Us</Link>
+              </Button>
+            </div>
               </CardContent>
             </Card>
           </div>
@@ -392,4 +376,4 @@ const About = () => {
   );
 };
 
-export default About; 
+export default About;
