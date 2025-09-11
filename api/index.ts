@@ -103,6 +103,15 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working!', timestamp: new Date().toISOString() });
 });
 
+// Add a simple auth test route
+app.get('/api/auth/test', (req, res) => {
+  res.json({ 
+    message: 'Auth endpoints are working!', 
+    timestamp: new Date().toISOString(),
+    endpoints: ['/api/auth/signin', '/api/auth/signup', '/api/auth/signout']
+  });
+});
+
 // Add a database test route
 app.get('/api/db-test', async (req, res) => {
   try {
