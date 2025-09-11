@@ -10,11 +10,18 @@ let storage: any = null;
 async function getStorage() {
   if (!storage) {
     try {
+      console.log('Loading storage module...');
       const { storage: storageModule } = await import('../server/storage');
       storage = storageModule;
+      console.log('Storage module loaded successfully');
     } catch (error) {
       console.error('Failed to load storage module:', error);
-      throw new Error('Database connection failed');
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : undefined
+      });
+      throw new Error(`Database connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
   return storage;
@@ -59,6 +66,34 @@ app.get('/api/health', async (req, res) => {
 // Add a simple test route
 app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working!', timestamp: new Date().toISOString() });
+});
+
+// Add a database test route
+app.get('/api/db-test', async (req, res) => {
+  try {
+    console.log('Testing database connection...');
+    const storageInstance = await getStorage();
+    console.log('Storage instance obtained, testing getPlans...');
+    
+    // Try a simple query
+    const plans = await storageInstance.getPlans({});
+    console.log('Database query successful, found', plans.length, 'plans');
+    
+    res.json({ 
+      status: 'success', 
+      message: 'Database connection working',
+      plansCount: plans.length,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Database test failed:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: 'Database test failed',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // Plans API - register directly
