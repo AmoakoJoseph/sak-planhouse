@@ -20,7 +20,7 @@ interface Profile {
   email: string;
   first_name: string | null;
   last_name: string | null;
-  role: 'user' | 'admin' | 'super_admin';
+  role: string; // Using string to match API response
   phone: string | null;
   avatar_url: string | null;
   created_at: string;
@@ -72,9 +72,8 @@ const AdminManager = () => {
     try {
       setLoadingData(true);
       
-      // Fetch all users with profiles
-      const usersResponse = await fetch('/api/users');
-      const usersData = await usersResponse.json();
+      // Fetch all users with profiles using proper API client
+      const usersData = await api.getAllUsers();
       
       const adminUsers = usersData.filter((user: Profile) => 
         user.role === 'admin' || user.role === 'super_admin'
@@ -97,26 +96,14 @@ const AdminManager = () => {
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Create the user account
-      const signupResponse = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: createAdminForm.email,
-          password: createAdminForm.password,
-          firstName: createAdminForm.firstName,
-          lastName: createAdminForm.lastName
-        })
+      // Create admin account using secure endpoint
+      await api.createAdmin({
+        email: createAdminForm.email,
+        password: createAdminForm.password,
+        firstName: createAdminForm.firstName,
+        lastName: createAdminForm.lastName,
+        role: createAdminForm.role
       });
-
-      if (!signupResponse.ok) {
-        throw new Error('Failed to create admin account');
-      }
-
-      const { profile: newProfile } = await signupResponse.json();
-
-      // Update the role to admin or super_admin
-      await api.updateProfile(newProfile.user_id, { role: createAdminForm.role });
 
       toast({
         title: "Success",
@@ -132,11 +119,11 @@ const AdminManager = () => {
       });
       setCreateAdminOpen(false);
       fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating admin:', error);
       toast({
         title: "Error",
-        description: "Failed to create admin account",
+        description: error.message || "Failed to create admin account",
         variant: "destructive"
       });
     }
@@ -144,6 +131,12 @@ const AdminManager = () => {
 
   const handleRoleUpdate = async (userId: string, newRole: string) => {
     try {
+      // Validate role enum on client side too
+      const validRoles = ['user', 'admin', 'super_admin'];
+      if (!validRoles.includes(newRole)) {
+        throw new Error('Invalid role value');
+      }
+
       await api.updateProfile(userId, { role: newRole });
       
       toast({
@@ -152,11 +145,11 @@ const AdminManager = () => {
       });
 
       fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating role:', error);
       toast({
         title: "Error",
-        description: "Failed to update user role",
+        description: error.message || "Failed to update user role",
         variant: "destructive"
       });
     }

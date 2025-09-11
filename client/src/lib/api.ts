@@ -197,6 +197,32 @@ class ApiClient {
     if (!response.ok) throw new Error(`Failed to GET from ${endpoint}`);
     return response.json();
   }
+
+  // Admin Management API
+  async getAllUsers(): Promise<Profile[]> {
+    const response = await fetch(`${API_BASE}/users`);
+    if (!response.ok) throw new Error('Failed to fetch users');
+    return response.json();
+  }
+
+  async createAdmin(adminData: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    role: 'admin' | 'super_admin';
+  }): Promise<{ user: any; profile: Profile }> {
+    const response = await fetch(`${API_BASE}/admin/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(adminData),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to create admin account');
+    }
+    return response.json();
+  }
 }
 
 export const api = new ApiClient();
