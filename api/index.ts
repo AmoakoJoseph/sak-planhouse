@@ -1,71 +1,30 @@
 import express from 'express';
-import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import { eq, and, desc } from 'drizzle-orm';
 import 'dotenv/config';
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Inline database setup to avoid import issues
-let db: any = null;
-
-async function getDatabase() {
-  if (!db) {
-    try {
-      console.log('Initializing database connection...');
-      
-      if (!process.env.DATABASE_URL) {
-        throw new Error('DATABASE_URL is not set');
-      }
-
-      // Create the connection with serverless-friendly configuration
-      const client = postgres(process.env.DATABASE_URL, {
-        max: 1, // Limit connections for serverless
-        idle_timeout: 20,
-        connect_timeout: 10,
-        ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
-      });
-
-      // Simple schema for plans table
-      const plansSchema = {
-        id: 'text',
-        title: 'text',
-        description: 'text',
-        plan_type: 'text',
-        bedrooms: 'integer',
-        bathrooms: 'integer',
-        area_sqft: 'integer',
-        basic_price: 'decimal',
-        standard_price: 'decimal',
-        premium_price: 'decimal',
-        featured: 'boolean',
-        status: 'text',
-        image_url: 'text',
-        gallery_images: 'json',
-        plan_files: 'json',
-        created_at: 'timestamp',
-        updated_at: 'timestamp'
-      };
-
-      db = drizzle(client, { schema: { plans: plansSchema } });
-      console.log('Database connection initialized successfully');
-    } catch (error) {
-      console.error('Failed to initialize database connection:', error);
-      throw new Error(`Database connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-  return db;
-}
-
-// Simple getPlans function
+// Simple getPlans function using direct postgres connection
 async function getPlans(filters: { status?: string; featured?: boolean } = {}) {
+  let client: postgres.Sql | null = null;
+  
   try {
-    const database = await getDatabase();
+    console.log('Connecting to database...');
     
-    // Simple query using raw SQL to avoid schema issues
-    const client = database.client;
+    if (!process.env.DATABASE_URL) {
+      throw new Error('DATABASE_URL is not set');
+    }
+
+    // Create a new connection for each request (serverless-friendly)
+    client = postgres(process.env.DATABASE_URL, {
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+    });
+    
     let query = 'SELECT * FROM plans WHERE 1=1';
     const params: any[] = [];
     
@@ -81,11 +40,26 @@ async function getPlans(filters: { status?: string; featured?: boolean } = {}) {
     
     query += ' ORDER BY featured DESC, created_at DESC';
     
+    console.log('Executing query:', query);
+    console.log('With params:', params);
+    
     const result = await client.unsafe(query, params);
+    console.log('Query successful, found', result.length, 'plans');
+    
     return result;
   } catch (error) {
     console.error('Error fetching plans:', error);
     throw error;
+  } finally {
+    // Always close the connection
+    if (client) {
+      try {
+        await client.end();
+        console.log('Database connection closed');
+      } catch (closeError) {
+        console.error('Error closing database connection:', closeError);
+      }
+    }
   }
 }
 
