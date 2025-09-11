@@ -7,39 +7,11 @@ import fs from "fs";
 import express from "express";
 import { PaystackService } from "./paystack";
 import bcrypt from "bcrypt";
+import { supabaseStorage } from "./supabase-storage";
 
-// Multer configuration for file uploads
-const imageStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/images/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const planFileStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const tier = req.body.tier || 'basic';
-    const planId = req.body.planId || 'temp';
-    const uploadPath = `uploads/plans/${tier}/`;
-    
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
+// Multer configuration for file uploads - use memory storage for serverless
 const uploadImage = multer({ 
-  storage: imageStorage,
+  storage: multer.memoryStorage(),
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
@@ -51,7 +23,7 @@ const uploadImage = multer({
 });
 
 const uploadPlanFile = multer({ 
-  storage: planFileStorage,
+  storage: multer.memoryStorage(),
   fileFilter: (req, file, cb) => {
     const allowedTypes = ['.pdf', '.dwg', '.dxf', '.zip'];
     const fileExt = path.extname(file.originalname).toLowerCase();
@@ -120,19 +92,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ message: "Server is running!", timestamp: new Date().toISOString() });
   });
 
-  // Serve static files from uploads directory
-  app.use('/uploads', express.static('uploads'));
+  // No local static uploads in serverless
 
-  // File Upload API
-  app.post("/api/upload/image", uploadImage.single('image'), (req, res) => {
+  // File Upload API - Supabase
+  app.post("/api/upload/image", uploadImage.single('image'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: 'No file uploaded' });
       }
+
+      const uniqueFilename = supabaseStorage.generateUniqueFilename(req.file.originalname);
+      const uploadResult = await supabaseStorage.uploadImage(req.file.buffer, uniqueFilename, 'images');
+
       res.json({ 
-        filename: req.file.filename,
-        path: `/uploads/images/${req.file.filename}`,
-        url: `/uploads/images/${req.file.filename}`
+        filename: uploadResult.filename,
+        path: uploadResult.path,
+        url: uploadResult.publicUrl
       });
     } catch (error) {
       console.error("Error uploading image:", error);
@@ -141,18 +116,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/upload/plan-files", uploadPlanFile.fields([
-    { name: 'basic', maxCount: 5 },
-    { name: 'standard', maxCount: 5 },
-    { name: 'premium', maxCount: 5 }
-  ]), (req, res) => {
+    { name: 'basic', maxCount: 10 },
+    { name: 'standard', maxCount: 10 },
+    { name: 'premium', maxCount: 10 }
+  ]), async (req, res) => {
     try {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       const uploadedFiles: { [tier: string]: string[] } = {};
-      
-      for (const tier in files) {
-        uploadedFiles[tier] = files[tier].map(file => `/uploads/plans/${tier}/${file.filename}`);
+
+      for (const tier of Object.keys(files)) {
+        const tierFiles = files[tier] || [];
+        const URLs: string[] = [];
+        for (const f of tierFiles) {
+          const uniqueFilename = supabaseStorage.generateUniqueFilename(f.originalname);
+          const result = await supabaseStorage.uploadPlanFile(f.buffer, uniqueFilename, tier as any);
+          URLs.push(result.publicUrl);
+        }
+        uploadedFiles[tier] = URLs;
       }
-      
+
       res.json({ files: uploadedFiles });
     } catch (error) {
       console.error("Error uploading plan files:", error);
@@ -1099,11 +1081,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "File not included in your package" });
       }
 
-      const fullFilePath = path.join(process.cwd(), filePath as string);
-      
-      if (!fs.existsSync(fullFilePath)) {
-        return res.status(404).json({ error: "File not found" });
-      }
+      const filePathStr = String(filePath);
+      const isRemote = filePathStr.startsWith('http://') || filePathStr.startsWith('https://');
 
       // Record the download
       await storage.recordDownload({
@@ -1114,14 +1093,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         download_count: 1,
       });
 
-      // Set appropriate headers for download
+      if (isRemote) {
+        // Redirect to Supabase public URL
+        return res.redirect(302, filePathStr);
+      }
+
+      // Backward compatibility: serve local file if path is relative
+      const fullFilePath = path.join(process.cwd(), filePathStr);
+      if (!fs.existsSync(fullFilePath)) {
+        return res.status(404).json({ error: "File not found" });
+      }
       const fileName = path.basename(fullFilePath);
       res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
       res.setHeader('Content-Type', 'application/octet-stream');
-      
-      // Stream the file
-      const fileStream = fs.createReadStream(fullFilePath);
-      fileStream.pipe(res);
+      fs.createReadStream(fullFilePath).pipe(res);
     } catch (error) {
       console.error("Error downloading file:", error);
       res.status(500).json({ error: "Failed to download file" });
