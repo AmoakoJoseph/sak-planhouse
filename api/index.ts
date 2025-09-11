@@ -1,31 +1,92 @@
 import express from 'express';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
+import { eq, and, desc } from 'drizzle-orm';
+import 'dotenv/config';
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Lazy load storage to avoid database connection issues during module initialization
-let storage: any = null;
+// Inline database setup to avoid import issues
+let db: any = null;
 
-async function getStorage() {
-  if (!storage) {
+async function getDatabase() {
+  if (!db) {
     try {
-      console.log('Loading storage module...');
-      // Use dynamic import with proper error handling
-      const module = await import('../server/storage');
-      storage = module.storage;
-      console.log('Storage module loaded successfully');
-    } catch (error) {
-      console.error('Failed to load storage module:', error);
-      console.error('Error details:', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        name: error instanceof Error ? error.name : undefined
+      console.log('Initializing database connection...');
+      
+      if (!process.env.DATABASE_URL) {
+        throw new Error('DATABASE_URL is not set');
+      }
+
+      // Create the connection with serverless-friendly configuration
+      const client = postgres(process.env.DATABASE_URL, {
+        max: 1, // Limit connections for serverless
+        idle_timeout: 20,
+        connect_timeout: 10,
+        ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
       });
+
+      // Simple schema for plans table
+      const plansSchema = {
+        id: 'text',
+        title: 'text',
+        description: 'text',
+        plan_type: 'text',
+        bedrooms: 'integer',
+        bathrooms: 'integer',
+        area_sqft: 'integer',
+        basic_price: 'decimal',
+        standard_price: 'decimal',
+        premium_price: 'decimal',
+        featured: 'boolean',
+        status: 'text',
+        image_url: 'text',
+        gallery_images: 'json',
+        plan_files: 'json',
+        created_at: 'timestamp',
+        updated_at: 'timestamp'
+      };
+
+      db = drizzle(client, { schema: { plans: plansSchema } });
+      console.log('Database connection initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize database connection:', error);
       throw new Error(`Database connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
-  return storage;
+  return db;
+}
+
+// Simple getPlans function
+async function getPlans(filters: { status?: string; featured?: boolean } = {}) {
+  try {
+    const database = await getDatabase();
+    
+    // Simple query using raw SQL to avoid schema issues
+    const client = database.client;
+    let query = 'SELECT * FROM plans WHERE 1=1';
+    const params: any[] = [];
+    
+    if (filters.status) {
+      query += ' AND status = $' + (params.length + 1);
+      params.push(filters.status);
+    }
+    
+    if (filters.featured !== undefined) {
+      query += ' AND featured = $' + (params.length + 1);
+      params.push(filters.featured);
+    }
+    
+    query += ' ORDER BY featured DESC, created_at DESC';
+    
+    const result = await client.unsafe(query, params);
+    return result;
+  } catch (error) {
+    console.error('Error fetching plans:', error);
+    throw error;
+  }
 }
 
 // Add a simple health check for the API first
@@ -36,8 +97,7 @@ app.get('/api/health', async (req, res) => {
     // Test database connection
     let dbStatus = 'unknown';
     try {
-      const storageInstance = await getStorage();
-      await storageInstance.getPlans({});
+      await getPlans({});
       dbStatus = 'connected';
     } catch (error) {
       console.error('Database health check failed:', error);
@@ -73,11 +133,10 @@ app.get('/api/test', (req, res) => {
 app.get('/api/db-test', async (req, res) => {
   try {
     console.log('Testing database connection...');
-    const storageInstance = await getStorage();
-    console.log('Storage instance obtained, testing getPlans...');
+    console.log('Testing getPlans...');
     
     // Try a simple query
-    const plans = await storageInstance.getPlans({});
+    const plans = await getPlans({});
     console.log('Database query successful, found', plans.length, 'plans');
     
     res.json({ 
@@ -106,8 +165,7 @@ app.get("/api/plans", async (req, res) => {
     if (status) filters.status = status as string;
     if (featured) filters.featured = featured === 'true';
     
-    const storageInstance = await getStorage();
-    const plans = await storageInstance.getPlans(filters);
+    const plans = await getPlans(filters);
     res.json(plans);
   } catch (error) {
     console.error("Error fetching plans:", error);
