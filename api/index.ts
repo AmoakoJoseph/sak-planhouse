@@ -18,6 +18,11 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Add a simple test route
+app.get('/api/test', (req, res) => {
+  res.json({ message: 'API is working!', timestamp: new Date().toISOString() });
+});
+
 // Add error handling middleware
 app.use((err: any, req: any, res: any, next: any) => {
   console.error('Serverless function error:', err);
@@ -28,16 +33,17 @@ app.use((err: any, req: any, res: any, next: any) => {
   });
 });
 
-// Register all routes asynchronously
-(async () => {
-  try {
-    const { registerRoutes } = await import('../server/routes');
-    await registerRoutes(app);
+// Register all routes synchronously
+try {
+  const { registerRoutes } = require('../server/routes');
+  registerRoutes(app).then(() => {
     console.log('Routes registered successfully');
-  } catch (error) {
+  }).catch((error: any) => {
     console.error('Error registering routes:', error);
-  }
-})();
+  });
+} catch (error) {
+  console.error('Error importing routes:', error);
+}
 
 export default app;
 
