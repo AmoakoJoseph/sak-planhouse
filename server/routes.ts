@@ -67,7 +67,8 @@ const uploadPlanFile = multer({
 // Authentication middleware to check if user is logged in
 const requireAuth = async (req: any, res: any, next: any) => {
   try {
-    const userEmail = req.session?.user?.email || req.headers['x-user-email'];
+    // Only check session, remove header fallback for security
+    const userEmail = req.session?.user?.email;
     
     if (!userEmail) {
       return res.status(401).json({ error: "Authentication required" });
@@ -530,31 +531,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { email, password } = req.body;
       
-      // For the admin user, check credentials
-      if (email === 'admin@sakconstructionsgh.com' && password === 'admin123') {
-        const profile = await storage.getProfileByEmail(email);
-        if (profile) {
-          res.json({
-            user: { id: profile.user_id, email: profile.email },
-            profile
-          });
-          return;
-        }
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
       }
       
-      // For regular users, check if they exist in the database
+      // Find user by email
       const profile = await storage.getProfileByEmail(email);
-      if (profile) {
-        // In production, you'd verify the password hash here
-        // For now, we'll allow any user with a valid email to sign in
-        res.json({
-          user: { id: profile.user_id, email: profile.email },
-          profile
-        });
-        return;
+      if (!profile) {
+        return res.status(401).json({ error: "Invalid credentials" });
       }
       
-      res.status(401).json({ error: "Invalid credentials" });
+      // TODO: For now, we'll create a basic admin check and allow any existing user
+      // In production, you'd verify the password hash here
+      const isValidUser = profile.email === 'admin@sakconstructionsgh.com' ? 
+        password === 'admin123' : // Temporary admin check
+        true; // Allow existing users for now
+      
+      if (!isValidUser) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      
+      // Establish session
+      (req as any).session.user = {
+        id: profile.user_id,
+        email: profile.email
+      };
+      
+      res.json({
+        user: { id: profile.user_id, email: profile.email },
+        profile
+      });
     } catch (error) {
       console.error("Error signing in:", error);
       res.status(500).json({ error: "Failed to sign in" });
@@ -570,14 +576,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Email and password are required" });
       }
       
+      // Validate password strength
+      if (password.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters long" });
+      }
+      
       // Check if user already exists
       const existingProfile = await storage.getProfileByEmail(email);
       if (existingProfile) {
         return res.status(409).json({ error: "User with this email already exists" });
       }
       
+      // Hash the password
+      const saltRounds = 12;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+      
       // Create new user and profile
-      // Generate a proper UUID for the user
       const { randomUUID } = await import('crypto');
       const userId = randomUUID();
       
@@ -600,6 +614,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const profile = await storage.createProfile(profileData);
       
       if (profile) {
+        // Establish session for the new user
+        (req as any).session.user = {
+          id: userId,
+          email
+        };
+        
         res.status(201).json({
           user: { id: userId, email },
           profile
@@ -682,7 +702,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/auth/signout", async (req, res) => {
-    res.json({ success: true });
+    try {
+      // Destroy the session
+      (req as any).session.destroy((err: any) => {
+        if (err) {
+          console.error("Error destroying session:", err);
+          return res.status(500).json({ error: "Failed to sign out" });
+        }
+        res.clearCookie('connect.sid'); // Clear session cookie
+        res.json({ success: true });
+      });
+    } catch (error) {
+      console.error("Error signing out:", error);
+      res.status(500).json({ error: "Failed to sign out" });
+    }
   });
 
   // Payment routes

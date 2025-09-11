@@ -111,22 +111,24 @@ const UserProfile = () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies for session auth
         body: JSON.stringify(formData),
       });
 
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.error || `Server error: ${response.status}`);
+      }
+      
       const result = await response.json();
       
-      if (response.ok) {
-        toast({
-          title: "Profile updated!",
-          description: "Your profile information has been saved successfully.",
-        });
-        setIsEditing(false);
-        // Optionally refresh the page to show updated data
-        window.location.reload();
-      } else {
-        throw new Error(result.error || 'Failed to update profile');
-      }
+      toast({
+        title: "Profile updated!",
+        description: "Your profile information has been saved successfully.",
+      });
+      setIsEditing(false);
+      // Refresh the page to show updated data
+      window.location.reload();
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
@@ -206,6 +208,7 @@ const UserProfile = () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies for session auth
         body: JSON.stringify({
           avatar_url: result.url
         }),

@@ -117,6 +117,7 @@ const UserSettings = () => {
       // TODO: Implement settings save API endpoint
       await new Promise(resolve => setTimeout(resolve, 1000));
       console.log('Settings saved:', settings);
+      
       toast({
         title: "Settings saved!",
         description: "Your preferences have been updated successfully.",
@@ -134,6 +135,7 @@ const UserSettings = () => {
   };
 
   const changePassword = async () => {
+    // Validate passwords match
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       toast({
         title: "Password mismatch",
@@ -143,10 +145,20 @@ const UserSettings = () => {
       return;
     }
     
+    // Validate password strength
     if (passwordForm.newPassword.length < 8) {
       toast({
         title: "Password too short",
         description: "Password must be at least 8 characters long",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!passwordForm.currentPassword) {
+      toast({
+        title: "Current password required",
+        description: "Please enter your current password",
         variant: "destructive",
       });
       return;
@@ -159,27 +171,31 @@ const UserSettings = () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies for session auth
         body: JSON.stringify({
           currentPassword: passwordForm.currentPassword,
           newPassword: passwordForm.newPassword,
         }),
       });
       
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.error || `Server error: ${response.status}`);
+      }
+      
       const result = await response.json();
       
-      if (response.ok) {
-        toast({
-          title: "Password changed!",
-          description: "Your password has been updated successfully.",
-        });
-        setPasswordForm({
-          currentPassword: '',
-          newPassword: '',
-          confirmPassword: ''
-        });
-      } else {
-        throw new Error(result.error || 'Failed to change password');
-      }
+      toast({
+        title: "Password changed!",
+        description: "Your password has been updated successfully.",
+      });
+      
+      // Clear form on success
+      setPasswordForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
     } catch (error) {
       console.error('Error changing password:', error);
       toast({
