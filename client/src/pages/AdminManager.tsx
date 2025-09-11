@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Search, UserPlus, UserCog, Shield, Users, Crown } from 'lucide-react';
 import AdminHeader from '@/components/AdminHeader';
-import * as api from '@/lib/api';
+import { api } from '@/lib/api';
 
 interface Profile {
   id: string;
