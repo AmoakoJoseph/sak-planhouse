@@ -1,5 +1,35 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
+// Utility function to safely handle localStorage operations
+const safeLocalStorage = {
+  getItem: (key: string) => {
+    try {
+      const item = localStorage.getItem(key);
+      if (item && item !== 'undefined' && item !== 'null') {
+        return JSON.parse(item);
+      }
+    } catch (error) {
+      console.error(`Error parsing ${key} from localStorage:`, error);
+      localStorage.removeItem(key);
+    }
+    return null;
+  },
+  setItem: (key: string, value: any) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+      console.error(`Error saving ${key} to localStorage:`, error);
+    }
+  },
+  removeItem: (key: string) => {
+    try {
+      localStorage.removeItem(key);
+    } catch (error) {
+      console.error(`Error removing ${key} from localStorage:`, error);
+    }
+  }
+};
+
 interface User {
   id: string;
   email: string;
@@ -49,16 +79,8 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<User | null>(() => {
-    // Initialize from localStorage
-    const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-  const [profile, setProfile] = useState<Profile | null>(() => {
-    // Initialize from localStorage
-    const savedProfile = localStorage.getItem('profile');
-    return savedProfile ? JSON.parse(savedProfile) : null;
-  });
+  const [user, setUser] = useState<User | null>(() => safeLocalStorage.getItem('user'));
+  const [profile, setProfile] = useState<Profile | null>(() => safeLocalStorage.getItem('profile'));
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -87,9 +109,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const data = await response.json();
         setUser(data.user);
         setProfile(data.profile);
-        // Save to localStorage
-        localStorage.setItem('user', JSON.stringify(data.user));
-        localStorage.setItem('profile', JSON.stringify(data.profile));
+        // Save to localStorage safely
+        safeLocalStorage.setItem('user', data.user);
+        safeLocalStorage.setItem('profile', data.profile);
         return { error: null };
       } else {
         const errorData = await response.json();
@@ -117,9 +139,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const data = await response.json();
         setUser(data.user);
         setProfile(data.profile);
-        // Save to localStorage
-        localStorage.setItem('user', JSON.stringify(data.user));
-        localStorage.setItem('profile', JSON.stringify(data.profile));
+        // Save to localStorage safely
+        safeLocalStorage.setItem('user', data.user);
+        safeLocalStorage.setItem('profile', data.profile);
         return { error: null };
       } else {
         const errorData = await response.json();
@@ -139,9 +161,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
     setUser(null);
     setProfile(null);
-    // Clear localStorage
-    localStorage.removeItem('user');
-    localStorage.removeItem('profile');
+    // Clear localStorage safely
+    safeLocalStorage.removeItem('user');
+    safeLocalStorage.removeItem('profile');
   };
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
