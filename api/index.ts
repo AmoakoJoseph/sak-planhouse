@@ -12,6 +12,11 @@ registerRoutes(app).then(() => {
   console.error('Error registering routes:', error);
 });
 
+// Add a simple health check for the API
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 export default app;
 
 
