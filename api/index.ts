@@ -11,8 +11,9 @@ async function getStorage() {
   if (!storage) {
     try {
       console.log('Loading storage module...');
-      const { storage: storageModule } = await import('../server/storage');
-      storage = storageModule;
+      // Use dynamic import with proper error handling
+      const module = await import('../server/storage');
+      storage = module.storage;
       console.log('Storage module loaded successfully');
     } catch (error) {
       console.error('Failed to load storage module:', error);
