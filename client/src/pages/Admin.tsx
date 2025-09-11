@@ -7,6 +7,7 @@ import AdminPlans from './AdminPlans';
 import AdminAnalytics from './AdminAnalytics';
 import AdminOrders from './AdminOrders';
 import AdminUsers from './AdminUsers';
+import AdminAds from './AdminAds';
 import AdminManager from './AdminManager';
 import AdminSettings from './AdminSettings';
 
@@ -45,6 +46,7 @@ const Admin = () => {
         <Route path="plans" element={<AdminPlans />} />
         <Route path="orders" element={<AdminOrders />} />
         <Route path="users" element={<AdminUsers />} />
+        <Route path="ads" element={<AdminAds />} />
         <Route path="admin-manager" element={<AdminManager />} />
         <Route path="settings" element={<AdminSettings />} />
       </Routes>

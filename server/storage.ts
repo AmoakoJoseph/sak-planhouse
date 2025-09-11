@@ -1,5 +1,5 @@
-import { users, profiles, plans, orders, downloads } from "@shared/schema";
-import type { User, Profile, Plan, Order, Download, InsertUser } from "@shared/schema";
+import { users, profiles, plans, orders, downloads, ads } from "@shared/schema";
+import type { User, Profile, Plan, Order, Download, Ad, InsertUser } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
 
@@ -31,6 +31,15 @@ export interface IStorage {
   // Downloads management
   getDownloads(userId?: string): Promise<Download[]>;
   recordDownload(download: Omit<Download, 'id' | 'downloaded_at'>): Promise<Download>;
+
+  // Ads management
+  getAds(filters?: { is_active?: boolean; target_page?: string }): Promise<Ad[]>;
+  getAd(id: string): Promise<Ad | undefined>;
+  createAd(ad: Omit<Ad, 'id' | 'created_at' | 'updated_at'>): Promise<Ad>;
+  updateAd(id: string, updates: Partial<Ad>): Promise<Ad | undefined>;
+  deleteAd(id: string): Promise<boolean>;
+  recordAdImpression(id: string): Promise<void>;
+  recordAdClick(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -170,6 +179,63 @@ export class DatabaseStorage implements IStorage {
       last_downloaded: new Date(),
     }).returning();
     return result[0];
+  }
+
+  // Ads methods
+  async getAds(filters?: { is_active?: boolean; target_page?: string }): Promise<Ad[]> {
+    let conditions = [];
+
+    if (filters?.is_active !== undefined) {
+      conditions.push(eq(ads.is_active, filters.is_active));
+    }
+
+    if (filters?.target_page) {
+      conditions.push(and(
+        eq(ads.target_page, filters.target_page),
+        eq(ads.target_page, 'all')
+      ));
+    }
+
+    const result = await db.select().from(ads)
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(desc(ads.priority), desc(ads.created_at));
+
+    return result;
+  }
+
+  async getAd(id: string): Promise<Ad | undefined> {
+    const result = await db.select().from(ads).where(eq(ads.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createAd(ad: Omit<Ad, 'id' | 'created_at' | 'updated_at'>): Promise<Ad> {
+    const result = await db.insert(ads).values(ad).returning();
+    return result[0];
+  }
+
+  async updateAd(id: string, updates: Partial<Ad>): Promise<Ad | undefined> {
+    const result = await db.update(ads)
+      .set({ ...updates, updated_at: new Date() })
+      .where(eq(ads.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteAd(id: string): Promise<boolean> {
+    const result = await db.delete(ads).where(eq(ads.id, id));
+    return result.length > 0;
+  }
+
+  async recordAdImpression(id: string): Promise<void> {
+    await db.update(ads)
+      .set({ impressions: sql`${ads.impressions} + 1` })
+      .where(eq(ads.id, id));
+  }
+
+  async recordAdClick(id: string): Promise<void> {
+    await db.update(ads)
+      .set({ clicks: sql`${ads.clicks} + 1` })
+      .where(eq(ads.id, id));
   }
 
   // Analytics methods
