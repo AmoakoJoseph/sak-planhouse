@@ -150,6 +150,90 @@ app.get("/api/plans", async (req, res) => {
   }
 });
 
+// Authentication endpoints
+app.post("/api/auth/signin", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ 
+        error: "Email and password are required" 
+      });
+    }
+    
+    console.log('Sign in attempt for email:', email);
+    
+    // For now, return a mock successful response
+    // TODO: Implement actual authentication logic
+    res.json({
+      success: true,
+      message: "Sign in successful",
+      user: {
+        id: "1",
+        email: email,
+        name: "Test User"
+      }
+    });
+  } catch (error) {
+    console.error("Sign in error:", error);
+    res.status(500).json({ 
+      error: "Sign in failed",
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+app.post("/api/auth/signup", async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
+    
+    if (!email || !password || !name) {
+      return res.status(400).json({ 
+        error: "Email, password, and name are required" 
+      });
+    }
+    
+    console.log('Sign up attempt for email:', email);
+    
+    // For now, return a mock successful response
+    // TODO: Implement actual registration logic
+    res.json({
+      success: true,
+      message: "Sign up successful",
+      user: {
+        id: "1",
+        email: email,
+        name: name
+      }
+    });
+  } catch (error) {
+    console.error("Sign up error:", error);
+    res.status(500).json({ 
+      error: "Sign up failed",
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+app.post("/api/auth/signout", async (req, res) => {
+  try {
+    console.log('Sign out request');
+    
+    // For now, return a mock successful response
+    // TODO: Implement actual sign out logic
+    res.json({
+      success: true,
+      message: "Sign out successful"
+    });
+  } catch (error) {
+    console.error("Sign out error:", error);
+    res.status(500).json({ 
+      error: "Sign out failed",
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 // Add error handling middleware
 app.use((err: any, req: any, res: any, next: any) => {
   console.error('Serverless function error:', err);
