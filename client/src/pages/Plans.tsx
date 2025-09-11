@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
 import PlanComparison from '@/components/PlanComparison';
+import AdDisplay from '@/components/AdDisplay';
 import villaImage from '@/assets/villa-plan.jpg';
 import bungalowImage from '@/assets/bungalow-plan.jpg';
 import townhouseImage from '@/assets/townhouse-plan.jpg';
@@ -120,6 +121,9 @@ const Plans = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
       {/* Hero Section */}
+      {/* Top Banner Ads */}
+      <AdDisplay position="top" targetPage="plans" className="pt-16" />
+      
       <section className="relative py-20 bg-gradient-to-br from-primary/5 via-primary/10 to-secondary/5 overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-30">
