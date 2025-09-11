@@ -164,7 +164,10 @@ app.post("/api/auth/signin", async (req, res) => {
   try {
     const { email, password } = req.body;
     
+    console.log('Sign in attempt received:', { email, hasPassword: !!password });
+    
     if (!email || !password) {
+      console.log('Missing email or password');
       return res.status(400).json({ 
         error: "Email and password are required" 
       });
@@ -174,15 +177,26 @@ app.post("/api/auth/signin", async (req, res) => {
     
     // For now, return a mock successful response
     // TODO: Implement actual authentication logic
-    res.json({
+    const response = {
       success: true,
       message: "Sign in successful",
       user: {
         id: "1",
         email: email,
         name: "Test User"
+      },
+      profile: {
+        id: "1",
+        user_id: "1",
+        email: email,
+        first_name: "Test",
+        last_name: "User",
+        role: "user"
       }
-    });
+    };
+    
+    console.log('Returning sign in response:', response);
+    res.json(response);
   } catch (error) {
     console.error("Sign in error:", error);
     res.status(500).json({ 
@@ -194,11 +208,14 @@ app.post("/api/auth/signin", async (req, res) => {
 
 app.post("/api/auth/signup", async (req, res) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, firstName, lastName } = req.body;
     
-    if (!email || !password || !name) {
+    console.log('Sign up attempt received:', { email, firstName, lastName, hasPassword: !!password });
+    
+    if (!email || !password) {
+      console.log('Missing email or password');
       return res.status(400).json({ 
-        error: "Email, password, and name are required" 
+        error: "Email and password are required" 
       });
     }
     
@@ -206,15 +223,26 @@ app.post("/api/auth/signup", async (req, res) => {
     
     // For now, return a mock successful response
     // TODO: Implement actual registration logic
-    res.json({
+    const response = {
       success: true,
       message: "Sign up successful",
       user: {
         id: "1",
         email: email,
-        name: name
+        name: firstName ? `${firstName} ${lastName || ''}`.trim() : "New User"
+      },
+      profile: {
+        id: "1",
+        user_id: "1",
+        email: email,
+        first_name: firstName || null,
+        last_name: lastName || null,
+        role: "user"
       }
-    });
+    };
+    
+    console.log('Returning sign up response:', response);
+    res.json(response);
   } catch (error) {
     console.error("Sign up error:", error);
     res.status(500).json({ 
