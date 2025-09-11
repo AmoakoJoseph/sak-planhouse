@@ -6,7 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Menu, Home, BarChart3, FileText, ShoppingCart, Users, Settings, LogOut, Shield } from 'lucide-react';
+import { Menu, Home, BarChart3, FileText, ShoppingCart, Users, Settings, LogOut, Shield, UserCog } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const AdminHeader = () => {
@@ -21,6 +21,9 @@ const AdminHeader = () => {
     { icon: FileText, label: 'Plans', href: '/admin/plans' },
     { icon: ShoppingCart, label: 'Orders', href: '/admin/orders' },
     { icon: Users, label: 'Users', href: '/admin/users' },
+    ...(profile?.role === 'super_admin' ? [
+      { icon: UserCog, label: 'Admin Manager', href: '/admin/admin-manager' }
+    ] : []),
     { icon: Settings, label: 'Settings', href: '/admin/settings' },
   ];
 
