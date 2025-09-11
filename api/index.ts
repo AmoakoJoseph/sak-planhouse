@@ -66,7 +66,7 @@ async function getPlans(filters: { status?: string; featured?: boolean } = {}) {
 // Add a simple health check for the API first
 app.get('/api/health', async (req, res) => {
   try {
-    console.log('Health check called');
+  console.log('Health check called');
     
     // Test database connection
     let dbStatus = 'unknown';
@@ -78,16 +78,16 @@ app.get('/api/health', async (req, res) => {
       dbStatus = 'error';
     }
     
-    res.json({ 
-      status: 'ok', 
-      timestamp: new Date().toISOString(),
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
       database: dbStatus,
-      env: {
-        hasDatabaseUrl: !!process.env.DATABASE_URL,
-        hasPaystackKey: !!process.env.PAYSTACK_SECRET_KEY,
-        nodeEnv: process.env.NODE_ENV
-      }
-    });
+    env: {
+      hasDatabaseUrl: !!process.env.DATABASE_URL,
+      hasPaystackKey: !!process.env.PAYSTACK_SECRET_KEY,
+      nodeEnv: process.env.NODE_ENV
+    }
+  });
   } catch (error) {
     console.error('Health check error:', error);
     res.status(500).json({ 
@@ -229,6 +229,269 @@ app.post("/api/auth/signout", async (req, res) => {
     console.error("Sign out error:", error);
     res.status(500).json({ 
       error: "Sign out failed",
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Individual Plan API
+app.get("/api/plans/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log('Fetching plan with ID:', id);
+    
+    // Get a single plan by ID
+    const client = postgres(process.env.DATABASE_URL!, {
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+    });
+    
+    const result = await client.unsafe('SELECT * FROM plans WHERE id = $1', [id]);
+    await client.end();
+    
+    if (result.length === 0) {
+      return res.status(404).json({ error: "Plan not found" });
+    }
+    
+    res.json(result[0]);
+  } catch (error) {
+    console.error("Error fetching plan:", error);
+    res.status(500).json({ 
+      error: "Failed to fetch plan",
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Orders API
+app.get("/api/orders", async (req, res) => {
+  try {
+    const { userId } = req.query;
+    console.log('Fetching orders for user:', userId);
+    
+    const client = postgres(process.env.DATABASE_URL!, {
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+    });
+    
+    let query = 'SELECT * FROM orders';
+    const params: any[] = [];
+    
+    if (userId) {
+      query += ' WHERE user_id = $1';
+      params.push(userId);
+    }
+    
+    query += ' ORDER BY created_at DESC';
+    
+    const result = await client.unsafe(query, params);
+    await client.end();
+    
+    res.json(result);
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    res.status(500).json({ 
+      error: "Failed to fetch orders",
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+app.post("/api/orders", async (req, res) => {
+  try {
+    const orderData = req.body;
+    console.log('Creating order:', orderData);
+    
+    const client = postgres(process.env.DATABASE_URL!, {
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+    });
+    
+    const result = await client.unsafe(
+      'INSERT INTO orders (user_id, plan_id, tier, amount, status, payment_intent_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW()) RETURNING *',
+      [orderData.user_id, orderData.plan_id, orderData.tier, orderData.amount, orderData.status || 'pending', orderData.payment_intent_id]
+    );
+    await client.end();
+    
+    res.json(result[0]);
+  } catch (error) {
+    console.error("Error creating order:", error);
+    res.status(500).json({ 
+      error: "Failed to create order",
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Profiles API
+app.get("/api/profiles/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    console.log('Fetching profile for user:', userId);
+    
+    const client = postgres(process.env.DATABASE_URL!, {
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+    });
+    
+    const result = await client.unsafe('SELECT * FROM profiles WHERE user_id = $1', [userId]);
+    await client.end();
+    
+    if (result.length === 0) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
+    
+    res.json(result[0]);
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+    res.status(500).json({ 
+      error: "Failed to fetch profile",
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+app.post("/api/profiles", async (req, res) => {
+  try {
+    const profileData = req.body;
+    console.log('Creating profile:', profileData);
+    
+    const client = postgres(process.env.DATABASE_URL!, {
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+    });
+    
+    const result = await client.unsafe(
+      'INSERT INTO profiles (user_id, email, first_name, last_name, phone, role, address, city, country, bio, company, website, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW()) RETURNING *',
+      [profileData.user_id, profileData.email, profileData.first_name, profileData.last_name, profileData.phone, profileData.role || 'user', profileData.address, profileData.city, profileData.country, profileData.bio, profileData.company, profileData.website]
+    );
+    await client.end();
+    
+    res.json(result[0]);
+  } catch (error) {
+    console.error("Error creating profile:", error);
+    res.status(500).json({ 
+      error: "Failed to create profile",
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+app.put("/api/profiles/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const updates = req.body;
+    console.log('Updating profile for user:', userId, updates);
+    
+    const client = postgres(process.env.DATABASE_URL!, {
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+    });
+    
+    // Build dynamic update query
+    const fields = Object.keys(updates).filter(key => key !== 'id' && key !== 'user_id' && key !== 'created_at');
+    const setClause = fields.map((field, index) => `${field} = $${index + 2}`).join(', ');
+    const values = [userId, ...fields.map(field => updates[field])];
+    
+    const result = await client.unsafe(
+      `UPDATE profiles SET ${setClause}, updated_at = NOW() WHERE user_id = $1 RETURNING *`,
+      values
+    );
+    await client.end();
+    
+    if (result.length === 0) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
+    
+    res.json(result[0]);
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    res.status(500).json({ 
+      error: "Failed to update profile",
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Downloads API
+app.get("/api/downloads/:orderId", async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    console.log('Fetching download info for order:', orderId);
+    
+    const client = postgres(process.env.DATABASE_URL!, {
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+    });
+    
+    const result = await client.unsafe('SELECT * FROM downloads WHERE order_id = $1', [orderId]);
+    await client.end();
+    
+    res.json(result);
+  } catch (error) {
+    console.error("Error fetching download info:", error);
+    res.status(500).json({ 
+      error: "Failed to fetch download info",
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+app.get("/api/downloads/:orderId/file", async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { filePath } = req.query;
+    console.log('Downloading file for order:', orderId, 'file:', filePath);
+    
+    // For now, return a mock response
+    // TODO: Implement actual file download logic
+    res.json({
+      success: true,
+      message: "File download initiated",
+      orderId,
+      filePath
+    });
+  } catch (error) {
+    console.error("Error downloading file:", error);
+    res.status(500).json({ 
+      error: "Failed to download file",
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Payment API
+app.post("/api/payments/initialize", async (req, res) => {
+  try {
+    const paymentData = req.body;
+    console.log('Initializing payment:', paymentData);
+    
+    // For now, return a mock response
+    // TODO: Implement actual Paystack payment initialization
+    res.json({
+      success: true,
+      message: "Payment initialized",
+      reference: `ref_${Date.now()}`,
+      authorization_url: "https://checkout.paystack.com/mock-checkout"
+    });
+  } catch (error) {
+    console.error("Error initializing payment:", error);
+    res.status(500).json({ 
+      error: "Failed to initialize payment",
       message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
