@@ -63,6 +63,32 @@ const uploadPlanFile = multer({
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
 
+// RBAC middleware to check user permissions
+const requireRole = (allowedRoles: string[]) => {
+  return async (req: any, res: any, next: any) => {
+    try {
+      // Get user session/auth info - this would be from your auth middleware
+      const userEmail = req.session?.user?.email || req.headers['x-user-email'];
+      
+      if (!userEmail) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      
+      // Get user profile to check role
+      const profile = await storage.getProfileByEmail(userEmail);
+      if (!profile || !allowedRoles.includes(profile.role)) {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      req.userProfile = profile;
+      next();
+    } catch (error) {
+      console.error("Role check error:", error);
+      res.status(500).json({ error: "Authorization check failed" });
+    }
+  };
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Test endpoint to verify server is working
   app.get("/api/test", (req, res) => {
@@ -221,12 +247,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/profiles/:userId", async (req, res) => {
+  app.put("/api/profiles/:userId", requireRole(['super_admin']), async (req, res) => {
     try {
+      const { role, ...otherUpdates } = req.body;
+      const requestingProfile = (req as any).userProfile;
+      
+      // Role-specific validations for role changes
+      if (role !== undefined) {
+        // Validate role value
+        const validRoles = ['user', 'admin', 'super_admin'];
+        if (!validRoles.includes(role)) {
+          return res.status(400).json({ error: "Invalid role value" });
+        }
+        
+        // Prevent self-demotion from super_admin
+        if (requestingProfile.user_id === req.params.userId && 
+            requestingProfile.role === 'super_admin' && 
+            role !== 'super_admin') {
+          return res.status(400).json({ error: "Cannot demote yourself from super_admin" });
+        }
+        
+        // Check if this would be the last super_admin
+        if (role !== 'super_admin') {
+          const currentProfile = await storage.getProfile(req.params.userId);
+          if (currentProfile?.role === 'super_admin') {
+            const allUsers = await storage.getAllUsers();
+            const superAdminCount = allUsers.filter(user => user.role === 'super_admin').length;
+            if (superAdminCount <= 1) {
+              return res.status(400).json({ error: "Cannot demote the last super_admin" });
+            }
+          }
+        }
+      }
+      
       const profile = await storage.updateProfile(req.params.userId, req.body);
       if (!profile) {
         return res.status(404).json({ error: "Profile not found" });
       }
+      
+      // Log role changes for security audit
+      if (role !== undefined) {
+        console.log(`Role change: ${requestingProfile.email} changed user ${req.params.userId} to role ${role}`);
+      }
+      
       res.json(profile);
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -273,13 +336,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Users API
-  app.get("/api/users", async (req, res) => {
+  // Protected endpoint - only super_admin can access user list
+  app.get("/api/users", requireRole(['super_admin']), async (req, res) => {
     try {
       const users = await storage.getAllUsers();
       res.json(users);
     } catch (error) {
       console.error("Error fetching users:", error);
       res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  // Admin creation endpoint - only super_admin can create new admins
+  app.post("/api/admin/create", requireRole(['super_admin']), async (req, res) => {
+    try {
+      const { email, password, firstName, lastName, role } = req.body;
+      
+      // Validate required fields
+      if (!email || !password || !firstName || !lastName || !role) {
+        return res.status(400).json({ error: "All fields are required" });
+      }
+      
+      // Validate role
+      const validRoles = ['admin', 'super_admin'];
+      if (!validRoles.includes(role)) {
+        return res.status(400).json({ error: "Invalid role. Must be 'admin' or 'super_admin'" });
+      }
+      
+      // Check if user already exists
+      const existingProfile = await storage.getProfileByEmail(email);
+      if (existingProfile) {
+        return res.status(409).json({ error: "User with this email already exists" });
+      }
+      
+      // Create new admin profile
+      const { randomUUID } = await import('crypto');
+      const userId = randomUUID();
+      
+      const profileData = {
+        user_id: userId,
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        phone: null,
+        role,
+        avatar_url: null,
+        address: null,
+        city: null,
+        country: 'Ghana',
+        bio: null,
+        company: null,
+        website: null
+      };
+      
+      const profile = await storage.createProfile(profileData);
+      
+      if (profile) {
+        // Log admin creation for security audit
+        const requestingProfile = (req as any).userProfile;
+        console.log(`Admin creation: ${requestingProfile.email} created new ${role} account for ${email}`);
+        
+        res.status(201).json({
+          user: { id: userId, email },
+          profile
+        });
+      } else {
+        res.status(500).json({ error: "Failed to create admin profile" });
+      }
+      
+    } catch (error) {
+      console.error("Error creating admin:", error);
+      res.status(500).json({ error: "Failed to create admin account" });
     }
   });
 
