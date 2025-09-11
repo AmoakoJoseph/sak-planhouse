@@ -28,6 +28,7 @@ import Cookies from '@/pages/Cookies';
 import DemoPayment from '@/pages/DemoPayment';
 import PaymentVerification from '@/pages/PaymentVerification';
 import Services from './pages/Services';
+import CookieConsent from '@/components/CookieConsent';
 
 const queryClient = new QueryClient();
 
@@ -78,6 +79,7 @@ const AppContent = () => {
         </Routes>
       </main>
       {!isAdminRoute && <Footer />}
+      <CookieConsent />
     </div>
   );
 };

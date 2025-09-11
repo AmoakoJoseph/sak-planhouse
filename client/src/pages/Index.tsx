@@ -28,6 +28,7 @@ import { api } from '@/lib/api';
 import Hero from '@/components/Hero';
 import PlanCategories from '@/components/PlanCategories';
 import Features from '@/components/Features';
+import AdDisplay from '@/components/AdDisplay';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -111,11 +112,17 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Top Banner Ads */}
+      <AdDisplay position="top" targetPage="home" />
+      
       {/* Hero Section */}
       <Hero />
       
       {/* Plan Categories */}
       <PlanCategories />
+      
+      {/* Inline Ads */}
+      <AdDisplay position="between_plans" targetPage="home" className="container mx-auto px-4" />
       
       {/* Features */}
       <Features />
