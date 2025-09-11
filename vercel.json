@@ -1,59 +1,13 @@
 {
   "version": 2,
-  "framework": null,
-  "buildCommand": "npm run build:vercel",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install",
-  "outputDirectory": "dist",
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
-  "functions": {
-    "api/*.ts": {
-      "runtime": "nodejs20.x"
-    }
+  "name": "sak-constructions-monorepo",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "github": {
+    "silent": true
   },
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/index.ts"
-    },
-    {
-      "src": "/uploads/(.*)",
-      "dest": "/api/index.ts"
-    },
-    {
-      "src": "/_next/static/(.*)",
-      "headers": {
-        "cache-control": "public, max-age=31536000, immutable"
-      }
-    },
-    {
-      "src": "/assets/(.*)",
-      "dest": "/assets/$1",
-      "headers": {
-        "cache-control": "public, max-age=31536000"
-      }
-    },
-    {
-      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|webp))",
-      "dest": "/$1",
-      "headers": {
-        "cache-control": "public, max-age=31536000"
-      }
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+  "git": {
+    "deploymentEnabled": {
+      "main": false
     }
-  ],
-  "env": {
-    "NODE_ENV": "production"
   }
 }

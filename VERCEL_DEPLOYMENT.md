@@ -1,163 +1,290 @@
-# Vercel Deployment Guide - UPDATED
+# Vercel Monorepo Deployment Guide
 
-This application is now properly configured for deployment on Vercel with both frontend and backend support.
+This SAK Constructions application is configured as a **monorepo** with separate **client** and **server** deployments on Vercel for optimal performance and maintainability.
 
-## What Was Fixed
+## 🏗️ Project Structure
 
-1. **Client Build Process**: Added proper client package.json and build configuration
-2. **File Copying**: Fixed build script to copy files to correct location
-3. **Static Serving**: Updated server to serve files from root directory
-4. **Vercel Configuration**: Simplified vercel.json to handle routing correctly
+```
+sak-constructions/
+├── client/                 # Frontend (React + Vite)
+│   ├── src/
+│   ├── package.json
+│   ├── vercel.json
+│   └── vite.config.ts
+├── server/                 # Backend (Express + Node.js)
+│   ├── index.ts
+│   ├── routes.ts
+│   ├── package.json
+│   ├── vercel.json
+│   └── tsconfig.json
+├── shared/                 # Shared schemas and types
+│   └── schema.ts
+└── README.md
+```
 
-## Prerequisites
+## 🚀 Deployment Strategy
+
+This project uses **separate Vercel projects** for frontend and backend:
+
+- **Frontend**: Static React app deployed from `client/` folder
+- **Backend**: Serverless functions deployed from `server/` folder
+- **Benefits**: Faster builds, better isolation, independent scaling
+
+## ⚠️ **CRITICAL: File Storage Requirements**
+
+**This application currently uses local file storage which WILL NOT WORK on Vercel's ephemeral filesystem.**
+
+### Before Production Deployment:
+1. **Replace local uploads with cloud storage**:
+   - **Recommended**: Supabase Storage (integrates well with PostgreSQL)
+   - **Alternatives**: AWS S3, Cloudinary, Uploadcare
+   
+2. **Update file handling code**:
+   - Replace `multer` local storage with cloud storage APIs
+   - Generate signed URLs for file access
+   - Update all file upload/download logic
+
+3. **Environment Variables** (for cloud storage):
+   ```env
+   # Example for Supabase Storage
+   SUPABASE_URL=your_supabase_url
+   SUPABASE_ANON_KEY=your_supabase_anon_key
+   SUPABASE_SERVICE_KEY=your_supabase_service_key
+   ```
+
+**Without this change, file uploads/downloads will fail in production.**
+
+## 📋 Prerequisites
 
 1. **Vercel Account**: Sign up at [vercel.com](https://vercel.com)
-2. **Vercel CLI** (optional): `npm i -g vercel`
+2. **GitHub Repository**: Project hosted on GitHub/GitLab
+3. **Environment Variables**: Database and payment credentials
 
-## Environment Variables
+## 🔧 Environment Variables
 
-Create a `.env` file in your Vercel project with these variables:
-
+### Frontend (.env in client/)
 ```env
-DATABASE_URL=your_supabase_database_connection_string
+VITE_API_URL=https://your-backend.vercel.app
+```
+
+### Backend (.env in server/)
+```env
+DATABASE_URL=your_postgresql_connection_string
 PAYSTACK_SECRET_KEY=your_paystack_secret_key
+PAYSTACK_PUBLIC_KEY=your_paystack_public_key
+SESSION_SECRET=your_secure_session_secret
 NODE_ENV=production
 ```
 
-## Deployment Steps
+## 📦 Deployment Steps
 
-### Option 1: Vercel Dashboard (Recommended)
+### Step 1: Deploy Backend (API)
 
-1. **Connect Repository**:
-   - Go to [vercel.com/new](https://vercel.com/new)
-   - Import your GitHub/GitLab repository
-   - Vercel will automatically detect the configuration
+1. **Create New Project** in Vercel Dashboard
+2. **Import Repository** and configure:
+   - **Project Name**: `sak-constructions-backend`
+   - **Framework Preset**: `Other`
+   - **Root Directory**: `server`
+   - **Build Command**: `npm run vercel-build`
+   - **Output Directory**: `.`
+   - **Install Command**: `npm install`
 
-2. **Configure Project**:
-   - Framework Preset: `Other`
-   - Root Directory: `./` (root of the project)
-   - Build Command: `npm run build:vercel`
-   - Output Directory: `./`
-   - Install Command: `npm install`
+3. **Add Environment Variables**:
+   - `DATABASE_URL`
+   - `PAYSTACK_SECRET_KEY`
+   - `PAYSTACK_PUBLIC_KEY`
+   - `SESSION_SECRET`
+   - `NODE_ENV=production`
 
-3. **Environment Variables**:
-   - Add all required environment variables in the Vercel dashboard:
-     - `DATABASE_URL`
-     - `PAYSTACK_SECRET_KEY`
-     - `NODE_ENV=production`
+4. **Deploy** and copy the deployment URL
 
-4. **Deploy**:
-   - Click "Deploy"
-   - Vercel will build and deploy your application
+### Step 2: Deploy Frontend
 
-### Option 2: Vercel CLI
+1. **Create New Project** in Vercel Dashboard
+2. **Import Repository** and configure:
+   - **Project Name**: `sak-constructions-frontend`
+   - **Framework Preset**: `Vite`
+   - **Root Directory**: `client`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+   - **Install Command**: `npm install`
 
-1. **Install Vercel CLI**:
-   ```bash
-   npm i -g vercel
-   ```
+3. **Add Environment Variables**:
+   - `VITE_API_URL=https://your-backend-url.vercel.app`
 
-2. **Login to Vercel**:
-   ```bash
-   vercel login
-   ```
+4. **Deploy**
 
-3. **Deploy**:
-   ```bash
-   vercel --prod
-   ```
+### Step 3: Configure CORS (if needed)
 
-## How It Works Now
+If frontend and backend are on different domains, update `server/index.ts`:
 
-### Build Process
-1. **Client Build**: The `build:vercel` script builds the React app using Vite
-2. **File Copy**: Built files are copied to the root directory for Vercel to serve
-3. **Server Build**: Vercel builds the Node.js server as serverless functions
-
-### Routing
-- **API Routes** (`/api/*`): Handled by the Express server (serverless functions)
-- **Static Files** (`/uploads/*`): Handled by the Express server
-- **Frontend Routes** (`/*`): Served as static files, with React Router handling client-side routing
-
-### File Structure After Build
-```
-/
-├── index.html          # React app entry point
-├── assets/            # Built JavaScript/CSS files
-├── server/            # Server source code (built by Vercel)
-├── shared/            # Shared schemas and types
-├── vercel.json        # Vercel configuration
-└── build-client.js    # Build script
+```typescript
+app.use(cors({
+  origin: ['https://your-frontend.vercel.app'],
+  credentials: true
+}));
 ```
 
-## Build Scripts
+## 🛠️ Local Development
 
-The project now has these build scripts:
-
-- `npm run build:vercel`: Builds client and prepares for Vercel deployment
-- `npm run build:client`: Builds only the client
-- `npm run build`: Builds both client and server for local deployment
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Build Failures**:
-   - Check environment variables are set correctly
-   - Verify all dependencies are in `package.json`
-   - Check build logs in Vercel dashboard
-
-2. **Frontend Not Loading**:
-   - Ensure `build:vercel` script ran successfully
-   - Verify `index.html` exists in the root after build
-   - Check Vercel build logs for client build errors
-
-3. **API Routes Not Working**:
-   - Ensure `DATABASE_URL` is set correctly
-   - Check function logs for database connection errors
-   - Verify database is accessible from Vercel's servers
-
-4. **404 Errors**:
-   - Check that the build process completed successfully
-   - Verify all static files were copied to root
-   - Check Vercel routing configuration
-
-### Debug Mode
-
-To enable debug logging, add this to your environment variables:
-```env
-DEBUG=*
-NODE_ENV=development
+### Start Backend
+```bash
+cd server
+npm install
+npm run dev
 ```
 
-## Performance Optimization
+### Start Frontend
+```bash
+cd client
+npm install
+npm run dev
+```
 
-1. **Function Optimization**:
-   - Keep functions lightweight
-   - Use connection pooling for database connections
-   - Implement proper caching strategies
+### Full Stack Development
+```bash
+# Terminal 1 - Backend
+cd server && npm run dev
 
-2. **Frontend Optimization**:
-   - Enable Vite's build optimizations
-   - Use code splitting for better loading performance
-   - Implement proper caching headers
+# Terminal 2 - Frontend  
+cd client && npm run dev
+```
 
-## Security Considerations
+## 🔍 Monitoring & Testing
 
-1. **Environment Variables**: Never commit sensitive data to your repository
-2. **CORS**: Configure CORS properly for production
-3. **Rate Limiting**: Implement rate limiting for API endpoints
-4. **Input Validation**: Validate all user inputs on the server side
+### Health Checks
+- **Backend**: `https://your-backend.vercel.app/api/test`
+- **Frontend**: Check if React app loads correctly
 
-## Support
+### Common Endpoints
+- **API Base**: `https://your-backend.vercel.app/api`
+- **Authentication**: `/api/auth/signin`, `/api/auth/signup`
+- **Plans**: `/api/plans`
+- **Admin**: `/api/admin/*` (protected)
 
-- **Vercel Documentation**: [vercel.com/docs](https://vercel.com/docs)
-- **Vercel Community**: [github.com/vercel/vercel/discussions](https://github.com/vercel/vercel/discussions)
-- **Project Issues**: Check your repository's issue tracker
+## 🐛 Troubleshooting
 
-## Next Steps After Deployment
+### Build Failures
 
-1. **Test the Application**: Verify all routes work correctly
-2. **Check API Endpoints**: Test database connections and payment processing
-3. **Monitor Performance**: Use Vercel analytics to monitor function performance
-4. **Set Up Custom Domain**: Configure your custom domain if needed
+**Client Build Issues**:
+- Check if all dependencies are in `client/package.json`
+- Verify Vite configuration
+- Check for TypeScript errors
+
+**Server Build Issues**:
+- Ensure all imports use `.js` extensions for ESM
+- Check TypeScript configuration
+- Verify environment variables are set
+
+### Runtime Errors
+
+**CORS Issues**:
+```typescript
+// In server/index.ts
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true
+}));
+```
+
+**Database Connection**:
+- Verify `DATABASE_URL` is correct
+- Check if database accepts connections from Vercel IPs
+- Test connection with database client
+
+**Session Issues**:
+- Set secure session configuration for production
+- Use database-backed session store for persistence
+
+## 🔒 Security Considerations
+
+### Production Security
+1. **Environment Variables**: Never commit secrets to Git
+2. **CORS**: Configure specific origins, not wildcards
+3. **Session Secret**: Use strong, random session secret
+4. **Rate Limiting**: Implement for API endpoints
+5. **Input Validation**: Validate all user inputs
+
+### Database Security
+- Use connection pooling
+- Implement query parameterization
+- Regular security updates
+
+## 🚀 Performance Optimization
+
+### Frontend
+- Enable Vite optimizations
+- Use lazy loading for routes
+- Optimize image sizes and formats
+- Implement service worker for caching
+
+### Backend
+- Use database connection pooling
+- Implement API response caching
+- Optimize database queries
+- Use CDN for static assets
+
+## 📊 Monitoring
+
+### Vercel Analytics
+- Enable Web Analytics in Vercel dashboard
+- Monitor function execution times
+- Track build performance
+
+### Error Tracking
+- Implement error logging
+- Monitor API response times
+- Track user interactions
+
+## 🔄 CI/CD Pipeline
+
+### Automatic Deployments
+- **Production**: Deploys on push to `main` branch
+- **Preview**: Deploys on pull requests
+- **Development**: Manual deployments
+
+### Git Workflow
+```bash
+# Feature development
+git checkout -b feature/new-feature
+git commit -m "Add new feature"
+git push origin feature/new-feature
+
+# Create pull request → triggers preview deployment
+# Merge to main → triggers production deployment
+```
+
+## 📞 Support
+
+### Documentation
+- [Vercel Docs](https://vercel.com/docs)
+- [React Docs](https://react.dev)
+- [Express Docs](https://expressjs.com)
+
+### Common Commands
+```bash
+# Local development
+npm run dev                 # Start dev servers
+
+# Building
+npm run build              # Build for production
+npm run preview            # Preview production build
+
+# Database
+npm run db:push            # Sync database schema
+```
+
+---
+
+## 📝 Quick Reference
+
+| Component | URL | Purpose |
+|-----------|-----|---------|
+| Frontend | `https://your-app.vercel.app` | React application |
+| Backend API | `https://your-api.vercel.app/api` | REST API endpoints |
+| Admin Panel | `https://your-app.vercel.app/admin` | Admin interface |
+| Database | PostgreSQL URL | Data storage |
+
+**Last Updated**: December 2024  
+**Architecture**: Monorepo with separate deployments  
+**Framework**: React + Express + PostgreSQL
