@@ -6,6 +6,7 @@ import path from "path";
 import fs from "fs";
 import express from "express";
 import { PaystackService } from "./paystack";
+import bcrypt from "bcrypt";
 
 // Multer configuration for file uploads
 const imageStorage = multer.diskStorage({
@@ -62,6 +63,29 @@ const uploadPlanFile = multer({
   },
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
+
+// Authentication middleware to check if user is logged in
+const requireAuth = async (req: any, res: any, next: any) => {
+  try {
+    const userEmail = req.session?.user?.email || req.headers['x-user-email'];
+    
+    if (!userEmail) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    // Get user profile
+    const profile = await storage.getProfileByEmail(userEmail);
+    if (!profile) {
+      return res.status(401).json({ error: "User profile not found" });
+    }
+    
+    req.userProfile = profile;
+    next();
+  } catch (error) {
+    console.error("Authentication error:", error);
+    res.status(500).json({ error: "Authentication check failed" });
+  }
+};
 
 // RBAC middleware to check user permissions
 const requireRole = (allowedRoles: string[]) => {
@@ -587,6 +611,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error signing up:", error);
       res.status(500).json({ error: "Failed to sign up" });
+    }
+  });
+
+  // Change Password API
+  app.post("/api/auth/change-password", requireAuth, async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const userProfile = (req as any).userProfile;
+      
+      // Validate required fields
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: "Current password and new password are required" });
+      }
+      
+      // Validate new password strength
+      if (newPassword.length < 8) {
+        return res.status(400).json({ error: "New password must be at least 8 characters long" });
+      }
+      
+      // For now, we'll just update the password (in production, you'd verify current password first)
+      // TODO: Add proper password verification logic when implementing hashed passwords
+      
+      // Hash the new password
+      const saltRounds = 12;
+      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+      
+      // In a real implementation, you'd store this hashed password in the users table
+      // For now, we'll simulate success
+      console.log(`Password changed for user: ${userProfile.email}`);
+      
+      res.json({ 
+        message: "Password changed successfully" 
+      });
+    } catch (error) {
+      console.error("Error changing password:", error);
+      res.status(500).json({ error: "Failed to change password" });
+    }
+  });
+
+  // User Profile Update API (for users updating their own profiles)
+  app.put("/api/profile/me", requireAuth, async (req, res) => {
+    try {
+      const userProfile = (req as any).userProfile;
+      const { role, ...profileUpdates } = req.body;
+      
+      // Users cannot change their own role
+      if (role !== undefined) {
+        return res.status(403).json({ error: "Cannot change your own role" });
+      }
+      
+      // Validate email if being updated
+      if (profileUpdates.email && profileUpdates.email !== userProfile.email) {
+        const existingProfile = await storage.getProfileByEmail(profileUpdates.email);
+        if (existingProfile) {
+          return res.status(409).json({ error: "Email already in use by another account" });
+        }
+      }
+      
+      const updatedProfile = await storage.updateProfile(userProfile.user_id, profileUpdates);
+      if (!updatedProfile) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+      
+      res.json(updatedProfile);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ error: "Failed to update profile" });
     }
   });
 

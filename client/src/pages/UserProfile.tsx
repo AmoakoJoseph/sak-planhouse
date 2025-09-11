@@ -105,8 +105,8 @@ const UserProfile = () => {
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      // Update profile in backend
-      const response = await fetch(`/api/profiles/${profile?.user_id}`, {
+      // Update profile using the user-specific endpoint
+      const response = await fetch('/api/profile/me', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -114,20 +114,24 @@ const UserProfile = () => {
         body: JSON.stringify(formData),
       });
 
+      const result = await response.json();
+      
       if (response.ok) {
         toast({
           title: "Profile updated!",
           description: "Your profile information has been saved successfully.",
         });
         setIsEditing(false);
+        // Optionally refresh the page to show updated data
+        window.location.reload();
       } else {
-        throw new Error('Failed to update profile');
+        throw new Error(result.error || 'Failed to update profile');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
       toast({
         title: "Update failed",
-        description: "Failed to update profile. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to update profile. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -197,7 +201,7 @@ const UserProfile = () => {
       const result = await response.json();
       
       // Update profile with new avatar URL
-      const updateResponse = await fetch(`/api/profiles/${profile?.user_id}`, {
+      const updateResponse = await fetch('/api/profile/me', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -556,7 +560,12 @@ const UserProfile = () => {
                         <h4 className="font-medium">Change Password</h4>
                         <p className="text-sm text-muted-foreground">Update your account password</p>
                       </div>
-                      <Button variant="outline">Change</Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => navigate('/user/settings#security')}
+                      >
+                        Change
+                      </Button>
                     </div>
                     
                     <div className="flex items-center justify-between p-4 border rounded-lg">

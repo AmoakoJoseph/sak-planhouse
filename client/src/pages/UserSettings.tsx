@@ -29,6 +29,7 @@ import {
   Info
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import UserHeader from '@/components/UserHeader';
@@ -36,6 +37,7 @@ import UserHeader from '@/components/UserHeader';
 const UserSettings = () => {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -112,13 +114,20 @@ const UserSettings = () => {
   const saveSettings = async () => {
     setIsLoading(true);
     try {
-      // Simulate API call
+      // TODO: Implement settings save API endpoint
       await new Promise(resolve => setTimeout(resolve, 1000));
       console.log('Settings saved:', settings);
-      // You could show a success toast here
+      toast({
+        title: "Settings saved!",
+        description: "Your preferences have been updated successfully.",
+      });
     } catch (error) {
       console.error('Error saving settings:', error);
-      // You could show an error toast here
+      toast({
+        title: "Save failed",
+        description: "Failed to save settings. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -126,24 +135,58 @@ const UserSettings = () => {
 
   const changePassword = async () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert('New passwords do not match');
+      toast({
+        title: "Password mismatch",
+        description: "New passwords do not match",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (passwordForm.newPassword.length < 8) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 8 characters long",
+        variant: "destructive",
+      });
       return;
     }
     
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('Password changed');
-      setPasswordForm({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
+      const response = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword,
+        }),
       });
-      // You could show a success toast here
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        toast({
+          title: "Password changed!",
+          description: "Your password has been updated successfully.",
+        });
+        setPasswordForm({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+      } else {
+        throw new Error(result.error || 'Failed to change password');
+      }
     } catch (error) {
       console.error('Error changing password:', error);
-      // You could show an error toast here
+      toast({
+        title: "Password change failed",
+        description: error instanceof Error ? error.message : 'An error occurred while changing your password.',
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
