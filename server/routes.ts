@@ -297,6 +297,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Ads API
+  app.get("/api/ads", async (req, res) => {
+    try {
+      const { is_active, target_page } = req.query;
+      const filters: any = {};
+      
+      if (is_active !== undefined) {
+        filters.is_active = is_active === 'true';
+      }
+      if (target_page) {
+        filters.target_page = target_page as string;
+      }
+      
+      const ads = await storage.getAds(filters);
+      res.json(ads);
+    } catch (error) {
+      console.error("Error fetching ads:", error);
+      res.status(500).json({ error: "Failed to fetch ads" });
+    }
+  });
+
+  app.get("/api/ads/:id", async (req, res) => {
+    try {
+      const ad = await storage.getAd(req.params.id);
+      if (!ad) {
+        return res.status(404).json({ error: "Ad not found" });
+      }
+      res.json(ad);
+    } catch (error) {
+      console.error("Error fetching ad:", error);
+      res.status(500).json({ error: "Failed to fetch ad" });
+    }
+  });
+
+  app.post("/api/ads", requireRole(['admin', 'super_admin']), async (req, res) => {
+    try {
+      const ad = await storage.createAd(req.body);
+      res.status(201).json(ad);
+    } catch (error) {
+      console.error("Error creating ad:", error);
+      res.status(500).json({ error: "Failed to create ad" });
+    }
+  });
+
+  app.put("/api/ads/:id", requireRole(['admin', 'super_admin']), async (req, res) => {
+    try {
+      const ad = await storage.updateAd(req.params.id, req.body);
+      if (!ad) {
+        return res.status(404).json({ error: "Ad not found" });
+      }
+      res.json(ad);
+    } catch (error) {
+      console.error("Error updating ad:", error);
+      res.status(500).json({ error: "Failed to update ad" });
+    }
+  });
+
+  app.delete("/api/ads/:id", requireRole(['admin', 'super_admin']), async (req, res) => {
+    try {
+      const success = await storage.deleteAd(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Ad not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting ad:", error);
+      res.status(500).json({ error: "Failed to delete ad" });
+    }
+  });
+
+  // Ad tracking endpoints
+  app.post("/api/ads/:id/impression", async (req, res) => {
+    try {
+      await storage.recordAdImpression(req.params.id);
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Error recording ad impression:", error);
+      res.status(500).json({ error: "Failed to record impression" });
+    }
+  });
+
+  app.post("/api/ads/:id/click", async (req, res) => {
+    try {
+      await storage.recordAdClick(req.params.id);
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Error recording ad click:", error);
+      res.status(500).json({ error: "Failed to record click" });
+    }
+  });
+
   // Analytics API
   app.get("/api/analytics", async (req, res) => {
     try {
