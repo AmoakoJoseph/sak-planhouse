@@ -1,7 +1,6 @@
 import express from 'express';
 import postgres from 'postgres';
 import multer from 'multer';
-import { supabaseStorage } from '../server/supabase-storage';
 import 'dotenv/config';
 
 const app = express();
@@ -213,6 +212,7 @@ app.post('/api/ads/:id/impression', async (req, res) => {
 app.post('/api/upload/image', memoryUpload.single('image'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    const { supabaseStorage } = await import('../server/supabase-storage');
     const filename = supabaseStorage.generateUniqueFilename(req.file.originalname);
     const result = await supabaseStorage.uploadImage(req.file.buffer, filename, 'images');
     res.json({ filename: result.filename, path: result.path, url: result.publicUrl });
@@ -230,6 +230,7 @@ app.post('/api/upload/plan-files', memoryUpload.fields([
   try {
     const files = req.files as { [fieldname: string]: Express.Multer.File[] };
     const uploaded: Record<string, string[]> = {};
+    const { supabaseStorage } = await import('../server/supabase-storage');
     for (const tier of Object.keys(files)) {
       const tierFiles = files[tier] || [];
       uploaded[tier] = [];
