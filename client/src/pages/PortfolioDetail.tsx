@@ -14,6 +14,9 @@ type Item = {
   design_image?: string;
   current_image?: string;
   status?: string;
+  features?: string[];
+  specifications?: Record<string, string>;
+  created_at?: string;
 };
 
 const PortfolioDetail = () => {
@@ -93,11 +96,42 @@ const PortfolioDetail = () => {
           </div>
 
           {item.description && (
-            <div className="prose prose-neutral dark:prose-invert max-w-none">
+            <div className="prose prose-neutral dark:prose-invert max-w-none mb-10">
               <h3>About this project</h3>
               <p>{item.description}</p>
             </div>
           )}
+
+          {/* Features and Specifications */}
+          <div className="grid md:grid-cols-2 gap-8 mb-10">
+            {item.features && item.features.length > 0 && (
+              <div>
+                <h3 className="text-xl font-semibold mb-4">Key Features</h3>
+                <ul className="space-y-2">
+                  {item.features.map((feature, index) => (
+                    <li key={index} className="flex items-start gap-2">
+                      <span className="text-primary mt-1">•</span>
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {item.specifications && Object.keys(item.specifications).length > 0 && (
+              <div>
+                <h3 className="text-xl font-semibold mb-4">Specifications</h3>
+                <div className="space-y-2">
+                  {Object.entries(item.specifications).map(([key, value]) => (
+                    <div key={key} className="flex justify-between py-2 border-b border-muted">
+                      <span className="font-medium text-muted-foreground">{key}</span>
+                      <span className="text-foreground">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="mt-8">
             <Button asChild variant="outline"><Link to="/portfolio"><ArrowLeft className="w-4 h-4 mr-2" /> Back to Portfolio</Link></Button>

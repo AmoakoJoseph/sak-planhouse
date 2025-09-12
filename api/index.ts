@@ -146,9 +146,56 @@ app.get('/api/users', async (req, res) => {
 // Portfolio API endpoints
 app.get('/api/portfolio', async (req, res) => {
   try {
-    // For now, return empty portfolio
+    // For now, return sample portfolio data
     // TODO: Implement actual portfolio fetching from database
-    res.json([]);
+    const samplePortfolio = [
+      {
+        id: '1',
+        title: 'Modern Villa Design',
+        category: 'Residential',
+        summary: 'Contemporary 4-bedroom villa with open-plan living and sustainable features',
+        description: 'A stunning modern villa featuring clean lines, large windows, and eco-friendly materials. The design emphasizes natural light and seamless indoor-outdoor living.',
+        design_image: '/client/assets/villa-plan.jpg',
+        current_image: '/client/assets/villa-plan.jpg',
+        status: 'completed',
+        created_at: new Date().toISOString()
+      },
+      {
+        id: '2',
+        title: 'Commercial Office Complex',
+        category: 'Commercial',
+        summary: 'Multi-story office building with modern amenities and green building certification',
+        description: 'A state-of-the-art commercial complex designed for efficiency and sustainability. Features include solar panels, rainwater harvesting, and smart building systems.',
+        design_image: '/client/assets/hero-construction.jpg',
+        current_image: '/client/assets/hero-construction.jpg',
+        status: 'completed',
+        created_at: new Date().toISOString()
+      },
+      {
+        id: '3',
+        title: 'Townhouse Development',
+        category: 'Residential',
+        summary: 'Affordable housing development with modern amenities and community spaces',
+        description: 'A thoughtfully designed townhouse community that balances affordability with quality. Each unit features modern finishes and energy-efficient systems.',
+        design_image: '/client/assets/townhouse-plan.jpg',
+        current_image: '/client/assets/townhouse-plan.jpg',
+        status: 'in-progress',
+        created_at: new Date().toISOString()
+      },
+      {
+        id: '4',
+        title: 'Bungalow Renovation',
+        category: 'Renovation',
+        summary: 'Complete renovation of traditional bungalow with modern extensions',
+        description: 'A comprehensive renovation project that preserved the original character while adding modern conveniences and expanding living space.',
+        design_image: '/client/assets/bungalow-plan.jpg',
+        current_image: '/client/assets/bungalow-plan.jpg',
+        status: 'completed',
+        created_at: new Date().toISOString()
+      }
+    ];
+    
+    res.json(samplePortfolio);
   } catch (error) {
     console.error('Error fetching portfolio:', error);
     res.status(500).json({ error: 'Failed to fetch portfolio' });
@@ -158,11 +205,150 @@ app.get('/api/portfolio', async (req, res) => {
 app.get('/api/portfolio/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    // For now, return 404 for specific portfolio items
-    res.status(404).json({ error: 'Portfolio item not found' });
+    
+    // Sample portfolio items for individual requests
+    const sampleItems = {
+      '1': {
+        id: '1',
+        title: 'Modern Villa Design',
+        category: 'Residential',
+        summary: 'Contemporary 4-bedroom villa with open-plan living and sustainable features',
+        description: 'A stunning modern villa featuring clean lines, large windows, and eco-friendly materials. The design emphasizes natural light and seamless indoor-outdoor living. This project showcases our commitment to sustainable architecture and modern design principles.',
+        design_image: '/client/assets/villa-plan.jpg',
+        current_image: '/client/assets/villa-plan.jpg',
+        status: 'completed',
+        created_at: new Date().toISOString(),
+        features: [
+          '4 bedrooms with ensuite bathrooms',
+          'Open-plan living and dining area',
+          'Modern kitchen with island',
+          'Solar panel system',
+          'Rainwater harvesting',
+          'Smart home automation'
+        ],
+        specifications: {
+          'Total Area': '450 sqm',
+          'Bedrooms': '4',
+          'Bathrooms': '5',
+          'Parking': '2 cars',
+          'Completion': '2023'
+        }
+      },
+      '2': {
+        id: '2',
+        title: 'Commercial Office Complex',
+        category: 'Commercial',
+        summary: 'Multi-story office building with modern amenities and green building certification',
+        description: 'A state-of-the-art commercial complex designed for efficiency and sustainability. Features include solar panels, rainwater harvesting, and smart building systems.',
+        design_image: '/client/assets/hero-construction.jpg',
+        current_image: '/client/assets/hero-construction.jpg',
+        status: 'completed',
+        created_at: new Date().toISOString()
+      }
+    };
+    
+    const item = sampleItems[id as keyof typeof sampleItems];
+    if (item) {
+      res.json(item);
+    } else {
+      res.status(404).json({ error: 'Portfolio item not found' });
+    }
   } catch (error) {
     console.error('Error fetching portfolio item:', error);
     res.status(500).json({ error: 'Failed to fetch portfolio item' });
+  }
+});
+
+// Portfolio CRUD endpoints for admin
+app.post('/api/portfolio', async (req, res) => {
+  try {
+    const portfolioData = req.body;
+    console.log('Creating portfolio item:', portfolioData);
+    
+    // For now, return mock created item
+    const newItem = {
+      id: Date.now().toString(),
+      ...portfolioData,
+      created_at: new Date().toISOString()
+    };
+    
+    res.json(newItem);
+  } catch (error) {
+    console.error('Error creating portfolio item:', error);
+    res.status(500).json({ error: 'Failed to create portfolio item' });
+  }
+});
+
+app.put('/api/portfolio/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+    console.log('Updating portfolio item:', id, updateData);
+    
+    // For now, return mock updated item
+    const updatedItem = {
+      id,
+      ...updateData,
+      updated_at: new Date().toISOString()
+    };
+    
+    res.json(updatedItem);
+  } catch (error) {
+    console.error('Error updating portfolio item:', error);
+    res.status(500).json({ error: 'Failed to update portfolio item' });
+  }
+});
+
+app.delete('/api/portfolio/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log('Deleting portfolio item:', id);
+    
+    // For now, return success
+    res.json({ success: true, message: 'Portfolio item deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting portfolio item:', error);
+    res.status(500).json({ error: 'Failed to delete portfolio item' });
+  }
+});
+
+// User favorites endpoint
+app.get('/api/favorites/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    console.log('Fetching favorites for user:', userId);
+    
+    // For now, return empty favorites array
+    // TODO: Implement actual favorites fetching from database
+    res.json([]);
+  } catch (error) {
+    console.error('Error fetching favorites:', error);
+    res.status(500).json({ error: 'Failed to fetch favorites' });
+  }
+});
+
+// User analytics endpoint
+app.get('/api/analytics/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    console.log('Fetching user analytics for user:', userId);
+    
+    // For now, return mock user analytics data
+    // TODO: Implement actual user analytics fetching from database
+    const mockAnalytics = {
+      userId: userId,
+      totalOrders: 0,
+      totalSpent: 0,
+      favoritePlans: [],
+      recentActivity: [],
+      accountCreated: new Date().toISOString(),
+      lastLogin: new Date().toISOString()
+    };
+    
+    res.json(mockAnalytics);
+  } catch (error) {
+    console.error('Error fetching user analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch user analytics' });
   }
 });
 
@@ -267,14 +453,56 @@ app.post('/api/ads/:id/impression', async (req, res) => {
 // Upload endpoints (mirror dev behavior using Supabase storage)
 app.post('/api/upload/image', memoryUpload.single('image'), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    console.log('Image upload endpoint hit');
+    console.log('Request file:', req.file ? { 
+      originalname: req.file.originalname, 
+      mimetype: req.file.mimetype, 
+      size: req.file.size 
+    } : 'No file');
+    
+    if (!req.file) {
+      console.log('No file uploaded');
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    
+    // Check if Supabase is configured
+    if (!process.env.SUPABASE_URL || (!process.env.SUPABASE_SERVICE_KEY && !process.env.SUPABASE_ANON_KEY)) {
+      console.log('Supabase not configured, returning mock response');
+      const mockFilename = `image-${Date.now()}-${Math.floor(Math.random() * 1e9)}.${req.file.originalname.split('.').pop() || 'jpg'}`;
+      return res.json({ 
+        filename: mockFilename, 
+        path: `images/${mockFilename}`, 
+        url: `https://via.placeholder.com/400x300?text=${encodeURIComponent(req.file.originalname)}`,
+        publicUrl: `https://via.placeholder.com/400x300?text=${encodeURIComponent(req.file.originalname)}`
+      });
+    }
+    
+    console.log('Importing supabase storage...');
     const { supabaseStorage } = await import('../server/supabase-storage');
+    console.log('Supabase storage imported successfully');
+    
+    console.log('Generating unique filename...');
     const filename = supabaseStorage.generateUniqueFilename(req.file.originalname);
+    console.log('Generated filename:', filename);
+    
+    console.log('Uploading to Supabase...');
     const result = await supabaseStorage.uploadImage(req.file.buffer, filename, 'images');
+    console.log('Upload successful:', result);
+    
     res.json({ filename: result.filename, path: result.path, url: result.publicUrl });
   } catch (error) {
     console.error('Upload image error:', error);
-    res.status(500).json({ error: 'Failed to upload image' });
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      name: error instanceof Error ? error.name : 'Unknown',
+      cause: error instanceof Error ? error.cause : undefined
+    });
+    res.status(500).json({ 
+      error: 'Failed to upload image',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      details: process.env.NODE_ENV === 'development' ? error : undefined
+    });
   }
 });
 
