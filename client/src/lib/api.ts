@@ -59,13 +59,13 @@ class ApiClient {
     if (filters?.status) params.append('status', filters.status);
     if (filters?.featured !== undefined) params.append('featured', filters.featured.toString());
 
-    const response = await fetch(`${API_BASE}/plans?${params}`);
+    const response = await fetch(`${API_BASE}/plans?${params}`, { credentials: 'include' });
     if (!response.ok) throw new Error('Failed to fetch plans');
     return response.json();
   }
 
   async getPlan(id: string): Promise<Plan> {
-    const response = await fetch(`${API_BASE}/plans/${id}`);
+    const response = await fetch(`${API_BASE}/plans/${id}`, { credentials: 'include' });
     if (!response.ok) throw new Error('Failed to fetch plan');
     return response.json();
   }
@@ -75,7 +75,8 @@ class ApiClient {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(plan),
-    });
+      credentials: 'include',
+    } as RequestInit);
     if (!response.ok) throw new Error('Failed to create plan');
     return response.json();
   }
@@ -85,7 +86,8 @@ class ApiClient {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
-    });
+      credentials: 'include',
+    } as RequestInit);
     if (!response.ok) throw new Error('Failed to update plan');
     return response.json();
   }
@@ -93,6 +95,7 @@ class ApiClient {
   async deletePlan(id: string): Promise<void> {
     const response = await fetch(`${API_BASE}/plans/${id}`, {
       method: 'DELETE',
+      credentials: 'include',
     });
     if (!response.ok) throw new Error('Failed to delete plan');
   }
@@ -102,7 +105,7 @@ class ApiClient {
     const params = new URLSearchParams();
     if (userId) params.append('userId', userId);
 
-    const response = await fetch(`${API_BASE}/orders?${params}`);
+    const response = await fetch(`${API_BASE}/orders?${params}`, { credentials: 'include' });
     if (!response.ok) throw new Error('Failed to fetch orders');
     return response.json();
   }
@@ -112,14 +115,15 @@ class ApiClient {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(order),
-    });
+      credentials: 'include',
+    } as RequestInit);
     if (!response.ok) throw new Error('Failed to create order');
     return response.json();
   }
 
   // Profiles API
   async getProfile(userId: string): Promise<Profile> {
-    const response = await fetch(`${API_BASE}/profiles/${userId}`);
+    const response = await fetch(`${API_BASE}/profiles/${userId}`, { credentials: 'include' });
     if (!response.ok) throw new Error('Failed to fetch profile');
     return response.json();
   }
@@ -129,7 +133,8 @@ class ApiClient {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(profile),
-    });
+      credentials: 'include',
+    } as RequestInit);
     if (!response.ok) throw new Error('Failed to create profile');
     return response.json();
   }
@@ -139,14 +144,15 @@ class ApiClient {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updates),
-    });
+      credentials: 'include',
+    } as RequestInit);
     if (!response.ok) throw new Error('Failed to update profile');
     return response.json();
   }
 
   // Downloads API
   async getDownloadInfo(orderId: string): Promise<any> {
-    const response = await fetch(`${API_BASE}/downloads/${orderId}`);
+    const response = await fetch(`${API_BASE}/downloads/${orderId}`, { credentials: 'include' });
     if (!response.ok) throw new Error('Failed to fetch download info');
     return response.json();
   }
@@ -155,7 +161,7 @@ class ApiClient {
 
   async downloadFile(orderId: string, filePath: string): Promise<Response> {
     const url = `${API_BASE}/downloads/${orderId}/file?filePath=${encodeURIComponent(filePath)}`;
-    const response = await fetch(url);
+    const response = await fetch(url, { credentials: 'include' });
     if (!response.ok) throw new Error('Failed to download file');
     return response;
   }
@@ -173,7 +179,8 @@ class ApiClient {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(paymentData),
-    });
+      credentials: 'include',
+    } as RequestInit);
     if (!response.ok) throw new Error('Failed to initialize payment');
     return response.json();
   }
@@ -185,7 +192,8 @@ class ApiClient {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-    });
+      credentials: 'include',
+    } as RequestInit);
     if (!response.ok) throw new Error(`Failed to POST to ${endpoint}`);
     return response.json();
   }
@@ -193,16 +201,20 @@ class ApiClient {
   async get(endpoint: string): Promise<any> {
     // Remove leading slash if present to avoid double /api/
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
-    const response = await fetch(`${API_BASE}/${cleanEndpoint}`);
+    const response = await fetch(`${API_BASE}/${cleanEndpoint}`, { credentials: 'include' });
     if (!response.ok) throw new Error(`Failed to GET from ${endpoint}`);
     return response.json();
   }
 
   // Admin Management API
   async getAllUsers(): Promise<Profile[]> {
-    const response = await fetch(`${API_BASE}/users`);
-    if (!response.ok) throw new Error('Failed to fetch users');
-    return response.json();
+    const response = await this.get('users');
+    return response;
+  }
+
+  // Backwards-compatible alias used by AdminUsers.tsx
+  async getUsers(): Promise<Profile[]> {
+    return this.getAllUsers();
   }
 
   async createAdmin(adminData: {

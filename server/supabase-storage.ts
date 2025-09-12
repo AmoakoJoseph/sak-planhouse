@@ -17,11 +17,25 @@ function assertEnv(name: string, value: string | undefined): string {
 export class SupabaseStorageService {
   private client: SupabaseClient;
   private bucketName = 'sak-constructions';
+  private isServiceRole = false;
 
   constructor() {
     const url = assertEnv('SUPABASE_URL', process.env.SUPABASE_URL);
-    const serviceKey = assertEnv('SUPABASE_SERVICE_KEY', process.env.SUPABASE_SERVICE_KEY);
-    this.client = createClient(url, serviceKey);
+    const serviceKey = process.env.SUPABASE_SERVICE_KEY;
+    const anonKey = process.env.SUPABASE_ANON_KEY;
+
+    const keyToUse = serviceKey || anonKey;
+    if (!keyToUse) {
+      throw new Error('Missing required env var: SUPABASE_SERVICE_KEY or SUPABASE_ANON_KEY');
+    }
+
+    this.isServiceRole = Boolean(serviceKey);
+    if (!this.isServiceRole) {
+      // eslint-disable-next-line no-console
+      console.warn('Using SUPABASE_ANON_KEY for storage uploads. Ensure bucket exists and policies allow uploads in development.');
+    }
+
+    this.client = createClient(url, keyToUse);
   }
 
   public generateUniqueFilename(originalName: string): string {
@@ -38,6 +52,10 @@ export class SupabaseStorageService {
   }
 
   async ensureBucket(): Promise<void> {
+    // Only service role can create/list buckets
+    if (!this.isServiceRole) {
+      return;
+    }
     const { data: list, error: listError } = await this.client.storage.listBuckets();
     if (listError) {
       // Non-fatal; attempt to create anyway

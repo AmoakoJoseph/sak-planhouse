@@ -488,7 +488,7 @@ const AdminAds = () => {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="capitalize">
-                          {ad.position.replace('_', ' ')}
+                          {(ad.position || '').replace('_', ' ')}
                         </Badge>
                       </TableCell>
                       <TableCell>

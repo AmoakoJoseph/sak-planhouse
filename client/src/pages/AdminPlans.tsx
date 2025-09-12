@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, ArrowLeft, Star, Eye, CheckCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, Star, Eye, CheckCircle } from 'lucide-react';
+import AdminHeader from '@/components/AdminHeader';
 
 type PlanType = 'villa' | 'bungalow' | 'townhouse' | 'duplex' | 'apartment' | 'commercial';
 
@@ -317,20 +318,14 @@ const AdminPlans = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
+      <AdminHeader />
+      {/* Page toolbar below header */}
+      <div className="border-b bg-card/60">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/admin/dashboard')}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Dashboard
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold">Plan Management</h1>
-              <p className="text-sm text-muted-foreground">Manage construction plans and pricing</p>
-            </div>
+          <div>
+            <h1 className="text-xl font-bold">Plan Management</h1>
+            <p className="text-sm text-muted-foreground">Manage construction plans and pricing</p>
           </div>
-          
           <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -339,12 +334,12 @@ const AdminPlans = () => {
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-            <DialogTitle>Create New Plan</DialogTitle>
-            <DialogDescription>
-              Add a new construction plan with all the necessary details and pricing tiers.
-            </DialogDescription>
-          </DialogHeader>
+              <DialogHeader>
+                <DialogTitle>Create New Plan</DialogTitle>
+                <DialogDescription>
+                  Add a new construction plan with all the necessary details and pricing tiers.
+                </DialogDescription>
+              </DialogHeader>
               <form onSubmit={handleCreatePlan} className="space-y-4">
                 
                 <div className="space-y-2">
@@ -557,7 +552,7 @@ const AdminPlans = () => {
             </DialogContent>
           </Dialog>
         </div>
-      </header>
+      </div>
 
       <div className="container mx-auto px-4 py-8">
         <Card>

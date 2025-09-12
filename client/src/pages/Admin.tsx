@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, Routes, Route } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { AdminThemeProvider } from '@/hooks/useAdminTheme';
 import AdminLogin from './AdminLogin';
 import AdminDashboard from './AdminDashboard';
 import AdminPlans from './AdminPlans';
@@ -38,19 +39,21 @@ const Admin = () => {
   }, [user, profile, navigate]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <Routes>
-        <Route path="login" element={<AdminLogin />} />
-        <Route path="dashboard" element={<AdminDashboard />} />
-        <Route path="analytics" element={<AdminAnalytics />} />
-        <Route path="plans" element={<AdminPlans />} />
-        <Route path="orders" element={<AdminOrders />} />
-        <Route path="users" element={<AdminUsers />} />
-        <Route path="portfolio" element={<AdminPortfolio />} />
-        <Route path="ads" element={<AdminAds />} />
-        <Route path="settings" element={<AdminSettings />} />
-      </Routes>
-    </div>
+    <AdminThemeProvider>
+      <div className="min-h-screen bg-background">
+        <Routes>
+          <Route path="login" element={<AdminLogin />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="analytics" element={<AdminAnalytics />} />
+          <Route path="plans" element={<AdminPlans />} />
+          <Route path="orders" element={<AdminOrders />} />
+          <Route path="users" element={<AdminUsers />} />
+          <Route path="portfolio" element={<AdminPortfolio />} />
+          <Route path="ads" element={<AdminAds />} />
+          <Route path="settings" element={<AdminSettings />} />
+        </Routes>
+      </div>
+    </AdminThemeProvider>
   );
 };
 
