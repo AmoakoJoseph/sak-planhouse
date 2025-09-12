@@ -16,11 +16,15 @@ const DownloadPage = () => {
   useEffect(() => {
     // Check for pending premium order that requires account creation
     const pendingOrder = localStorage.getItem('pendingPremiumOrder');
-    if (pendingOrder && !user) {
-      const orderInfo = JSON.parse(pendingOrder);
-      if (orderInfo.orderId === orderId) {
-        navigate('/auth/register');
-        return;
+    if (pendingOrder && pendingOrder !== 'undefined' && pendingOrder !== 'null' && !user) {
+      try {
+        const orderInfo = JSON.parse(pendingOrder);
+        if (orderInfo.orderId === orderId) {
+          navigate('/auth/register');
+          return;
+        }
+      } catch {
+        localStorage.removeItem('pendingPremiumOrder');
       }
     }
     

@@ -47,8 +47,12 @@ const Checkout = () => {
 
     // Get checkout data from localStorage
     const data = localStorage.getItem('checkoutData');
-    if (data) {
-      setCheckoutData(JSON.parse(data));
+    if (data && data !== 'undefined' && data !== 'null') {
+      try {
+        setCheckoutData(JSON.parse(data));
+      } catch {
+        localStorage.removeItem('checkoutData');
+      }
       verifyPayment();
     } else if (!searchParams.get('reference')) {
       // No checkout data and no payment reference, redirect to plans

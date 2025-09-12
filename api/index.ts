@@ -29,7 +29,7 @@ async function getPlans(filters: { status?: string; featured?: boolean } = {}) {
       max: 1,
       idle_timeout: 20,
       connect_timeout: 10,
-      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+      ssl: 'require', // Supabase requires SSL even in development
     });
     
     let query = 'SELECT * FROM plans WHERE 1=1';
@@ -110,6 +110,15 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working!', timestamp: new Date().toISOString() });
 });
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'unknown'
+  });
+});
+
 // Add a simple auth test route
 app.get('/api/auth/test', (req, res) => {
   res.json({ 
@@ -128,7 +137,7 @@ app.get('/api/ads', async (req, res) => {
       max: 1,
       idle_timeout: 20,
       connect_timeout: 10,
-      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+      ssl: 'require', // Supabase requires SSL even in development
     });
 
     const filters: string[] = [];
@@ -157,7 +166,7 @@ app.get('/api/analytics', async (_req, res) => {
       max: 1,
       idle_timeout: 20,
       connect_timeout: 10,
-      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+      ssl: 'require', // Supabase requires SSL even in development
     });
 
     const revenue = await client.unsafe(`SELECT COALESCE(SUM(amount),0)::decimal as total FROM orders WHERE status = 'completed'`);
@@ -194,7 +203,7 @@ app.post('/api/ads/:id/impression', async (req, res) => {
       max: 1,
       idle_timeout: 20,
       connect_timeout: 10,
-      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+      ssl: 'require', // Supabase requires SSL even in development
     });
     // Try to increment if the column exists; otherwise ignore
     try {
@@ -247,6 +256,34 @@ app.post('/api/upload/plan-files', memoryUpload.fields([
   }
 });
 
+// Gallery images upload endpoint
+app.post('/api/upload/gallery', memoryUpload.array('gallery', 10), async (req, res) => {
+  try {
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: 'No files uploaded' });
+    }
+
+    const { supabaseStorage } = await import('../server/supabase-storage');
+    const uploadedUrls: string[] = [];
+
+    for (const file of files) {
+      const filename = supabaseStorage.generateUniqueFilename(file.originalname);
+      const result = await supabaseStorage.uploadGalleryImage(file.buffer, filename);
+      uploadedUrls.push(result.publicUrl);
+    }
+
+    res.json({ 
+      success: true,
+      urls: uploadedUrls,
+      count: uploadedUrls.length
+    });
+  } catch (error) {
+    console.error('Upload gallery error:', error);
+    res.status(500).json({ error: 'Failed to upload gallery images' });
+  }
+});
+
 app.post('/api/ads/:id/click', async (req, res) => {
   try {
     const { id } = req.params;
@@ -254,7 +291,7 @@ app.post('/api/ads/:id/click', async (req, res) => {
       max: 1,
       idle_timeout: 20,
       connect_timeout: 10,
-      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+      ssl: 'require', // Supabase requires SSL even in development
     });
     try {
       await client.unsafe(`UPDATE ads SET clicks = COALESCE(clicks, 0) + 1 WHERE id = $1`, [id]);
@@ -317,6 +354,10 @@ app.get("/api/plans", async (req, res) => {
 // Authentication endpoints
 app.post("/api/auth/signin", async (req, res) => {
   try {
+    console.log('Sign in endpoint hit');
+    console.log('Request body:', req.body);
+    console.log('Request headers:', req.headers);
+    
     const { email, password } = req.body;
     
     console.log('Sign in attempt received:', { email, hasPassword: !!password });
@@ -354,9 +395,11 @@ app.post("/api/auth/signin", async (req, res) => {
     res.json(response);
   } catch (error) {
     console.error("Sign in error:", error);
+    console.error("Error stack:", error instanceof Error ? error.stack : 'No stack');
     res.status(500).json({ 
       error: "Sign in failed",
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: error instanceof Error ? error.message : 'Unknown error',
+      details: process.env.NODE_ENV === 'development' ? error : undefined
     });
   }
 });
@@ -437,7 +480,7 @@ app.get("/api/plans/:id", async (req, res) => {
       max: 1,
       idle_timeout: 20,
       connect_timeout: 10,
-      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+      ssl: 'require', // Supabase requires SSL even in development
     });
     
     const result = await client.unsafe('SELECT * FROM plans WHERE id = $1', [id]);
@@ -467,7 +510,7 @@ app.get("/api/orders", async (req, res) => {
       max: 1,
       idle_timeout: 20,
       connect_timeout: 10,
-      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+      ssl: 'require', // Supabase requires SSL even in development
     });
     
     let query = 'SELECT * FROM orders';
@@ -502,7 +545,7 @@ app.post("/api/orders", async (req, res) => {
       max: 1,
       idle_timeout: 20,
       connect_timeout: 10,
-      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+      ssl: 'require', // Supabase requires SSL even in development
     });
     
     const result = await client.unsafe(
@@ -531,7 +574,7 @@ app.get("/api/profiles/:userId", async (req, res) => {
       max: 1,
       idle_timeout: 20,
       connect_timeout: 10,
-      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+      ssl: 'require', // Supabase requires SSL even in development
     });
     
     const result = await client.unsafe('SELECT * FROM profiles WHERE user_id = $1', [userId]);
@@ -560,7 +603,7 @@ app.post("/api/profiles", async (req, res) => {
       max: 1,
       idle_timeout: 20,
       connect_timeout: 10,
-      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+      ssl: 'require', // Supabase requires SSL even in development
     });
     
     const result = await client.unsafe(
@@ -589,7 +632,7 @@ app.put("/api/profiles/:userId", async (req, res) => {
       max: 1,
       idle_timeout: 20,
       connect_timeout: 10,
-      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+      ssl: 'require', // Supabase requires SSL even in development
     });
     
     // Build dynamic update query
@@ -627,7 +670,7 @@ app.get("/api/downloads/:orderId", async (req, res) => {
       max: 1,
       idle_timeout: 20,
       connect_timeout: 10,
-      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+      ssl: 'require', // Supabase requires SSL even in development
     });
     
     const result = await client.unsafe('SELECT * FROM downloads WHERE order_id = $1', [orderId]);

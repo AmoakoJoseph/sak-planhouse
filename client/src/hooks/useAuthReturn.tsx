@@ -11,7 +11,7 @@ export const useAuthReturn = () => {
     if (isAuthenticated) {
       const pendingPurchase = localStorage.getItem('pendingPurchase');
       
-      if (pendingPurchase) {
+      if (pendingPurchase && pendingPurchase !== 'undefined' && pendingPurchase !== 'null') {
         try {
           const planContext = JSON.parse(pendingPurchase);
           

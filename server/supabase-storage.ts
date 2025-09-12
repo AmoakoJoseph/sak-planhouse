@@ -76,9 +76,13 @@ export class SupabaseStorageService {
   async uploadImage(buffer: Buffer, filename: string, folder = 'images'): Promise<UploadResult> {
     await this.ensureBucket();
     const path = `${folder}/${filename}`;
+    
+    // Determine content type based on file extension
+    const contentType = this.getContentType(filename);
+    
     const { error } = await this.client.storage.from(this.bucketName).upload(path, buffer, {
       upsert: false,
-      contentType: 'application/octet-stream',
+      contentType,
     } as any);
     if (error) {
       throw new Error(`Supabase upload failed: ${error.message}`);
@@ -87,18 +91,44 @@ export class SupabaseStorageService {
     return { filename, path, url: path, publicUrl };
   }
 
+  private getContentType(filename: string): string {
+    const ext = filename.toLowerCase().split('.').pop();
+    const contentTypes: Record<string, string> = {
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'png': 'image/png',
+      'gif': 'image/gif',
+      'webp': 'image/webp',
+      'pdf': 'application/pdf',
+      'dwg': 'application/dwg',
+      'dxf': 'application/dxf',
+      'zip': 'application/zip',
+      'rar': 'application/x-rar-compressed',
+      '7z': 'application/x-7z-compressed',
+    };
+    return contentTypes[ext || ''] || 'application/octet-stream';
+  }
+
   async uploadPlanFile(buffer: Buffer, filename: string, tier: 'basic' | 'standard' | 'premium'): Promise<UploadResult> {
     await this.ensureBucket();
     const path = `plans/${tier}/${filename}`;
+    
+    // Determine content type based on file extension
+    const contentType = this.getContentType(filename);
+    
     const { error } = await this.client.storage.from(this.bucketName).upload(path, buffer, {
       upsert: false,
-      contentType: 'application/octet-stream',
+      contentType,
     } as any);
     if (error) {
       throw new Error(`Supabase upload failed: ${error.message}`);
     }
     const publicUrl = this.getPublicUrl(path);
     return { filename, path, url: path, publicUrl };
+  }
+
+  async uploadGalleryImage(buffer: Buffer, filename: string): Promise<UploadResult> {
+    return this.uploadImage(buffer, filename, 'gallery');
   }
 
   async uploadMultiple(items: Array<{ buffer: Buffer; filename: string; folder: string }>): Promise<UploadResult[]> {

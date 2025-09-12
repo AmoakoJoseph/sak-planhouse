@@ -60,10 +60,15 @@ const Register = () => {
 
       // Check for pending premium order
       const pendingOrder = localStorage.getItem('pendingPremiumOrder');
-      if (pendingOrder) {
-        const orderInfo = JSON.parse(pendingOrder);
-        localStorage.removeItem('pendingPremiumOrder');
-        navigate(`/download/${orderInfo.orderId}`);
+      if (pendingOrder && pendingOrder !== 'undefined' && pendingOrder !== 'null') {
+        try {
+          const orderInfo = JSON.parse(pendingOrder);
+          localStorage.removeItem('pendingPremiumOrder');
+          navigate(`/download/${orderInfo.orderId}`);
+        } catch {
+          localStorage.removeItem('pendingPremiumOrder');
+          navigate('/user/dashboard');
+        }
       } else {
         navigate('/user/dashboard');
       }

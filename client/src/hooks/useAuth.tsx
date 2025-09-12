@@ -53,12 +53,24 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(() => {
     // Initialize from localStorage
     const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
+    if (!savedUser || savedUser === 'undefined' || savedUser === 'null') return null;
+    try {
+      return JSON.parse(savedUser);
+    } catch {
+      localStorage.removeItem('user');
+      return null;
+    }
   });
   const [profile, setProfile] = useState<Profile | null>(() => {
     // Initialize from localStorage
     const savedProfile = localStorage.getItem('profile');
-    return savedProfile ? JSON.parse(savedProfile) : null;
+    if (!savedProfile || savedProfile === 'undefined' || savedProfile === 'null') return null;
+    try {
+      return JSON.parse(savedProfile);
+    } catch {
+      localStorage.removeItem('profile');
+      return null;
+    }
   });
   const [loading, setLoading] = useState(false);
 

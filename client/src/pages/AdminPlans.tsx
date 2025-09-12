@@ -65,6 +65,7 @@ const AdminPlans = () => {
 
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
@@ -285,6 +286,60 @@ const AdminPlans = () => {
     }
   };
 
+  const handleGalleryUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingGallery(true);
+
+    try {
+      const formData = new FormData();
+      
+      // Add all files to form data
+      for (let i = 0; i < files.length; i++) {
+        formData.append('gallery', files[i]);
+      }
+
+      const response = await fetch('/api/upload/gallery', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Update the form with all uploaded gallery images
+        setPlanForm(prev => ({
+          ...prev,
+          gallery_images: [...(prev.gallery_images || []), ...result.urls]
+        }));
+
+        toast({
+          title: "Success",
+          description: `${result.count} gallery images uploaded successfully`
+        });
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error('Error uploading gallery images:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload gallery images",
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingGallery(false);
+    }
+  };
+
+  const removeGalleryImage = (index: number) => {
+    setPlanForm(prev => ({
+      ...prev,
+      gallery_images: prev.gallery_images?.filter((_: any, i: number) => i !== index) || []
+    }));
+  };
+
   const openEditModal = (plan: Plan) => {
     setEditingPlan(plan);
     setPlanForm({
@@ -496,6 +551,58 @@ const AdminPlans = () => {
                   </div>
                 </div>
 
+                {/* Gallery Images Section */}
+                <div className="space-y-2">
+                  <Label>Gallery Images</Label>
+                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4">
+                    <div className="space-y-4">
+                      {/* Upload new images */}
+                      <div className="flex flex-col items-center space-y-2">
+                        <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Upload multiple gallery images (JPG, PNG)</p>
+                          <p className="text-xs text-muted-foreground">Max size: 10MB each</p>
+                        </div>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleGalleryUpload}
+                          disabled={uploadingGallery}
+                          className="max-w-xs"
+                        />
+                        {uploadingGallery && <p className="text-xs text-blue-600">Uploading gallery images...</p>}
+                      </div>
+
+                      {/* Display existing gallery images */}
+                      {planForm.gallery_images && planForm.gallery_images.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Gallery Images ({planForm.gallery_images.length})</p>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            {planForm.gallery_images.map((imageUrl: string, index: number) => (
+                              <div key={index} className="relative group">
+                                <img 
+                                  src={imageUrl} 
+                                  alt={`Gallery ${index + 1}`} 
+                                  className="w-full h-20 object-cover rounded border"
+                                />
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  className="absolute -top-2 -right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => removeGalleryImage(index)}
+                                >
+                                  ×
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 {/* Plan Files Upload Section */}
                 <div className="space-y-4">
                   <Label>Plan Files by Tier</Label>
@@ -507,12 +614,12 @@ const AdminPlans = () => {
                           <Input
                             type="file"
                             multiple
-                            accept=".pdf,.dwg,.dxf,.zip"
+                            accept=".pdf,.dwg,.dxf,.zip,.rar,.7z"
                             onChange={(e) => handlePlanFilesUpload(e, tier)}
                             disabled={uploadingFiles}
                             className="text-xs"
                           />
-                          <p className="text-xs text-muted-foreground">PDF, DWG, DXF, ZIP (Max 50MB each)</p>
+                          <p className="text-xs text-muted-foreground">PDF, DWG, DXF, ZIP, RAR, 7Z (Max 50MB each)</p>
                           {planForm.plan_files?.[tier] && Array.isArray(planForm.plan_files[tier]) && planForm.plan_files[tier].length > 0 && (
                             <div className="space-y-1">
                               <p className="text-xs font-medium">{planForm.plan_files[tier].length} file(s) uploaded</p>
@@ -808,6 +915,124 @@ const AdminPlans = () => {
                   min="0"
                 />
               </div>
+            </div>
+
+            {/* Image Upload Section for Edit */}
+            <div className="space-y-2">
+              <Label>Plan Image</Label>
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4">
+                <div className="flex flex-col items-center space-y-2">
+                  {planForm.image_url ? (
+                    <div className="space-y-2">
+                      <img src={planForm.image_url} alt="Plan preview" className="max-w-32 h-20 object-cover rounded" />
+                      <Button type="button" variant="outline" size="sm" onClick={() => setPlanForm(prev => ({ ...prev, image_url: null }))}>
+                        Remove Image
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-center">
+                        <p className="text-sm text-muted-foreground">Upload plan image (JPG, PNG)</p>
+                        <p className="text-xs text-muted-foreground">Max size: 10MB</p>
+                      </div>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        disabled={uploadingImage}
+                        className="max-w-xs"
+                      />
+                      {uploadingImage && <p className="text-xs text-blue-600">Uploading...</p>}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Gallery Images Section for Edit */}
+            <div className="space-y-2">
+              <Label>Gallery Images</Label>
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4">
+                <div className="space-y-4">
+                  {/* Upload new images */}
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground">Upload multiple gallery images (JPG, PNG)</p>
+                      <p className="text-xs text-muted-foreground">Max size: 10MB each</p>
+                    </div>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleGalleryUpload}
+                      disabled={uploadingGallery}
+                      className="max-w-xs"
+                    />
+                    {uploadingGallery && <p className="text-xs text-blue-600">Uploading gallery images...</p>}
+                  </div>
+
+                  {/* Display existing gallery images */}
+                  {planForm.gallery_images && planForm.gallery_images.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Gallery Images ({planForm.gallery_images.length})</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {planForm.gallery_images.map((imageUrl: string, index: number) => (
+                          <div key={index} className="relative group">
+                            <img 
+                              src={imageUrl} 
+                              alt={`Gallery ${index + 1}`} 
+                              className="w-full h-20 object-cover rounded border"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="absolute -top-2 -right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => removeGalleryImage(index)}
+                            >
+                              ×
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Plan Files Upload Section for Edit */}
+            <div className="space-y-4">
+              <Label>Plan Files by Tier</Label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {(['basic', 'standard', 'premium'] as const).map((tier) => (
+                  <div key={tier} className="border rounded-lg p-3">
+                    <Label className="text-sm font-medium capitalize">{tier} Files</Label>
+                    <div className="mt-2 space-y-2">
+                      <Input
+                        type="file"
+                        multiple
+                        accept=".pdf,.dwg,.dxf,.zip,.rar,.7z"
+                        onChange={(e) => handlePlanFilesUpload(e, tier)}
+                        disabled={uploadingFiles}
+                        className="text-xs"
+                      />
+                      <p className="text-xs text-muted-foreground">PDF, DWG, DXF, ZIP, RAR, 7Z (Max 50MB each)</p>
+                      {planForm.plan_files?.[tier] && Array.isArray(planForm.plan_files[tier]) && planForm.plan_files[tier].length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium">{planForm.plan_files[tier].length} file(s) uploaded</p>
+                          {planForm.plan_files[tier].map((file: string, index: number) => (
+                            <p key={index} className="text-xs text-muted-foreground truncate">
+                              {file.split('/').pop()}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {uploadingFiles && <p className="text-sm text-blue-600">Uploading files...</p>}
             </div>
 
             <div className="flex items-center space-x-2">

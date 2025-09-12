@@ -30,11 +30,16 @@ const CookieConsent = () => {
   useEffect(() => {
     // Check if user has already made a choice
     const consent = localStorage.getItem('cookie-consent');
-    if (!consent) {
+    if (!consent || consent === 'undefined' || consent === 'null') {
       setShowBanner(true);
     } else {
-      const savedPreferences = JSON.parse(consent);
-      setPreferences(savedPreferences);
+      try {
+        const savedPreferences = JSON.parse(consent);
+        setPreferences(savedPreferences);
+      } catch {
+        localStorage.removeItem('cookie-consent');
+        setShowBanner(true);
+      }
     }
   }, []);
 
