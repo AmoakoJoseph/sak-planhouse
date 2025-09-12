@@ -97,12 +97,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // File Upload API - Supabase
   app.post("/api/upload/image", uploadImage.single('image'), async (req, res) => {
     try {
+      console.log('Image upload endpoint hit (dev server)');
+      console.log('Request file:', req.file ? { 
+        originalname: req.file.originalname, 
+        mimetype: req.file.mimetype, 
+        size: req.file.size 
+      } : 'No file');
+      
       if (!req.file) {
+        console.log('No file uploaded');
         return res.status(400).json({ error: 'No file uploaded' });
       }
 
+      // Check if Supabase is configured
+      if (!process.env.SUPABASE_URL || (!process.env.SUPABASE_SERVICE_KEY && !process.env.SUPABASE_ANON_KEY)) {
+        console.log('Supabase not configured, returning mock response');
+        const mockFilename = `image-${Date.now()}-${Math.floor(Math.random() * 1e9)}.${req.file.originalname.split('.').pop() || 'jpg'}`;
+        return res.json({ 
+          filename: mockFilename, 
+          path: `images/${mockFilename}`, 
+          url: `https://via.placeholder.com/400x300?text=${encodeURIComponent(req.file.originalname)}`,
+          publicUrl: `https://via.placeholder.com/400x300?text=${encodeURIComponent(req.file.originalname)}`
+        });
+      }
+
+      console.log('Generating unique filename...');
       const uniqueFilename = supabaseStorage.generateUniqueFilename(req.file.originalname);
+      console.log('Generated filename:', uniqueFilename);
+      
+      console.log('Uploading to Supabase...');
       const uploadResult = await supabaseStorage.uploadImage(req.file.buffer, uniqueFilename, 'images');
+      console.log('Upload successful:', uploadResult);
 
       res.json({ 
         filename: uploadResult.filename,
@@ -111,7 +136,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error uploading image:", error);
-      res.status(500).json({ error: "Failed to upload image" });
+      console.error("Error stack:", error instanceof Error ? error.stack : 'No stack');
+      console.error("Error details:", {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        name: error instanceof Error ? error.name : 'Unknown',
+        cause: error instanceof Error ? error.cause : undefined
+      });
+      res.status(500).json({ 
+        error: "Failed to upload image",
+        message: error instanceof Error ? error.message : 'Unknown error',
+        details: process.env.NODE_ENV === 'development' ? error : undefined
+      });
     }
   });
 
@@ -123,7 +158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       const uploadedFiles: { [tier: string]: string[] } = {};
-
+      
       for (const tier of Object.keys(files)) {
         const tierFiles = files[tier] || [];
         const URLs: string[] = [];
@@ -134,7 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         uploadedFiles[tier] = URLs;
       }
-
+      
       res.json({ files: uploadedFiles });
     } catch (error) {
       console.error("Error uploading plan files:", error);
@@ -722,15 +757,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const profile = await storage.createProfile(profileData);
       
-      if (profile) {
+        if (profile) {
         // Log admin creation for security audit
         const requestingProfile = (req as any).userProfile;
         console.log(`Admin creation: ${requestingProfile.email} created new ${role} account for ${email}`);
         
         res.status(201).json({
           user: { id: userId, email },
-          profile
-        });
+            profile
+          });
       } else {
         res.status(500).json({ error: "Failed to create admin profile" });
       }
@@ -757,7 +792,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // TODO: For now, we'll create a basic admin check and allow any existing user
-      // In production, you'd verify the password hash here
+        // In production, you'd verify the password hash here
       const isValidUser = profile.email === 'admin@sakconstructionsgh.com' ? 
         password === 'admin123' : // Temporary admin check
         true; // Allow existing users for now
@@ -772,10 +807,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: profile.email
       };
       
-      res.json({
-        user: { id: profile.user_id, email: profile.email },
-        profile
-      });
+        res.json({
+          user: { id: profile.user_id, email: profile.email },
+          profile
+        });
     } catch (error) {
       console.error("Error signing in:", error);
       res.status(500).json({ error: "Failed to sign in" });
@@ -925,7 +960,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(500).json({ error: "Failed to sign out" });
         }
         res.clearCookie('connect.sid'); // Clear session cookie
-        res.json({ success: true });
+    res.json({ success: true });
       });
     } catch (error) {
       console.error("Error signing out:", error);

@@ -110,15 +110,6 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working!', timestamp: new Date().toISOString() });
 });
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'unknown'
-  });
-});
-
 // Users API endpoint
 app.get('/api/users', async (req, res) => {
   try {
@@ -406,8 +397,8 @@ app.get('/api/analytics', async (_req, res) => {
     const users = await client.unsafe(`SELECT COUNT(*)::int as total FROM profiles`);
     const downloads = await client.unsafe(`SELECT COUNT(*)::int as total FROM downloads`);
     await client.end();
-
-    res.json({
+      
+      res.json({
       overview: {
         totalRevenue: Number(revenue[0]?.total || 0),
         revenueGrowth: 12.5,
@@ -626,6 +617,102 @@ app.get("/api/plans", async (req, res) => {
   }
 });
 
+// Plans CRUD endpoints for admin
+app.post("/api/plans", async (req, res) => {
+  try {
+    const planData = req.body;
+    console.log('Creating plan:', planData);
+    
+    const client = postgres(process.env.DATABASE_URL!, {
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      ssl: 'require',
+    });
+    
+    const result = await client.unsafe(
+      'INSERT INTO plans (title, description, category, price_basic, price_standard, price_premium, featured, status, image_url, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW()) RETURNING *',
+      [planData.title, planData.description, planData.category, planData.price_basic, planData.price_standard, planData.price_premium, planData.featured || false, planData.status || 'active', planData.image_url]
+    );
+    await client.end();
+    
+    res.json(result[0]);
+  } catch (error) {
+    console.error("Error creating plan:", error);
+    res.status(500).json({ 
+      error: "Failed to create plan",
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+app.put("/api/plans/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    console.log('Updating plan:', id, updates);
+    
+    const client = postgres(process.env.DATABASE_URL!, {
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      ssl: 'require',
+    });
+    
+    // Build dynamic update query
+    const fields = Object.keys(updates).filter(key => key !== 'id' && key !== 'created_at');
+    const setClause = fields.map((field, index) => `${field} = $${index + 2}`).join(', ');
+    const values = [id, ...fields.map(field => updates[field])];
+    
+    const result = await client.unsafe(
+      `UPDATE plans SET ${setClause}, updated_at = NOW() WHERE id = $1 RETURNING *`,
+      values
+    );
+    await client.end();
+    
+    if (result.length === 0) {
+      return res.status(404).json({ error: "Plan not found" });
+    }
+    
+    res.json(result[0]);
+  } catch (error) {
+    console.error("Error updating plan:", error);
+    res.status(500).json({ 
+      error: "Failed to update plan",
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+app.delete("/api/plans/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log('Deleting plan:', id);
+    
+    const client = postgres(process.env.DATABASE_URL!, {
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      ssl: 'require',
+    });
+    
+    const result = await client.unsafe('DELETE FROM plans WHERE id = $1 RETURNING *', [id]);
+    await client.end();
+    
+    if (result.length === 0) {
+      return res.status(404).json({ error: "Plan not found" });
+    }
+    
+    res.json({ success: true, message: 'Plan deleted successfully' });
+  } catch (error) {
+    console.error("Error deleting plan:", error);
+    res.status(500).json({ 
+      error: "Failed to delete plan",
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 // Authentication endpoints
 app.post("/api/auth/signin", async (req, res) => {
   try {
@@ -696,15 +783,15 @@ app.post("/api/auth/signup", async (req, res) => {
     
     // For now, return a mock successful response
     // TODO: Implement actual registration logic
-    const response = {
-      success: true,
-      message: "Sign up successful",
-      user: {
+      const response = {
+        success: true,
+        message: "Sign up successful",
+        user: {
         id: "1",
         email: email,
         name: firstName ? `${firstName} ${lastName || ''}`.trim() : "New User"
-      },
-      profile: {
+        },
+        profile: {
         id: "1",
         user_id: "1",
         email: email,
@@ -715,7 +802,7 @@ app.post("/api/auth/signup", async (req, res) => {
     };
     
     console.log('Returning sign up response:', response);
-    res.json(response);
+      res.json(response);
   } catch (error) {
     console.error("Sign up error:", error);
     res.status(500).json({ 
