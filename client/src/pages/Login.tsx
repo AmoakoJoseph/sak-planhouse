@@ -44,7 +44,7 @@ const Login = () => {
             {/* Logo */}
             <div className="flex items-center justify-center space-x-2">
               <img 
-                src="/logo.png" 
+                src="/client/logo.png" 
                 alt="SAK Constructions" 
                 className="h-12 w-auto"
               />

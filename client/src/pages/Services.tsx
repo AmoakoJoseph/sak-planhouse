@@ -206,19 +206,20 @@ const Services = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-      {/* Hero Section */}
-      <section className="py-20 bg-gradient-to-r from-primary/10 to-secondary/10">
-        <div className="container px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <Badge variant="secondary" className="mb-4">
-              Our Services
-            </Badge>
-            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
-              Smart Modular Plans and 
-              <span className="text-primary"> Comprehensive Services</span>
+    <div className="min-h-screen bg-background">
+      {/* Hero Section - use same image as Plans page */}
+      <section className="relative py-20 overflow-hidden">
+        <img src="/client/assets/hero-construction.jpg" alt="Services banner" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-orange-600/80" />
+        <div className="container px-4 relative z-10">
+          <div className="max-w-4xl mx-auto text-center text-white">
+            
+            <h1 className="text-4xl md:text-6xl font-bold text-black mb-6 drop-shadow-md">
+              Smart Modular Plans <br />
+               <span className="text-white"> and </span> <br />
+              <span className="text-white"> Comprehensive Services</span>
             </h1>
-            <p className="text-xl text-muted-foreground leading-relaxed mb-8">
+            <p className="text-xl text-white/90 leading-relaxed mb-8">
               From project management to construction completion, we provide comprehensive 
               construction services with transparent pricing and quality assurance to bring your vision to life.
             </p>
@@ -226,8 +227,8 @@ const Services = () => {
               <Button size="lg" asChild>
                 <Link to="/contact">Get Started</Link>
               </Button>
-              <Button variant="outline" size="lg">
-                View Portfolio
+              <Button variant="outline" size="lg" asChild>
+                <Link to="/portfolio">View Portfolio</Link>
               </Button>
             </div>
           </div>
@@ -316,7 +317,7 @@ const Services = () => {
       <section className="py-20">
         <div className="container px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <Card className="border-0 shadow-2xl bg-gradient-to-r from-primary/10 to-secondary/10">
+            <Card className="border-0 shadow-2xl bg-primary/10">
               <CardContent className="p-12">
                 <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
                   Ready to Start Your Project?

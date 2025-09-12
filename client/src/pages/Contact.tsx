@@ -104,7 +104,7 @@ const Contact = () => {
     {
       icon: MapPin,
       title: 'Address',
-      details: ['Tema com 25, Greater Accra', 'around Devtraco Estates'],
+      details: ['C 25, P2G8+WGW, RDA 2', 'Tema, Greater Accra'],
       description: 'Ghana'
     },
     {
@@ -137,17 +137,14 @@ const Contact = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <section className="py-20 bg-gradient-to-r from-primary/10 to-primary/5">
-        <div className="container px-4">
+      <section className="py-12">
+        <div className="max-w-6xl mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center space-y-6">
-            <Badge variant="secondary" className="mb-4">
-              Contact Us
-            </Badge>
-            <h1 className="text-3xl md:text-5xl font-bold text-foreground">
-              Let's Build Something
-                              <span className="bg-gradient-to-r from-primary to-primary bg-clip-text text-transparent"> Amazing Together</span>
+            <h1 className="text-3xl md:text-5xl font-bold text-slate-900">
+              Let's Build Together
+              <span className="block text-orange-600"> Something Amazing</span>
             </h1>
-            <p className="text-lg text-muted-foreground">
+            <p className="text-lg text-slate-600">
               Have questions about our plans? Need custom designs? Our team of experts is 
               here to help you create your dream home.
             </p>
@@ -155,20 +152,20 @@ const Contact = () => {
         </div>
       </section>
 
-      <div className="container px-4 py-16">
-        <div className="grid lg:grid-cols-3 gap-12">
+      <div className="max-w-6xl mx-auto px-4 py-16">
+        <div className="grid md:grid-cols-2 gap-8">
           {/* Contact Form */}
-          <div className="lg:col-span-2">
-            <Card className="border-0 bg-gradient-card shadow-card">
-              <CardHeader>
-                <CardTitle className="text-2xl">Send us a Message</CardTitle>
-                <CardDescription>
-                  Fill out the form below and click "Send Message" to send your inquiry directly to our team. Your message will be sent automatically to sakconstructiongh@gmail.com.
-                </CardDescription>
-              </CardHeader>
+          <div>
+            <form onSubmit={handleSubmit} className="p-6 rounded-3xl border border-slate-200 bg-white">
+              <div className="text-center mb-4">
+                <h3 className="text-lg font-semibold text-orange-600 mb-2">Let's Build Together</h3>
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Send us a Message</h2>
+              <p className="text-slate-600 mb-6">
+                Fill out the form below and click "Send Message" to send your inquiry directly to our team. Your message will be sent automatically to sakconstructiongh@gmail.com.
+              </p>
               
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="name">Full Name *</Label>
@@ -244,16 +241,15 @@ const Contact = () => {
                     />
                   </div>
 
-                  <Button type="submit" variant="cta" size="lg" className="w-full" ref={submitButtonRef}>
-                    <Send className="h-5 w-5 mr-2" />
-                    Send Message
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+                <Button type="submit" size="lg" className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold px-6 py-3 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300" ref={submitButtonRef}>
+                  <Send className="h-5 w-5 mr-2" />
+                  Send Message
+                </Button>
+              </div>
+            </form>
 
             {/* FAQ Section */}
-            <Card className="mt-8 border-0 bg-gradient-card">
+            <Card className="mt-8 border-0 bg-card">
               <CardHeader>
                 <CardTitle className="text-xl">Frequently Asked Questions</CardTitle>
                 <CardDescription>
@@ -277,11 +273,11 @@ const Contact = () => {
             {/* Contact Cards */}
             <div className="space-y-4">
               {contactInfo.map((info, index) => (
-                <Card key={index} className="border-0 bg-gradient-card hover:shadow-construction transition-all duration-300">
+                <Card key={index} className="border-0 bg-card hover:shadow-construction transition-all duration-300">
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 bg-construction-orange-light rounded-xl flex items-center justify-center flex-shrink-0">
-                        <info.icon className="h-6 w-6 text-primary" />
+                      <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center flex-shrink-0 border border-orange-100">
+                        <info.icon className="h-6 w-6 text-orange-600" />
                       </div>
                       <div className="space-y-2">
                         <h3 className="font-semibold text-foreground">{info.title}</h3>
@@ -297,7 +293,7 @@ const Contact = () => {
             </div>
 
             {/* Quick Response Promise */}
-            <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
+            <Card className="border-primary/20 bg-primary/10">
               <CardContent className="p-6 text-center">
                 <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <MessageCircle className="h-8 w-8 text-primary-foreground" />
@@ -315,7 +311,7 @@ const Contact = () => {
             </Card>
 
             {/* Office Hours */}
-            <Card className="border-0 bg-gradient-card">
+            <Card className="border-0 bg-card">
               <CardHeader>
                 <CardTitle className="text-lg">Visit Our Office</CardTitle>
               </CardHeader>
@@ -358,21 +354,20 @@ const Contact = () => {
             </p>
           </div>
           
-          {/* Placeholder for map */}
-          <Card className="border-0 bg-gradient-card h-96">
-            <CardContent className="p-6 h-full flex items-center justify-center">
-              <div className="text-center space-y-4">
-                <MapPin className="h-16 w-16 text-primary mx-auto" />
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">Interactive Map</h3>
-                  <p className="text-muted-foreground">
-                    Tema com 25, Greater Accra, around Devtraco Estates
-                  </p>
-                  <Button variant="outline" className="mt-4">
-                    Open in Google Maps
-                  </Button>
-                </div>
-              </div>
+          {/* Google Map */}
+          <Card className="border-0 bg-card h-96 overflow-hidden">
+            <CardContent className="p-0 h-full">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m16!1m12!1m3!1d127036.84199018365!2d-0.13610090273435713!3d5.727352999999991!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!2m1!1sc%2025%20p2g8%2Bwgw%20rda%202%20tema!5e0!3m2!1sen!2sgh!4v1757129308588!5m2!1sen!2sgh"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="SAK Constructions Location - C 25, P2G8+WGW, RDA 2, Tema"
+                className="rounded-lg"
+              />
             </CardContent>
           </Card>
         </div>

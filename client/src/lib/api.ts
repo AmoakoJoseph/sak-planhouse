@@ -1,9 +1,6 @@
 // API client to replace Supabase calls
 const API_BASE = '/api';
 
-// Debug logging
-console.log('API_BASE:', API_BASE);
-
 export interface Plan {
   id: string;
   title: string;
@@ -62,21 +59,9 @@ class ApiClient {
     if (filters?.status) params.append('status', filters.status);
     if (filters?.featured !== undefined) params.append('featured', filters.featured.toString());
 
-    const url = `${API_BASE}/plans?${params}`;
-    console.log('Fetching plans from:', url);
-    
-    try {
-      const response = await fetch(url);
-      console.log('Plans response status:', response.status);
-      if (!response.ok) {
-        console.error('Plans fetch failed:', response.status, response.statusText);
-        throw new Error(`Failed to fetch plans: ${response.status} ${response.statusText}`);
-      }
-      return response.json();
-    } catch (error) {
-      console.error('Plans fetch error:', error);
-      throw error;
-    }
+    const response = await fetch(`${API_BASE}/plans?${params}`);
+    if (!response.ok) throw new Error('Failed to fetch plans');
+    return response.json();
   }
 
   async getPlan(id: string): Promise<Plan> {
@@ -210,6 +195,32 @@ class ApiClient {
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
     const response = await fetch(`${API_BASE}/${cleanEndpoint}`);
     if (!response.ok) throw new Error(`Failed to GET from ${endpoint}`);
+    return response.json();
+  }
+
+  // Admin Management API
+  async getAllUsers(): Promise<Profile[]> {
+    const response = await fetch(`${API_BASE}/users`);
+    if (!response.ok) throw new Error('Failed to fetch users');
+    return response.json();
+  }
+
+  async createAdmin(adminData: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    role: 'admin' | 'super_admin';
+  }): Promise<{ user: any; profile: Profile }> {
+    const response = await fetch(`${API_BASE}/admin/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(adminData),
+    });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to create admin account');
+    }
     return response.json();
   }
 }

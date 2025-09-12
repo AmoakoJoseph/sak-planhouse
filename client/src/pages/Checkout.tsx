@@ -21,13 +21,8 @@ const Checkout = () => {
 
   // Mock user state for demonstration. Replace with actual auth state.
   const user = null; // Example: user = { id: '123', name: 'John Doe' }
-  const selectedPackage = checkoutData?.package || 'basic'; // Default to basic
-  const plan = { title: checkoutData?.planTitle || 'Basic Plan' }; // Mock plan title
-  const packagePrices = {
-    basic: 50.00,
-    standard: 100.00,
-    premium: 150.00,
-  }; // Mock prices
+  const selectedPackage = checkoutData?.package || 'basic';
+  const plan = { title: checkoutData?.planTitle || 'Basic Plan' };
 
   useEffect(() => {
     const verifyPayment = async () => {
@@ -80,7 +75,7 @@ const Checkout = () => {
       }
     } else {
       console.error('Order ID not found in payment data');
-      setError('Payment completed but order information is missing. Please contact support.');
+      setPaymentError('Payment completed but order information is missing. Please contact support.');
     }
   };
 
@@ -207,7 +202,7 @@ const Checkout = () => {
                     <div className="flex items-center justify-between">
                       <span className="font-medium">Total Amount:</span>
                       <span className="text-lg font-bold">
-                        GH₵ {packagePrices[selectedPackage].toFixed(2)}
+                        GH₵ {Number(checkoutData.price).toFixed(2)}
                       </span>
                     </div>
                   </div>

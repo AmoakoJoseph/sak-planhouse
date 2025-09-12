@@ -20,9 +20,7 @@ const AdminLogin = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log('AdminLogin useEffect - loading:', loading, 'user:', user, 'isAdmin:', isAdmin);
     if (!loading && user && isAdmin) {
-      console.log('Redirecting to admin dashboard...');
       navigate('/admin/dashboard');
     }
   }, [user, isAdmin, loading, navigate]);
@@ -32,18 +30,15 @@ const AdminLogin = () => {
     setIsLoading(true);
 
     try {
-      console.log('AdminLogin: Starting sign in process...');
       const { error } = await signIn(loginForm.email, loginForm.password);
       
       if (error) {
-        console.log('AdminLogin: Sign in failed with error:', error);
         toast({
           title: "Login Error",
           description: error.message,
           variant: "destructive"
         });
       } else {
-        console.log('AdminLogin: Sign in successful, waiting for redirect...');
         // Wait for profile to load to check admin status
         setTimeout(() => {
           toast({
@@ -53,7 +48,6 @@ const AdminLogin = () => {
         }, 1000);
       }
     } catch (error) {
-      console.log('AdminLogin: Unexpected error:', error);
       toast({
         title: "Login Error",
         description: "An unexpected error occurred",
@@ -80,7 +74,7 @@ const AdminLogin = () => {
           
           <div className="flex items-center justify-center mb-4">
             <img 
-              src="/logo.png" 
+              src="/client/logo.png" 
               alt="SAK Constructions" 
               className="h-12 w-auto"
             />

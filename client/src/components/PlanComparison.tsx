@@ -23,17 +23,17 @@ import {
 import { api } from '@/lib/api';
 
 interface Plan {
-  id: number;
+  id: string;
   title: string;
-  description: string;
+  description: string | null;
   plan_type: string;
-  bedrooms: number;
-  bathrooms: number;
-  area_sqft: number;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  area_sqft: number | null;
   basic_price: number;
   standard_price: number;
   premium_price: number;
-  image_url?: string;
+  image_url?: string | null;
   featured?: boolean;
   status: string;
 }
@@ -76,7 +76,7 @@ const PlanComparison = ({ isOpen, onClose }: PlanComparisonProps) => {
   const filterPlans = () => {
     let filtered = plans.filter(plan => {
       const matchesSearch = plan.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           plan.description.toLowerCase().includes(searchTerm.toLowerCase());
+                            plan.description?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesType = selectedType === 'all' || plan.plan_type === selectedType;
       return matchesSearch && matchesType;
     });
@@ -93,7 +93,7 @@ const PlanComparison = ({ isOpen, onClose }: PlanComparisonProps) => {
     }
   };
 
-  const removeFromComparison = (planId: number) => {
+  const removeFromComparison = (planId: string) => {
     setSelectedPlans(selectedPlans.filter(p => p.id !== planId));
   };
 

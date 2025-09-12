@@ -88,6 +88,21 @@ export const downloads = pgTable("downloads", {
   created_at: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Ads
+export const ads = pgTable("ads", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title"),
+  image_url: text("image_url"),
+  link_url: text("link_url"),
+  target_page: text("target_page").notNull().default("all"),
+  is_active: boolean("is_active").notNull().default(true),
+  priority: integer("priority").notNull().default(0),
+  impressions: integer("impressions").notNull().default(0),
+  clicks: integer("clicks").notNull().default(0),
+  created_at: timestamp("created_at").notNull().defaultNow(),
+  updated_at: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -98,6 +113,7 @@ export const insertProfileSchema = createInsertSchema(profiles);
 export const insertPlanSchema = createInsertSchema(plans);
 export const insertOrderSchema = createInsertSchema(orders);
 export const insertDownloadSchema = createInsertSchema(downloads);
+export const insertAdSchema = createInsertSchema(ads);
 
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -106,3 +122,4 @@ export type Profile = typeof profiles.$inferSelect;
 export type Plan = typeof plans.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type Download = typeof downloads.$inferSelect;
+export type Ad = typeof ads.$inferSelect;

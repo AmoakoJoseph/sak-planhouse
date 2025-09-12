@@ -10,9 +10,10 @@ import { useToast } from '@/hooks/use-toast';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
+const AuthModal = ({ isOpen, onClose, onSuccess }: AuthModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
@@ -49,6 +50,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
           description: "You have been logged in successfully."
         });
         onClose();
+        onSuccess?.();
       }
     } catch (error) {
       toast({
@@ -95,6 +97,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
           description: "Please check your email to verify your account."
         });
         onClose();
+        onSuccess?.();
       }
     } catch (error) {
       toast({
@@ -114,7 +117,7 @@ const AuthModal = ({ isOpen, onClose }: AuthModalProps) => {
         <DialogHeader>
           <div className="flex flex-col items-center space-y-2">
             <img 
-              src="/logo.png" 
+              src="/client/logo.png" 
               alt="SAK Constructions" 
               className="h-8 w-auto"
             />

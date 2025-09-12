@@ -119,7 +119,7 @@ const Cookies = () => {
               {cookieTypes.map((cookieType, index) => (
                 <div key={index} className="admin-card">
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div className="w-12 h-12 bg-gradient-to-br from-primary/10 to-orange-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
                       <Cookie className="w-6 h-6 text-primary" />
                     </div>
                     <div className="flex-1">
@@ -307,7 +307,7 @@ const Cookies = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-primary/5 to-secondary/5">
+      <section className="py-20 bg-gradient-to-br from-primary/5 to-orange-500/5">
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-4xl mx-auto space-y-8">
             <h2 className="text-3xl md:text-4xl font-bold text-foreground">

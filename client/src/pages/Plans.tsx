@@ -7,10 +7,13 @@ import { Search, Filter, Grid, List, Star, Bed, Bath, Square, Download, Scale, M
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '@/lib/api';
+import heroImage from '@/assets/hero-construction.jpg';
+import { useFavorites } from '@/hooks/useFavorites';
+import { useAuth } from '@/hooks/useAuth';
 import PlanComparison from '@/components/PlanComparison';
-import villaImage from '@/assets/villa-plan.jpg';
-import bungalowImage from '@/assets/bungalow-plan.jpg';
-import townhouseImage from '@/assets/townhouse-plan.jpg';
+import AdBanner from '@/components/AdBanner';
+import PlanCard from '@/components/PlanCard';
+import SEO from '@/components/SEO';
 
 const Plans = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -24,6 +27,8 @@ const Plans = () => {
   const [showComparison, setShowComparison] = useState(false);
   
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   useEffect(() => {
     fetchPlans();
@@ -42,7 +47,7 @@ const Plans = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-6">
           <div className="relative">
             <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto"></div>
@@ -100,62 +105,63 @@ const Plans = () => {
     }
   });
 
-  const handleViewDetails = (planId: number) => {
-    navigate(`/plans/${planId}`);
-  };
-
   const getPlanImage = (planType: string) => {
     switch (planType.toLowerCase()) {
       case 'villa':
-        return villaImage;
+        return '/placeholder.svg';
       case 'bungalow':
-        return bungalowImage;
+        return '/placeholder.svg';
       case 'townhouse':
-        return townhouseImage;
+        return '/placeholder.svg';
       default:
-        return villaImage;
+        return '/placeholder.svg';
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
-      {/* Hero Section */}
-      <section className="relative py-20 bg-gradient-to-br from-primary/5 via-primary/10 to-secondary/5 overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_1px_1px,rgba(59,130,246,0.1)_1px,transparent_0)] bg-[size:40px_40px]"></div>
-        </div>
-        
+    <>
+      <SEO 
+        title="Building Plans - Premium Architectural Designs | SAK Constructions"
+        description="Browse our extensive collection of premium building plans including villas, bungalows, and townhouses. Professional architectural designs for every budget and lifestyle."
+        keywords="building plans, house plans, architectural designs, villas, bungalows, townhouses, construction plans, Ghana, SAK constructions"
+        url="/plans"
+        type="website"
+      />
+      <div className="min-h-screen bg-background">
+        {/* Hero/Banner Section */}
+        <section className="relative py-20 overflow-hidden">
+        {/* Background image */}
+        <img src={heroImage} alt="Plans banner" className="absolute inset-0 w-full h-full object-cover" />
+        {/* Orange overlay */}
+        <div className="absolute inset-0 bg-orange-600/80" />
+
         <div className="container px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center space-y-8">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full text-sm font-medium border border-primary/20">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/20 text-white rounded-full text-sm font-medium border border-white/30">
               <Sparkles className="w-4 h-4" />
               Premium House Plans
             </div>
             
-            <h1 className="text-4xl md:text-6xl font-bold text-foreground leading-tight">
+            <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight">
               Discover Your Perfect
-              <span className="block bg-gradient-to-r from-primary via-primary to-secondary bg-clip-text text-transparent">
-                Dream Home
-              </span>
+              <span className="block">Dream Home</span>
             </h1>
             
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Explore our curated collection of professionally designed architectural plans. 
-              From modern villas to cozy bungalows, find the perfect design that matches your vision.
+            <p className="text-xl text-white/90 max-w-2xl mx-auto leading-relaxed">
+              Explore our curated collection of professionally designed architectural plans. From modern villas to cozy bungalows, find the perfect design that matches your vision.
             </p>
             
-            <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
+            <div className="flex flex-wrap justify-center gap-4 text-sm text-white/90">
               <div className="flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-primary" />
+                <Building2 className="w-4 h-4" />
                 <span>500+ Plans</span>
               </div>
               <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-primary" />
+                <Users className="w-4 h-4" />
                 <span>2,500+ Happy Customers</span>
               </div>
               <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-primary" />
+                <MapPin className="w-4 h-4" />
                 <span>Ghana's #1 Platform</span>
               </div>
             </div>
@@ -170,10 +176,10 @@ const Plans = () => {
             {/* Search Bar */}
             <div className="relative max-w-2xl mx-auto">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
+                <Input
                 placeholder="Search for plans, styles, or features..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-12 pr-6 py-4 text-lg border-2 border-muted/30 focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-300 rounded-2xl"
               />
               <Button 
@@ -182,8 +188,8 @@ const Plans = () => {
               >
                 <Search className="h-4 w-4" />
               </Button>
-            </div>
-            
+              </div>
+              
             {/* Filter Controls */}
             <div className="flex flex-wrap gap-4 justify-center">
               <Select value={selectedType} onValueChange={setSelectedType}>
@@ -222,21 +228,21 @@ const Plans = () => {
                   <SelectItem value="high">₵3,500+</SelectItem>
                 </SelectContent>
               </Select>
-
-              <Select value={selectedSort} onValueChange={setSelectedSort}>
+          
+          <Select value={selectedSort} onValueChange={setSelectedSort}>
                 <SelectTrigger className="w-48 bg-white/50 border-muted/30 hover:bg-white/70 transition-colors rounded-xl">
-                  <SelectValue placeholder="Sort by" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="featured">Featured First</SelectItem>
-                  <SelectItem value="price-low">Price: Low to High</SelectItem>
-                  <SelectItem value="price-high">Price: High to Low</SelectItem>
-                  <SelectItem value="rating">Highest Rated</SelectItem>
-                  <SelectItem value="downloads">Most Downloaded</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="featured">Featured First</SelectItem>
+              <SelectItem value="price-low">Price: Low to High</SelectItem>
+              <SelectItem value="price-high">Price: High to Low</SelectItem>
+              <SelectItem value="rating">Highest Rated</SelectItem>
+              <SelectItem value="downloads">Most Downloaded</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
             {/* Action Buttons */}
             <div className="flex items-center justify-center gap-4 pt-4">
               <Button
@@ -271,6 +277,9 @@ const Plans = () => {
           </div>
         </div>
 
+        {/* Top Banner Ad */}
+        <AdBanner position="top" adType="banner" className="mb-8" />
+
         {/* Results Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-12 gap-4">
           <div className="space-y-2">
@@ -281,9 +290,9 @@ const Plans = () => {
               Professional architectural designs crafted by Ghana's top architects
             </p>
           </div>
-          
+           
           <div className="flex items-center gap-3">
-            <Badge variant="secondary" className="px-4 py-2 text-sm">
+            <Badge className="px-4 py-2 text-sm bg-orange-500 hover:bg-orange-600 text-white border-0">
               <Zap className="w-4 h-4 mr-2" />
               {sortedPlans.filter(p => p.featured).length} Featured
             </Badge>
@@ -294,102 +303,17 @@ const Plans = () => {
         {viewMode === 'grid' ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
             {sortedPlans.map((plan) => (
-              <Card key={plan.id} className="group relative overflow-hidden border-0 bg-white/80 backdrop-blur-sm hover:bg-white/90 transition-all duration-500 transform hover:-translate-y-3 hover:shadow-2xl rounded-3xl">
-                {/* Featured Badge */}
-                {plan.featured && (
-                  <div className="absolute top-4 left-4 z-20">
-                    <Badge className="bg-gradient-to-r from-primary to-secondary text-white border-0 shadow-lg">
-                      <Star className="h-3 w-3 mr-1 fill-current" />
-                      Featured
-                    </Badge>
-                  </div>
-                )}
-                
-                {/* Plan Type Badge */}
-                <div className="absolute top-4 right-4 z-20">
-                  <Badge variant="secondary" className="bg-white/90 text-foreground border-0 shadow-lg">
-                    {plan.plan_type}
-                  </Badge>
-                </div>
-                
-                {/* Image Section */}
-                <div className="relative h-56 overflow-hidden">
-                  <img
-                    src={plan.image_url || getPlanImage(plan.plan_type)}
-                    alt={plan.title}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                  
-                  {/* Quick Actions Overlay */}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
-                    <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0 flex gap-3">
-                      <Button size="sm" variant="secondary" className="rounded-full w-10 h-10 p-0">
-                        <Heart className="w-4 h-4" />
-                      </Button>
-                      <Button size="sm" variant="secondary" className="rounded-full w-10 h-10 p-0">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button size="sm" variant="secondary" className="rounded-full w-10 h-10 p-0">
-                        <Download className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors duration-300 line-clamp-2">
-                    {plan.title}
-                  </CardTitle>
-                  
-                  {/* Plan Features */}
-                  <div className="flex items-center justify-between text-sm text-muted-foreground pt-2">
-                    <div className="flex items-center gap-1">
-                      <Bed className="h-4 w-4 text-primary" />
-                      <span>{plan.bedrooms}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Bath className="h-4 w-4 text-primary" />
-                      <span>{plan.bathrooms}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Square className="h-4 w-4 text-primary" />
-                      <span>{plan.area_sqft}</span>
-                    </div>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="pt-0">
-                  <div className="space-y-4">
-                    {/* Pricing */}
-                    <div className="text-center p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-2xl border border-primary/10">
-                      <div className="text-2xl font-bold text-primary">
-                        From ₵{plan.basic_price.toLocaleString()}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Basic Package
-                      </div>
-                    </div>
-                    
-                    {/* Action Button */}
-                    <Button 
-                      variant="default" 
-                      className="w-full bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white py-3 rounded-xl font-semibold transition-all duration-300 transform hover:scale-105"
-                      onClick={() => handleViewDetails(plan.id)}
-                    >
-                      View Details
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <PlanCard 
+                key={plan.id} 
+                plan={plan} 
+                showFavorites={true}
+              />
             ))}
           </div>
         ) : (
           <div className="space-y-6">
             {sortedPlans.map((plan) => (
-              <Card key={plan.id} className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden">
+              <Card key={plan.id} className="group hover:shadow-xl transition-all duration-300 border-0 bg-white backdrop-blur-sm rounded-2xl overflow-hidden">
                 <div className="flex flex-col md:flex-row">
                   {/* Image */}
                   <div className="relative w-full md:w-80 h-48 md:h-auto overflow-hidden">
@@ -398,11 +322,11 @@ const Plans = () => {
                       alt={plan.title}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                    <div className="absolute inset-0 bg-black/40" />
                     
                     {plan.featured && (
                       <div className="absolute top-4 left-4">
-                        <Badge className="bg-gradient-to-r from-primary to-secondary text-white border-0">
+                        <Badge className="bg-orange-500 text-white border-0">
                           <Star className="h-3 w-3 mr-1 fill-current" />
                           Featured
                         </Badge>
@@ -419,12 +343,12 @@ const Plans = () => {
                             <Badge variant="secondary" className="text-xs">
                               {plan.plan_type}
                             </Badge>
-                            <h3 className="text-2xl font-bold text-foreground group-hover:text-primary transition-colors">
+                            <h3 className="text-2xl font-bold text-gray-800 group-hover:text-primary transition-colors">
                               {plan.title}
                             </h3>
                           </div>
                           
-                          <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-6 text-sm text-gray-600">
                             <div className="flex items-center gap-2">
                               <Bed className="h-4 w-4 text-primary" />
                               <span>{plan.bedrooms} Bedrooms</span>
@@ -448,17 +372,28 @@ const Plans = () => {
                       <div className="flex flex-col gap-3">
                         <Button 
                           variant="default" 
-                          className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white px-8 py-3 rounded-xl font-semibold"
-                          onClick={() => handleViewDetails(plan.id)}
+                          className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-3 rounded-xl font-semibold"
+                          onClick={() => navigate(`/plans/${plan.id}`)}
                         >
                           View Details
                           <ArrowRight className="w-4 h-4 ml-2" />
                         </Button>
                         
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm" className="flex-1 rounded-lg">
-                            <Heart className="w-4 h-4 mr-2" />
-                            Save
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className={`flex-1 rounded-lg ${isFavorite(plan.id) ? 'bg-red-500 hover:bg-red-600 text-white border-red-500' : ''}`}
+                            onClick={() => {
+                              if (!user) {
+                                alert('Please log in to add favorites');
+                                return;
+                              }
+                              toggleFavorite(plan.id);
+                            }}
+                          >
+                            <Heart className={`w-4 h-4 mr-2 ${isFavorite(plan.id) ? 'fill-current' : ''}`} />
+                            {isFavorite(plan.id) ? 'Saved' : 'Save'}
                           </Button>
                           <Button variant="outline" size="sm" className="flex-1 rounded-lg">
                             <Download className="w-4 h-4 mr-2" />
@@ -474,13 +409,16 @@ const Plans = () => {
           </div>
         )}
 
+        {/* Bottom Banner Ad */}
+        <AdBanner position="bottom" adType="banner" className="mt-8" />
+
         {/* Load More Section */}
         {sortedPlans.length > 0 && (
           <div className="text-center mt-16">
             <div className="space-y-4">
               <Button variant="outline" size="lg" className="px-8 py-4 rounded-xl text-lg font-semibold hover:bg-primary hover:text-white transition-all duration-300">
-                Load More Plans
-              </Button>
+            Load More Plans
+          </Button>
               <p className="text-muted-foreground">
                 Can't find what you're looking for? Contact us for custom designs.
               </p>
@@ -514,7 +452,7 @@ const Plans = () => {
                 Clear Filters
               </Button>
             </div>
-          </div>
+        </div>
         )}
       </div>
 
@@ -523,7 +461,8 @@ const Plans = () => {
         isOpen={showComparison} 
         onClose={() => setShowComparison(false)} 
       />
-    </div>
+      </div>
+    </>
   );
 };
 

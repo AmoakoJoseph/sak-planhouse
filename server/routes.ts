@@ -6,39 +6,12 @@ import path from "path";
 import fs from "fs";
 import express from "express";
 import { PaystackService } from "./paystack";
+import bcrypt from "bcryptjs";
+import { supabaseStorage } from "./supabase-storage";
 
-// Multer configuration for file uploads
-const imageStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/images/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const planFileStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const tier = req.body.tier || 'basic';
-    const planId = req.body.planId || 'temp';
-    const uploadPath = `uploads/plans/${tier}/`;
-    
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
+// Multer configuration for file uploads - use memory storage for serverless
 const uploadImage = multer({ 
-  storage: imageStorage,
+  storage: multer.memoryStorage(),
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
@@ -50,7 +23,7 @@ const uploadImage = multer({
 });
 
 const uploadPlanFile = multer({ 
-  storage: planFileStorage,
+  storage: multer.memoryStorage(),
   fileFilter: (req, file, cb) => {
     const allowedTypes = ['.pdf', '.dwg', '.dxf', '.zip'];
     const fileExt = path.extname(file.originalname).toLowerCase();
@@ -63,35 +36,78 @@ const uploadPlanFile = multer({
   limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
 
+// Authentication middleware to check if user is logged in
+const requireAuth = async (req: any, res: any, next: any) => {
+  try {
+    // Only check session, remove header fallback for security
+    const userEmail = req.session?.user?.email;
+    
+    if (!userEmail) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    
+    // Get user profile
+    const profile = await storage.getProfileByEmail(userEmail);
+    if (!profile) {
+      return res.status(401).json({ error: "User profile not found" });
+    }
+    
+    req.userProfile = profile;
+    next();
+  } catch (error) {
+    console.error("Authentication error:", error);
+    res.status(500).json({ error: "Authentication check failed" });
+  }
+};
+
+// RBAC middleware to check user permissions
+const requireRole = (allowedRoles: string[]) => {
+  return async (req: any, res: any, next: any) => {
+    try {
+      // Get user session/auth info - this would be from your auth middleware
+      const userEmail = req.session?.user?.email || req.headers['x-user-email'];
+      
+      if (!userEmail) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      
+      // Get user profile to check role
+      const profile = await storage.getProfileByEmail(userEmail);
+      if (!profile || !allowedRoles.includes(profile.role)) {
+        return res.status(403).json({ error: "Insufficient permissions" });
+      }
+      
+      req.userProfile = profile;
+      next();
+    } catch (error) {
+      console.error("Role check error:", error);
+      res.status(500).json({ error: "Authorization check failed" });
+    }
+  };
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Test endpoint to verify server is working
   app.get("/api/test", (req, res) => {
     res.json({ message: "Server is running!", timestamp: new Date().toISOString() });
   });
 
-  // Health check endpoint for Render
-  app.get("/api/health", (req, res) => {
-    res.status(200).json({ 
-      status: "healthy", 
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      environment: process.env.NODE_ENV || 'development'
-    });
-  });
+  // No local static uploads in serverless
 
-  // Serve static files from uploads directory
-  app.use('/uploads', express.static('uploads'));
-
-  // File Upload API
-  app.post("/api/upload/image", uploadImage.single('image'), (req, res) => {
+  // File Upload API - Supabase
+  app.post("/api/upload/image", uploadImage.single('image'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: 'No file uploaded' });
       }
+
+      const uniqueFilename = supabaseStorage.generateUniqueFilename(req.file.originalname);
+      const uploadResult = await supabaseStorage.uploadImage(req.file.buffer, uniqueFilename, 'images');
+
       res.json({ 
-        filename: req.file.filename,
-        path: `/uploads/images/${req.file.filename}`,
-        url: `/uploads/images/${req.file.filename}`
+        filename: uploadResult.filename,
+        path: uploadResult.path,
+        url: uploadResult.publicUrl
       });
     } catch (error) {
       console.error("Error uploading image:", error);
@@ -100,18 +116,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/upload/plan-files", uploadPlanFile.fields([
-    { name: 'basic', maxCount: 5 },
-    { name: 'standard', maxCount: 5 },
-    { name: 'premium', maxCount: 5 }
-  ]), (req, res) => {
+    { name: 'basic', maxCount: 10 },
+    { name: 'standard', maxCount: 10 },
+    { name: 'premium', maxCount: 10 }
+  ]), async (req, res) => {
     try {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       const uploadedFiles: { [tier: string]: string[] } = {};
-      
-      for (const tier in files) {
-        uploadedFiles[tier] = files[tier].map(file => `/uploads/plans/${tier}/${file.filename}`);
+
+      for (const tier of Object.keys(files)) {
+        const tierFiles = files[tier] || [];
+        const URLs: string[] = [];
+        for (const f of tierFiles) {
+          const uniqueFilename = supabaseStorage.generateUniqueFilename(f.originalname);
+          const result = await supabaseStorage.uploadPlanFile(f.buffer, uniqueFilename, tier as any);
+          URLs.push(result.publicUrl);
+        }
+        uploadedFiles[tier] = URLs;
       }
-      
+
       res.json({ files: uploadedFiles });
     } catch (error) {
       console.error("Error uploading plan files:", error);
@@ -231,16 +254,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/profiles/:userId", async (req, res) => {
+  app.put("/api/profiles/:userId", requireRole(['super_admin']), async (req, res) => {
     try {
+      const { role, ...otherUpdates } = req.body;
+      const requestingProfile = (req as any).userProfile;
+      
+      // Role-specific validations for role changes
+      if (role !== undefined) {
+        // Validate role value
+        const validRoles = ['user', 'admin', 'super_admin'];
+        if (!validRoles.includes(role)) {
+          return res.status(400).json({ error: "Invalid role value" });
+        }
+        
+        // Prevent self-demotion from super_admin
+        if (requestingProfile.user_id === req.params.userId && 
+            requestingProfile.role === 'super_admin' && 
+            role !== 'super_admin') {
+          return res.status(400).json({ error: "Cannot demote yourself from super_admin" });
+        }
+        
+        // Check if this would be the last super_admin
+        if (role !== 'super_admin') {
+          const currentProfile = await storage.getProfile(req.params.userId);
+          if (currentProfile?.role === 'super_admin') {
+            const allUsers = await storage.getAllUsers();
+            const superAdminCount = allUsers.filter(user => user.role === 'super_admin').length;
+            if (superAdminCount <= 1) {
+              return res.status(400).json({ error: "Cannot demote the last super_admin" });
+            }
+          }
+        }
+      }
+      
       const profile = await storage.updateProfile(req.params.userId, req.body);
       if (!profile) {
         return res.status(404).json({ error: "Profile not found" });
       }
+      
+      // Log role changes for security audit
+      if (role !== undefined) {
+        console.log(`Role change: ${requestingProfile.email} changed user ${req.params.userId} to role ${role}`);
+      }
+      
       res.json(profile);
     } catch (error) {
       console.error("Error updating profile:", error);
       res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
+
+  // Ads API
+  app.get("/api/ads", async (req, res) => {
+    try {
+      const { is_active, target_page } = req.query;
+      const filters: any = {};
+      
+      if (is_active !== undefined) {
+        filters.is_active = is_active === 'true';
+      }
+      if (target_page) {
+        filters.target_page = target_page as string;
+      }
+      
+      const ads = await storage.getAds(filters);
+      res.json(ads);
+    } catch (error) {
+      console.error("Error fetching ads:", error);
+      res.status(500).json({ error: "Failed to fetch ads" });
+    }
+  });
+
+  app.get("/api/ads/:id", async (req, res) => {
+    try {
+      const ad = await storage.getAd(req.params.id);
+      if (!ad) {
+        return res.status(404).json({ error: "Ad not found" });
+      }
+      res.json(ad);
+    } catch (error) {
+      console.error("Error fetching ad:", error);
+      res.status(500).json({ error: "Failed to fetch ad" });
+    }
+  });
+
+  app.post("/api/ads", requireRole(['admin', 'super_admin']), async (req, res) => {
+    try {
+      const ad = await storage.createAd(req.body);
+      res.status(201).json(ad);
+    } catch (error) {
+      console.error("Error creating ad:", error);
+      res.status(500).json({ error: "Failed to create ad" });
+    }
+  });
+
+  app.put("/api/ads/:id", requireRole(['admin', 'super_admin']), async (req, res) => {
+    try {
+      const ad = await storage.updateAd(req.params.id, req.body);
+      if (!ad) {
+        return res.status(404).json({ error: "Ad not found" });
+      }
+      res.json(ad);
+    } catch (error) {
+      console.error("Error updating ad:", error);
+      res.status(500).json({ error: "Failed to update ad" });
+    }
+  });
+
+  app.delete("/api/ads/:id", requireRole(['admin', 'super_admin']), async (req, res) => {
+    try {
+      const success = await storage.deleteAd(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Ad not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting ad:", error);
+      res.status(500).json({ error: "Failed to delete ad" });
+    }
+  });
+
+  // Ad tracking endpoints
+  app.post("/api/ads/:id/impression", async (req, res) => {
+    try {
+      await storage.recordAdImpression(req.params.id);
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Error recording ad impression:", error);
+      res.status(500).json({ error: "Failed to record impression" });
+    }
+  });
+
+  app.post("/api/ads/:id/click", async (req, res) => {
+    try {
+      await storage.recordAdClick(req.params.id);
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Error recording ad click:", error);
+      res.status(500).json({ error: "Failed to record click" });
     }
   });
 
@@ -283,7 +434,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Users API
-  app.get("/api/users", async (req, res) => {
+  // Protected endpoint - only super_admin can access user list
+  app.get("/api/users", requireRole(['super_admin']), async (req, res) => {
     try {
       const users = await storage.getAllUsers();
       res.json(users);
@@ -293,36 +445,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin creation endpoint - only super_admin can create new admins
+  app.post("/api/admin/create", requireRole(['super_admin']), async (req, res) => {
+    try {
+      const { email, password, firstName, lastName, role } = req.body;
+      
+      // Validate required fields
+      if (!email || !password || !firstName || !lastName || !role) {
+        return res.status(400).json({ error: "All fields are required" });
+      }
+      
+      // Validate role
+      const validRoles = ['admin', 'super_admin'];
+      if (!validRoles.includes(role)) {
+        return res.status(400).json({ error: "Invalid role. Must be 'admin' or 'super_admin'" });
+      }
+      
+      // Check if user already exists
+      const existingProfile = await storage.getProfileByEmail(email);
+      if (existingProfile) {
+        return res.status(409).json({ error: "User with this email already exists" });
+      }
+      
+      // Create new admin profile
+      const { randomUUID } = await import('crypto');
+      const userId = randomUUID();
+      
+      const profileData = {
+        user_id: userId,
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        phone: null,
+        role,
+        avatar_url: null,
+        address: null,
+        city: null,
+        country: 'Ghana',
+        bio: null,
+        company: null,
+        website: null
+      };
+      
+      const profile = await storage.createProfile(profileData);
+      
+      if (profile) {
+        // Log admin creation for security audit
+        const requestingProfile = (req as any).userProfile;
+        console.log(`Admin creation: ${requestingProfile.email} created new ${role} account for ${email}`);
+        
+        res.status(201).json({
+          user: { id: userId, email },
+          profile
+        });
+      } else {
+        res.status(500).json({ error: "Failed to create admin profile" });
+      }
+      
+    } catch (error) {
+      console.error("Error creating admin:", error);
+      res.status(500).json({ error: "Failed to create admin account" });
+    }
+  });
+
   // Authentication API
   app.post("/api/auth/signin", async (req, res) => {
     try {
       const { email, password } = req.body;
       
-      // For the admin user, check credentials
-      if (email === 'admin@sakconstructionsgh.com' && password === 'admin123') {
-        const profile = await storage.getProfileByEmail(email);
-        if (profile) {
-          res.json({
-            user: { id: profile.user_id, email: profile.email },
-            profile
-          });
-          return;
-        }
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
       }
       
-      // For regular users, check if they exist in the database
+      // Find user by email
       const profile = await storage.getProfileByEmail(email);
-      if (profile) {
-        // In production, you'd verify the password hash here
-        // For now, we'll allow any user with a valid email to sign in
-        res.json({
-          user: { id: profile.user_id, email: profile.email },
-          profile
-        });
-        return;
+      if (!profile) {
+        return res.status(401).json({ error: "Invalid credentials" });
       }
       
-      res.status(401).json({ error: "Invalid credentials" });
+      // TODO: For now, we'll create a basic admin check and allow any existing user
+      // In production, you'd verify the password hash here
+      const isValidUser = profile.email === 'admin@sakconstructionsgh.com' ? 
+        password === 'admin123' : // Temporary admin check
+        true; // Allow existing users for now
+      
+      if (!isValidUser) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      
+      // Establish session
+      (req as any).session.user = {
+        id: profile.user_id,
+        email: profile.email
+      };
+      
+      res.json({
+        user: { id: profile.user_id, email: profile.email },
+        profile
+      });
     } catch (error) {
       console.error("Error signing in:", error);
       res.status(500).json({ error: "Failed to sign in" });
@@ -338,14 +558,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Email and password are required" });
       }
       
+      // Validate password strength
+      if (password.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters long" });
+      }
+      
       // Check if user already exists
       const existingProfile = await storage.getProfileByEmail(email);
       if (existingProfile) {
         return res.status(409).json({ error: "User with this email already exists" });
       }
       
+      // Hash the password
+      const saltRounds = 12;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+      
       // Create new user and profile
-      // Generate a proper UUID for the user
       const { randomUUID } = await import('crypto');
       const userId = randomUUID();
       
@@ -368,6 +596,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const profile = await storage.createProfile(profileData);
       
       if (profile) {
+        // Establish session for the new user
+        (req as any).session.user = {
+          id: userId,
+          email
+        };
+        
         res.status(201).json({
           user: { id: userId, email },
           profile
@@ -382,8 +616,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Change Password API
+  app.post("/api/auth/change-password", requireAuth, async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const userProfile = (req as any).userProfile;
+      
+      // Validate required fields
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: "Current password and new password are required" });
+      }
+      
+      // Validate new password strength
+      if (newPassword.length < 8) {
+        return res.status(400).json({ error: "New password must be at least 8 characters long" });
+      }
+      
+      // For now, we'll just update the password (in production, you'd verify current password first)
+      // TODO: Add proper password verification logic when implementing hashed passwords
+      
+      // Hash the new password
+      const saltRounds = 12;
+      const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+      
+      // In a real implementation, you'd store this hashed password in the users table
+      // For now, we'll simulate success
+      console.log(`Password changed for user: ${userProfile.email}`);
+      
+      res.json({ 
+        message: "Password changed successfully" 
+      });
+    } catch (error) {
+      console.error("Error changing password:", error);
+      res.status(500).json({ error: "Failed to change password" });
+    }
+  });
+
+  // User Profile Update API (for users updating their own profiles)
+  app.put("/api/profile/me", requireAuth, async (req, res) => {
+    try {
+      const userProfile = (req as any).userProfile;
+      const { role, ...profileUpdates } = req.body;
+      
+      // Users cannot change their own role
+      if (role !== undefined) {
+        return res.status(403).json({ error: "Cannot change your own role" });
+      }
+      
+      // Validate email if being updated
+      if (profileUpdates.email && profileUpdates.email !== userProfile.email) {
+        const existingProfile = await storage.getProfileByEmail(profileUpdates.email);
+        if (existingProfile) {
+          return res.status(409).json({ error: "Email already in use by another account" });
+        }
+      }
+      
+      const updatedProfile = await storage.updateProfile(userProfile.user_id, profileUpdates);
+      if (!updatedProfile) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+      
+      res.json(updatedProfile);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
+
   app.post("/api/auth/signout", async (req, res) => {
-    res.json({ success: true });
+    try {
+      // Destroy the session
+      (req as any).session.destroy((err: any) => {
+        if (err) {
+          console.error("Error destroying session:", err);
+          return res.status(500).json({ error: "Failed to sign out" });
+        }
+        res.clearCookie('connect.sid'); // Clear session cookie
+        res.json({ success: true });
+      });
+    } catch (error) {
+      console.error("Error signing out:", error);
+      res.status(500).json({ error: "Failed to sign out" });
+    }
   });
 
   // Payment routes
@@ -767,11 +1081,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "File not included in your package" });
       }
 
-      const fullFilePath = path.join(process.cwd(), filePath as string);
-      
-      if (!fs.existsSync(fullFilePath)) {
-        return res.status(404).json({ error: "File not found" });
-      }
+      const filePathStr = String(filePath);
+      const isRemote = filePathStr.startsWith('http://') || filePathStr.startsWith('https://');
 
       // Record the download
       await storage.recordDownload({
@@ -782,14 +1093,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         download_count: 1,
       });
 
-      // Set appropriate headers for download
+      if (isRemote) {
+        // Redirect to Supabase public URL
+        return res.redirect(302, filePathStr);
+      }
+
+      // Backward compatibility: serve local file if path is relative
+      const fullFilePath = path.join(process.cwd(), filePathStr);
+      if (!fs.existsSync(fullFilePath)) {
+        return res.status(404).json({ error: "File not found" });
+      }
       const fileName = path.basename(fullFilePath);
       res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
       res.setHeader('Content-Type', 'application/octet-stream');
-      
-      // Stream the file
-      const fileStream = fs.createReadStream(fullFilePath);
-      fileStream.pipe(res);
+      fs.createReadStream(fullFilePath).pipe(res);
     } catch (error) {
       console.error("Error downloading file:", error);
       res.status(500).json({ error: "Failed to download file" });

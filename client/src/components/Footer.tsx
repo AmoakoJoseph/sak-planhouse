@@ -19,7 +19,7 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-gradient-to-br from-foreground via-foreground to-foreground/95 text-foreground-foreground relative overflow-hidden">
+    <footer className="bg-foreground text-foreground-foreground relative overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.15)_1px,transparent_0)] bg-[size:20px_20px]"></div>
@@ -33,12 +33,12 @@ const Footer = () => {
             <div className="lg:col-span-1 space-y-4">
               <div className="flex items-center space-x-3">
                 <div className="relative">
-                  <div className="absolute -inset-1 bg-gradient-to-br from-primary to-secondary rounded-xl blur opacity-30"></div>
+                  <div className="absolute -inset-1 bg-primary rounded-xl blur opacity-30"></div>
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
                     <img 
-                      src="/logo.png" 
+                      src="/client/logo.png" 
                       alt="SAK Constructions" 
                       className="h-6 w-auto"
                     />
@@ -47,7 +47,7 @@ const Footer = () => {
               </div>
               
               <p className="text-muted-foreground leading-relaxed text-sm">
-                Building dreams with professional architectural plans. Trusted by Ghana's leading contractors and architects.
+                Building dreams with professional architectural plans. Trusted by Ghana's leading professionals.
               </p>
               
               <div className="flex space-x-3">
@@ -152,7 +152,7 @@ const Footer = () => {
                     placeholder="Enter your email"
                     className="flex-1 bg-muted/20 border-muted/30 text-white placeholder:text-muted-foreground focus:border-primary focus:bg-muted/30 transition-all duration-300 text-sm py-2"
                   />
-                  <Button className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white px-3 py-2 transition-all duration-300">
+                  <Button className="bg-primary hover:bg-primary/90 text-white px-3 py-2 transition-all duration-300">
                     <ArrowRight className="w-3 h-3" />
                   </Button>
                 </div>
@@ -169,7 +169,7 @@ const Footer = () => {
             <div className="flex flex-col md:flex-row items-center justify-between space-y-3 md:space-y-0">
               <div className="text-xs text-muted-foreground flex items-center space-x-2">
                 <img 
-                  src="/logo.png" 
+                  src="/client/logo.png" 
                   alt="SAK Constructions" 
                   className="h-4 w-auto opacity-70"
                 />

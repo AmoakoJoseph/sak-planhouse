@@ -1,34 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-
-// Utility function to safely handle localStorage operations
-const safeLocalStorage = {
-  getItem: (key: string) => {
-    try {
-      const item = localStorage.getItem(key);
-      if (item && item !== 'undefined' && item !== 'null') {
-        return JSON.parse(item);
-      }
-    } catch (error) {
-      console.error(`Error parsing ${key} from localStorage:`, error);
-      localStorage.removeItem(key);
-    }
-    return null;
-  },
-  setItem: (key: string, value: any) => {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch (error) {
-      console.error(`Error saving ${key} to localStorage:`, error);
-    }
-  },
-  removeItem: (key: string) => {
-    try {
-      localStorage.removeItem(key);
-    } catch (error) {
-      console.error(`Error removing ${key} from localStorage:`, error);
-    }
-  }
-};
+import { api } from '@/lib/api';
 
 interface User {
   id: string;
@@ -79,8 +50,16 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<User | null>(() => safeLocalStorage.getItem('user'));
-  const [profile, setProfile] = useState<Profile | null>(() => safeLocalStorage.getItem('profile'));
+  const [user, setUser] = useState<User | null>(() => {
+    // Initialize from localStorage
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  const [profile, setProfile] = useState<Profile | null>(() => {
+    // Initialize from localStorage
+    const savedProfile = localStorage.getItem('profile');
+    return savedProfile ? JSON.parse(savedProfile) : null;
+  });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -91,32 +70,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
     try {
       console.log('Sign up attempted:', { email, firstName, lastName });
-      
-      const response = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          email, 
-          password, 
-          firstName, 
-          lastName 
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
+      const data = await api.post('auth/signup', { email, password, firstName, lastName });
         setUser(data.user);
         setProfile(data.profile);
-        // Save to localStorage safely
-        safeLocalStorage.setItem('user', data.user);
-        safeLocalStorage.setItem('profile', data.profile);
+        // Save to localStorage
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('profile', JSON.stringify(data.profile));
         return { error: null };
-      } else {
-        const errorData = await response.json();
-        return { error: errorData.error || 'Sign up failed' };
-      }
     } catch (error) {
       console.error('Sign up error:', error);
       return { error: 'Network error occurred' };
@@ -126,29 +86,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const signIn = async (email: string, password: string) => {
     try {
       console.log('Sign in attempted:', { email });
-      
-      const response = await fetch('/api/auth/signin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Sign in successful, received data:', data);
+      const data = await api.post('auth/signin', { email, password });
         setUser(data.user);
         setProfile(data.profile);
-        // Save to localStorage safely
-        safeLocalStorage.setItem('user', data.user);
-        safeLocalStorage.setItem('profile', data.profile);
-        console.log('User and profile set, isAdmin:', data.profile?.role === 'admin' || data.profile?.role === 'super_admin');
+        // Save to localStorage
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('profile', JSON.stringify(data.profile));
         return { error: null };
-      } else {
-        const errorData = await response.json();
-        return { error: errorData.error || 'Sign in failed' };
-      }
     } catch (error) {
       console.error('Sign in error:', error);
       return { error: 'Network error occurred' };
@@ -157,15 +101,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const signOut = async () => {
     try {
-      await fetch('/api/auth/signout', { method: 'POST' });
+      await api.post('auth/signout', {});
     } catch (error) {
       console.error('Sign out error:', error);
     }
     setUser(null);
     setProfile(null);
-    // Clear localStorage safely
-    safeLocalStorage.removeItem('user');
-    safeLocalStorage.removeItem('profile');
+    // Clear localStorage
+    localStorage.removeItem('user');
+    localStorage.removeItem('profile');
   };
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
