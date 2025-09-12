@@ -1,10 +1,18 @@
 import express from 'express';
 import postgres from 'postgres';
+import multer from 'multer';
+import { supabaseStorage } from '../server/supabase-storage';
 import 'dotenv/config';
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// In serverless, use in-memory uploads
+const memoryUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 },
+});
 
 // Simple getPlans function using direct postgres connection
 async function getPlans(filters: { status?: string; featured?: boolean } = {}) {
@@ -198,6 +206,43 @@ app.post('/api/ads/:id/impression', async (req, res) => {
   } catch (error) {
     console.error('Error recording ad impression:', error);
     res.status(200).json({ success: true }); // do not break UI if schema missing
+  }
+});
+
+// Upload endpoints (mirror dev behavior using Supabase storage)
+app.post('/api/upload/image', memoryUpload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    const filename = supabaseStorage.generateUniqueFilename(req.file.originalname);
+    const result = await supabaseStorage.uploadImage(req.file.buffer, filename, 'images');
+    res.json({ filename: result.filename, path: result.path, url: result.publicUrl });
+  } catch (error) {
+    console.error('Upload image error:', error);
+    res.status(500).json({ error: 'Failed to upload image' });
+  }
+});
+
+app.post('/api/upload/plan-files', memoryUpload.fields([
+  { name: 'basic', maxCount: 10 },
+  { name: 'standard', maxCount: 10 },
+  { name: 'premium', maxCount: 10 },
+]), async (req, res) => {
+  try {
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    const uploaded: Record<string, string[]> = {};
+    for (const tier of Object.keys(files)) {
+      const tierFiles = files[tier] || [];
+      uploaded[tier] = [];
+      for (const f of tierFiles) {
+        const filename = supabaseStorage.generateUniqueFilename(f.originalname);
+        const result = await supabaseStorage.uploadPlanFile(f.buffer, filename, tier as any);
+        uploaded[tier].push(result.publicUrl);
+      }
+    }
+    res.json({ files: uploaded });
+  } catch (error) {
+    console.error('Upload plan files error:', error);
+    res.status(500).json({ error: 'Failed to upload plan files' });
   }
 });
 
