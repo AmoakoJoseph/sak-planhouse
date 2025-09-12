@@ -1074,21 +1074,174 @@ app.get("/api/downloads/:orderId/file", async (req, res) => {
 // Payment API
 app.post("/api/payments/initialize", async (req, res) => {
   try {
-    const paymentData = req.body;
-    console.log('Initializing payment:', paymentData);
+    const { email, amount, planId, planTitle, packageType, userId } = req.body;
+    console.log('Initializing payment:', { email, amount, planId, planTitle, packageType, userId });
     
-    // For now, return a mock response
-    // TODO: Implement actual Paystack payment initialization
+    // Check if Paystack is configured
+    if (!process.env.PAYSTACK_SECRET_KEY) {
+      console.log('Paystack not configured, returning mock response');
+      return res.json({
+        success: true,
+        message: "Payment initialized (mock)",
+        reference: `ref_${Date.now()}`,
+        authorization_url: "https://checkout.paystack.com/mock-checkout"
+      });
+    }
+    
+    // Generate unique reference
+    const reference = `ref_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Convert amount to kobo (multiply by 100)
+    const amountInKobo = Math.round(amount * 100);
+    
+    // Prepare payment data
+    const paymentData = {
+      email,
+      amount: amountInKobo,
+      reference,
+      callback_url: `${req.protocol}://${req.get('host')}/payment/verify`,
+      planId,
+      packageType,
+      metadata: {
+        planId,
+        planTitle,
+        packageType,
+        userId: userId || null,
+        custom_fields: [
+          {
+            display_name: "Plan",
+            variable_name: "plan",
+            value: planTitle,
+          },
+          {
+            display_name: "Package",
+            variable_name: "package",
+            value: packageType,
+          },
+        ],
+      },
+    };
+    
+    console.log('Payment data prepared:', paymentData);
+    console.log('Making request to Paystack API...');
+    
+    // Call Paystack API
+    const response = await fetch('https://api.paystack.co/transaction/initialize', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: paymentData.email,
+        amount: paymentData.amount,
+        reference: paymentData.reference,
+        callback_url: paymentData.callback_url,
+        metadata: paymentData.metadata,
+      }),
+    });
+
+    console.log('Paystack API response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Paystack API error response:', errorText);
+      throw new Error(`Paystack API error: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const responseData = await response.json();
+    console.log('Paystack API response data:', responseData);
+
+    if (!responseData.status) {
+      throw new Error('Paystack API returned unsuccessful status');
+    }
+
     res.json({
       success: true,
-      message: "Payment initialized",
-      reference: `ref_${Date.now()}`,
-      authorization_url: "https://checkout.paystack.com/mock-checkout"
+      authorization_url: responseData.data.authorization_url,
+      access_code: responseData.data.access_code,
+      reference: responseData.data.reference,
     });
   } catch (error) {
     console.error("Error initializing payment:", error);
     res.status(500).json({ 
       error: "Failed to initialize payment",
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// Payment verification API
+app.get("/api/payments/verify/:reference", async (req, res) => {
+  try {
+    const { reference } = req.params;
+    console.log('Verifying payment with reference:', reference);
+    
+    // Check if Paystack is configured
+    if (!process.env.PAYSTACK_SECRET_KEY) {
+      console.log('Paystack not configured, returning mock verification');
+      return res.json({
+        success: true,
+        message: "Payment verified (mock)",
+        order: {
+          id: `order_${Date.now()}`,
+          status: 'completed',
+          amount: 1000,
+          reference: reference
+        }
+      });
+    }
+    
+    // Call Paystack verification API
+    const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    console.log('Paystack verification response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Paystack verification error response:', errorText);
+      throw new Error(`Paystack verification error: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    const responseData = await response.json();
+    console.log('Paystack verification response data:', responseData);
+
+    if (!responseData.status || responseData.data.status !== 'success') {
+      throw new Error('Payment verification failed or payment not successful');
+    }
+
+    // Create order in database
+    const client = postgres(process.env.DATABASE_URL!, {
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      ssl: 'require',
+    });
+
+    const orderData = responseData.data;
+    const metadata = orderData.metadata || {};
+    
+    const result = await client.unsafe(
+      'INSERT INTO orders (user_id, plan_id, tier, amount, status, payment_intent_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW()) RETURNING *',
+      [metadata.userId || null, metadata.planId, metadata.packageType, orderData.amount / 100, 'completed', reference]
+    );
+    await client.end();
+
+    res.json({
+      success: true,
+      message: "Payment verified successfully",
+      order: result[0]
+    });
+  } catch (error) {
+    console.error("Error verifying payment:", error);
+    res.status(500).json({ 
+      error: "Failed to verify payment",
       message: error instanceof Error ? error.message : 'Unknown error'
     });
   }
