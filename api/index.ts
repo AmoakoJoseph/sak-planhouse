@@ -191,7 +191,7 @@ app.post("/api/auth/signin", async (req, res) => {
         email: email,
         first_name: "Test",
         last_name: "User",
-        role: "user"
+        role: "admin" // Set to admin for testing admin login
       }
     };
     

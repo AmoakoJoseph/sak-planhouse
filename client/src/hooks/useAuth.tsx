@@ -137,11 +137,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Sign in successful, received data:', data);
         setUser(data.user);
         setProfile(data.profile);
         // Save to localStorage safely
         safeLocalStorage.setItem('user', data.user);
         safeLocalStorage.setItem('profile', data.profile);
+        console.log('User and profile set, isAdmin:', data.profile?.role === 'admin' || data.profile?.role === 'super_admin');
         return { error: null };
       } else {
         const errorData = await response.json();
