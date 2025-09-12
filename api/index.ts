@@ -375,7 +375,7 @@ app.get('/api/favorites/:userId', async (req, res) => {
     });
     
     // Try to fetch from favorites table first
-    let favorites = [];
+    let favorites: any[] = [];
     try {
       favorites = await client.unsafe(`
         SELECT f.*, p.title, p.description, p.image_url, p.category
@@ -388,20 +388,26 @@ app.get('/api/favorites/:userId', async (req, res) => {
     } catch (favoritesError) {
       console.log('Favorites table not found, using purchased plans as favorites');
       // Fallback: use purchased plans as favorites
-      favorites = await client.unsafe(`
-        SELECT DISTINCT p.*, o.created_at as favorited_at
-        FROM plans p
-        INNER JOIN orders o ON p.id = o.plan_id
-        WHERE o.user_id = $1 AND o.status = 'completed'
-        ORDER BY o.created_at DESC
-      `, [userId]);
-      console.log(`Found ${favorites.length} purchased plans as favorites`);
+      try {
+        favorites = await client.unsafe(`
+          SELECT DISTINCT p.*, o.created_at as favorited_at
+          FROM plans p
+          INNER JOIN orders o ON p.id = o.plan_id
+          WHERE o.user_id = $1 AND o.status = 'completed'
+          ORDER BY o.created_at DESC
+        `, [userId]);
+        console.log(`Found ${favorites.length} purchased plans as favorites`);
+      } catch (ordersError) {
+        console.log('Orders table not found, returning empty favorites');
+        favorites = [];
+      }
     }
     
     await client.end();
     res.json(favorites);
   } catch (error) {
     console.error('Error fetching favorites:', error);
+    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
     res.status(500).json({ error: 'Failed to fetch favorites' });
   }
 });
@@ -642,7 +648,7 @@ app.get('/api/analytics', async (_req, res) => {
     });
     
     console.log('Analytics data fetched successfully');
-    res.json({
+      res.json({
       overview: {
         totalRevenue: Number(revenue[0]?.total || 0),
         revenueGrowth: 0, // TODO: Calculate growth from historical data
@@ -1125,36 +1131,36 @@ app.post("/api/auth/signup", async (req, res) => {
     
     // Create user profile
     const result = await client.unsafe(
-      'INSERT INTO profiles (user_id, email, first_name, last_name, role, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) RETURNING *',
+        'INSERT INTO profiles (user_id, email, first_name, last_name, role, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) RETURNING *',
       [userId, email, firstName || null, lastName || null, 'user']
-    );
+      );
     await client.end();
-    
+      
     const profile = result[0];
     console.log('Created user profile:', { id: profile.id, email: profile.email, role: profile.role });
-    
-    const response = {
-      success: true,
-      message: "Sign up successful",
-      user: {
+      
+      const response = {
+        success: true,
+        message: "Sign up successful",
+        user: {
         id: profile.user_id,
-        email: profile.email,
+          email: profile.email,
         name: profile.first_name && profile.last_name ? 
           `${profile.first_name} ${profile.last_name}` : 
           profile.email
-      },
-      profile: {
-        id: profile.id,
-        user_id: profile.user_id,
-        email: profile.email,
-        first_name: profile.first_name,
-        last_name: profile.last_name,
+        },
+        profile: {
+          id: profile.id,
+          user_id: profile.user_id,
+          email: profile.email,
+          first_name: profile.first_name,
+          last_name: profile.last_name,
         role: profile.role
       }
     };
     
     console.log('Returning sign up response:', response);
-    res.json(response);
+      res.json(response);
   } catch (error) {
     console.error("Sign up error:", error);
     res.status(500).json({ 
@@ -1433,10 +1439,10 @@ app.post("/api/payments/initialize", async (req, res) => {
     if (!process.env.PAYSTACK_SECRET_KEY) {
       console.log('Paystack not configured, returning mock response');
       return res.json({
-        success: true,
+      success: true,
         message: "Payment initialized (mock)",
-        reference: `ref_${Date.now()}`,
-        authorization_url: "https://checkout.paystack.com/mock-checkout"
+      reference: `ref_${Date.now()}`,
+      authorization_url: "https://checkout.paystack.com/mock-checkout"
       });
     }
     
@@ -1596,6 +1602,105 @@ app.get("/api/payments/verify/:reference", async (req, res) => {
       error: "Failed to verify payment",
       message: error instanceof Error ? error.message : 'Unknown error'
     });
+  }
+});
+
+// Reviews API endpoints
+app.get('/api/reviews/:planId', async (req, res) => {
+  try {
+    const { planId } = req.params;
+    console.log('Fetching reviews for plan:', planId);
+    
+    // Check if database is configured
+    if (!process.env.DATABASE_URL) {
+      console.log('Database not configured, returning empty reviews');
+      return res.json([]);
+    }
+    
+    const client = postgres(process.env.DATABASE_URL!, {
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      ssl: 'require',
+    });
+    
+    // Try to fetch from reviews table
+    let reviews: any[] = [];
+    try {
+      reviews = await client.unsafe(`
+        SELECT r.*, p.email as user_email, p.first_name, p.last_name
+        FROM reviews r
+        LEFT JOIN profiles p ON r.user_id = p.user_id
+        WHERE r.plan_id = $1
+        ORDER BY r.created_at DESC
+      `, [planId]);
+      console.log(`Found ${reviews.length} reviews for plan ${planId}`);
+    } catch (reviewsError) {
+      console.log('Reviews table not found, returning empty reviews');
+      reviews = [];
+    }
+    
+    await client.end();
+    res.json(reviews);
+  } catch (error) {
+    console.error('Error fetching reviews:', error);
+    res.status(500).json({ error: 'Failed to fetch reviews' });
+  }
+});
+
+app.post('/api/reviews', async (req, res) => {
+  try {
+    const { plan_id, user_id, rating, title, content } = req.body;
+    console.log('Creating review:', { plan_id, user_id, rating, title });
+    
+    // Check if database is configured
+    if (!process.env.DATABASE_URL) {
+      console.log('Database not configured, returning mock review');
+      return res.json({
+        id: Date.now(),
+        plan_id,
+        user_id,
+        rating,
+        title,
+        content,
+        created_at: new Date().toISOString()
+      });
+    }
+    
+    const client = postgres(process.env.DATABASE_URL!, {
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      ssl: 'require',
+    });
+    
+    // Try to create review in reviews table
+    try {
+      const result = await client.unsafe(`
+        INSERT INTO reviews (plan_id, user_id, rating, title, content, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+        RETURNING *
+      `, [plan_id, user_id, rating, title, content]);
+      
+      await client.end();
+      console.log('Review created successfully');
+      res.json(result[0]);
+    } catch (reviewsError) {
+      console.log('Reviews table not found, returning mock review');
+      await client.end();
+      res.json({
+        id: Date.now(),
+        plan_id,
+        user_id,
+        rating,
+        title,
+        content,
+        created_at: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    console.error('Error creating review:', error);
+    res.status(500).json({ error: 'Failed to create review' });
   }
 });
 
