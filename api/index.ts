@@ -520,7 +520,7 @@ app.get('/api/ads', async (req, res) => {
     });
 
     // Try to fetch from ads table
-    let ads = [];
+    let ads: any[] = [];
     try {
       const filters: string[] = [];
       const params: any[] = [];
