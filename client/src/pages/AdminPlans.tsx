@@ -792,6 +792,9 @@ const AdminPlans = () => {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Plan</DialogTitle>
+            <DialogDescription>
+              Update the plan details, pricing, and file uploads
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleUpdatePlan} className="space-y-4">
             

@@ -119,6 +119,53 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Users API endpoint
+app.get('/api/users', async (req, res) => {
+  try {
+    // For now, return mock user data
+    // TODO: Implement actual user fetching from database
+    const mockUsers = [
+      {
+        id: '1',
+        user_id: '1',
+        email: 'admin@sakconstructionsgh.com',
+        first_name: 'Admin',
+        last_name: 'User',
+        role: 'admin',
+        created_at: new Date().toISOString()
+      }
+    ];
+    
+    res.json(mockUsers);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// Portfolio API endpoints
+app.get('/api/portfolio', async (req, res) => {
+  try {
+    // For now, return empty portfolio
+    // TODO: Implement actual portfolio fetching from database
+    res.json([]);
+  } catch (error) {
+    console.error('Error fetching portfolio:', error);
+    res.status(500).json({ error: 'Failed to fetch portfolio' });
+  }
+});
+
+app.get('/api/portfolio/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    // For now, return 404 for specific portfolio items
+    res.status(404).json({ error: 'Portfolio item not found' });
+  } catch (error) {
+    console.error('Error fetching portfolio item:', error);
+    res.status(500).json({ error: 'Failed to fetch portfolio item' });
+  }
+});
+
 // Add a simple auth test route
 app.get('/api/auth/test', (req, res) => {
   res.json({ 

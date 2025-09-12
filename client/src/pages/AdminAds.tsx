@@ -725,6 +725,9 @@ const AdminAds = () => {
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Ad</DialogTitle>
+              <DialogDescription>
+                Update the advertisement details and settings
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleUpdateAd} className="space-y-4">
               {/* Same form fields as create modal */}
