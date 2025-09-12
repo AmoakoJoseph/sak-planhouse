@@ -112,6 +112,73 @@ app.get('/api/auth/test', (req, res) => {
   });
 });
 
+// Ads API (minimal) – mirrors server/routes.ts shape at a basic level
+app.get('/api/ads', async (req, res) => {
+  try {
+    const { is_active, position, type, target_page } = req.query as Record<string, string | undefined>;
+
+    const client = postgres(process.env.DATABASE_URL!, {
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+    });
+
+    const filters: string[] = [];
+    const params: any[] = [];
+    if (is_active !== undefined) { filters.push(`is_active = $${params.length + 1}`); params.push(is_active === 'true'); }
+    if (position) { filters.push(`position = $${params.length + 1}`); params.push(position); }
+    if (type) { filters.push(`type = $${params.length + 1}`); params.push(type); }
+    if (target_page) { filters.push(`(target_page = $${params.length + 1} OR target_page = 'all')`); params.push(target_page); }
+
+    const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+    const query = `SELECT * FROM ads ${where} ORDER BY priority DESC, created_at DESC`;
+    const ads = await client.unsafe(query, params);
+    await client.end();
+
+    res.json(ads);
+  } catch (error) {
+    console.error('Error fetching ads:', error);
+    res.status(500).json({ error: 'Failed to fetch ads' });
+  }
+});
+
+// Analytics API (minimal)
+app.get('/api/analytics', async (_req, res) => {
+  try {
+    const client = postgres(process.env.DATABASE_URL!, {
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+    });
+
+    const revenue = await client.unsafe(`SELECT COALESCE(SUM(amount),0)::decimal as total FROM orders WHERE status = 'completed'`);
+    const users = await client.unsafe(`SELECT COUNT(*)::int as total FROM profiles`);
+    const downloads = await client.unsafe(`SELECT COUNT(*)::int as total FROM downloads`);
+    await client.end();
+
+    res.json({
+      overview: {
+        totalRevenue: Number(revenue[0]?.total || 0),
+        revenueGrowth: 12.5,
+        totalOrders: 0,
+        ordersGrowth: 8.2,
+        totalUsers: Number(users[0]?.total || 0),
+        usersGrowth: 15.3,
+        totalDownloads: Number(downloads[0]?.total || 0),
+        downloadsGrowth: 22.1
+      },
+      planMetrics: { basicSales: 0, standardSales: 0, premiumSales: 0, totalPlans: 0 },
+      recentActivity: [],
+      topPlans: []
+    });
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch analytics' });
+  }
+});
+
 // Add a database test route
 app.get('/api/db-test', async (req, res) => {
   try {
