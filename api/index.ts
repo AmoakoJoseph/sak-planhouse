@@ -179,6 +179,48 @@ app.get('/api/analytics', async (_req, res) => {
   }
 });
 
+// Ad tracking endpoints (minimal)
+app.post('/api/ads/:id/impression', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const client = postgres(process.env.DATABASE_URL!, {
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+    });
+    // Try to increment if the column exists; otherwise ignore
+    try {
+      await client.unsafe(`UPDATE ads SET impressions = COALESCE(impressions, 0) + 1 WHERE id = $1`, [id]);
+    } catch {}
+    await client.end();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error recording ad impression:', error);
+    res.status(200).json({ success: true }); // do not break UI if schema missing
+  }
+});
+
+app.post('/api/ads/:id/click', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const client = postgres(process.env.DATABASE_URL!, {
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+      ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+    });
+    try {
+      await client.unsafe(`UPDATE ads SET clicks = COALESCE(clicks, 0) + 1 WHERE id = $1`, [id]);
+    } catch {}
+    await client.end();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error recording ad click:', error);
+    res.status(200).json({ success: true });
+  }
+});
+
 // Add a database test route
 app.get('/api/db-test', async (req, res) => {
   try {
